@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DentaPass — The loyalty card that lives in your patients' wallets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+:root{
+  --ink:#0d0f14;
+  --ink2:#2a2d35;
+  --muted:#6b7280;
+  --white:#ffffff;
+  --off:#f8f7f4;
+  --teal:#0ea5a0;
+  --teal-dk:#0c8f8a;
+  --teal-lt:#e0f5f4;
+  --teal-mid:#b2e8e6;
+  --gold:#c9a84c;
+  --gold-lt:#fdf6e3;
+  --border:#e5e2db;
+  --r:16px;
+  --r-lg:24px;
+  --r-xl:32px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--white);color:var(--ink);line-height:1.6;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer}
+
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+.reveal.up{opacity:1;transform:none}
+.d1{transition-delay:.06s}.d2{transition-delay:.12s}.d3{transition-delay:.18s}.d4{transition-delay:.24s}.d5{transition-delay:.30s}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:58px;display:flex;align-items:center;padding:0 32px;background:rgba(255,255,255,.86);backdrop-filter:blur(20px);border-bottom:.5px solid rgba(0,0,0,.07);transition:background .3s}
+.nav-in{max-width:1100px;margin:0 auto;width:100%;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.04em;color:var(--ink)}
+.logo span{color:var(--teal)}
+.nav-cta{background:var(--ink);color:#fff;border:none;border-radius:980px;padding:9px 22px;font-size:13px;font-weight:500;letter-spacing:-.01em;transition:background .18s,transform .12s}
+.nav-cta:hover{background:var(--teal);transform:scale(1.02)}
+
+/* ── WAITLIST ── */
+.waitlist-section{background:var(--ink);padding:120px 32px;position:relative;overflow:hidden}
+.waitlist-section::before{content:'';position:absolute;top:-200px;right:-200px;width:700px;height:700px;background:radial-gradient(ellipse,rgba(14,165,160,.09) 0%,transparent 60%);pointer-events:none}
+.waitlist-section::after{content:'';position:absolute;bottom:-150px;left:-100px;width:500px;height:500px;background:radial-gradient(ellipse,rgba(201,168,76,.05) 0%,transparent 60%);pointer-events:none}
+.wl-in{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:96px;align-items:center}
+.wl-left h2{font-family:'Instrument Serif',serif;font-size:clamp(38px,4.5vw,58px);line-height:1.05;letter-spacing:-.03em;color:#fff;margin-bottom:20px}
+.wl-left h2 em{font-style:italic;color:var(--teal)}
+.wl-left p{font-size:17px;color:rgba(255,255,255,.5);line-height:1.7;font-weight:300;margin-bottom:36px}
+.wl-perks{display:flex;flex-direction:column;gap:14px}
+.wl-perk{display:flex;align-items:center;gap:12px;font-size:14px;color:rgba(255,255,255,.65)}
+.wl-perk-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);flex-shrink:0}
+.wl-count{display:flex;align-items:center;gap:10px;margin-top:36px;padding-top:28px;border-top:.5px solid rgba(255,255,255,.08)}
+.wl-avatars{display:flex}
+.wlav{width:32px;height:32px;border-radius:50%;border:2px solid rgba(14,165,160,.3);background:rgba(14,165,160,.12);margin-left:-9px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--teal);font-family:'Syne',sans-serif}
+.wlav:first-child{margin-left:0}
+.wl-count-text{font-size:13px;color:rgba(255,255,255,.4)}
+.wl-count-text strong{color:rgba(255,255,255,.75);font-weight:500}
+
+.wl-form-wrap{background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.1);border-radius:var(--r-xl);padding:40px 36px;backdrop-filter:blur(12px);position:relative;z-index:1}
+.wl-form-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:-.02em;margin-bottom:6px}
+.wl-form-sub{font-size:14px;color:rgba(255,255,255,.4);margin-bottom:28px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.fg.full{grid-template-columns:1fr}
+.f{display:flex;flex-direction:column;gap:5px}
+.f label{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase}
+.f input,.f select,.f textarea{border:.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);border-radius:12px;padding:13px 16px;font-size:14px;font-family:inherit;color:#fff;outline:none;letter-spacing:-.01em;transition:border-color .18s,background .18s;-webkit-appearance:none}
+.f input::placeholder,.f textarea::placeholder{color:rgba(255,255,255,.2)}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:rgba(14,165,160,.5);background:rgba(14,165,160,.04)}
+.f select option{background:#1a1f2e;color:#fff}
+.f textarea{resize:none;min-height:80px;line-height:1.5}
+.ferr{font-size:11px;color:#f87171;margin-top:3px;display:none}
+.wl-submit{width:100%;background:var(--teal);color:#fff;border:none;border-radius:980px;padding:16px;font-size:15px;font-weight:600;font-family:inherit;margin-top:8px;letter-spacing:-.01em;transition:background .18s,transform .14s,box-shadow .18s;cursor:pointer}
+.wl-submit:hover{background:var(--teal-dk);transform:translateY(-1px);box-shadow:0 12px 32px rgba(14,165,160,.3)}
+.wl-submit:disabled{background:rgba(14,165,160,.2);cursor:not-allowed;transform:none;box-shadow:none}
+.wl-note{font-size:11px;color:rgba(255,255,255,.25);text-align:center;margin-top:12px}
+.wl-success{display:none;text-align:center;padding:32px 0}
+.wl-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(14,165,160,.12);border:1.5px solid rgba(14,165,160,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:24px}
+.wl-success-title{font-family:'Instrument Serif',serif;font-size:28px;color:#fff;letter-spacing:-.02em;margin-bottom:8px}
+.wl-success-sub{font-size:14px;color:rgba(255,255,255,.45);line-height:1.6}
+.wl-success-num{font-size:12px;color:var(--teal);margin-top:12px;font-weight:500}
+
+@media(max-width:860px){
+  .wl-in{grid-template-columns:1fr;gap:48px}
+  .fg{grid-template-columns:1fr}
+}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;align-items:center;padding:100px 32px 80px;background:var(--off);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;right:-300px;width:900px;height:900px;background:radial-gradient(ellipse,rgba(14,165,160,.08) 0%,transparent 60%);pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-100px;left:-100px;width:600px;height:600px;background:radial-gradient(ellipse,rgba(201,168,76,.06) 0%,transparent 60%);pointer-events:none}
+.hero-in{max-width:1100px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--teal-lt);border:.5px solid var(--teal-mid);border-radius:980px;padding:6px 16px;font-size:12px;font-weight:500;color:var(--teal-dk);margin-bottom:28px;letter-spacing:.02em}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+h1{font-family:'Instrument Serif',serif;font-size:clamp(44px,5.5vw,72px);line-height:1.03;letter-spacing:-.03em;color:var(--ink);margin-bottom:24px}
+h1 em{font-style:italic;color:var(--teal)}
+.hero-sub{font-size:18px;color:var(--muted);line-height:1.7;max-width:480px;margin-bottom:40px;font-weight:300}
+.hero-sub strong{color:var(--ink);font-weight:500}
+
+.hero-btns{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border:none;border-radius:980px;padding:15px 32px;font-size:15px;font-weight:500;letter-spacing:-.01em;transition:background .18s,transform .14s,box-shadow .18s}
+.btn-primary:hover{background:var(--teal);transform:translateY(-1px);box-shadow:0 12px 32px rgba(14,165,160,.3)}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--ink);border:1.5px solid var(--border);border-radius:980px;padding:14px 28px;font-size:15px;font-weight:500;transition:all .18s}
+.btn-outline:hover{border-color:var(--ink);background:var(--ink);color:#fff}
+
+.hero-proof{display:flex;align-items:center;gap:12px;margin-top:28px}
+.proof-avatars{display:flex}
+.av{width:30px;height:30px;border-radius:50%;border:2px solid #fff;background:linear-gradient(135deg,var(--teal-lt),var(--teal-mid));margin-left:-8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--teal-dk)}
+.av:first-child{margin-left:0}
+.proof-text{font-size:13px;color:var(--muted)}
+.proof-text strong{color:var(--ink)}
+
+/* ── PHONE MOCKUP ── */
+.phone-wrap{display:flex;justify-content:flex-end;gap:20px;align-items:flex-end;position:relative}
+.phone{background:var(--ink);border-radius:42px;padding:14px;box-shadow:0 48px 96px rgba(0,0,0,.22),0 2px 0 rgba(255,255,255,.06) inset;position:relative;flex-shrink:0}
+.phone.main{width:236px;transform:translateY(-20px)}
+.phone.side{width:200px;opacity:.75;transform:translateY(16px)}
+.phone-notch{width:56px;height:6px;background:rgba(255,255,255,.08);border-radius:4px;margin:0 auto 12px}
+.phone-screen{background:#0a0c10;border-radius:28px;overflow:hidden}
+/* card front */
+.wallet-front{background:linear-gradient(145deg,#0d3348 0%,#0f4c6e 100%);padding:18px 16px;min-height:148px;display:flex;flex-direction:column;justify-content:space-between}
+.wf-top{display:flex;justify-content:space-between;align-items:flex-start}
+.wf-brand{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,.9);letter-spacing:.01em}
+.wf-sub{font-size:8px;color:rgba(255,255,255,.45);margin-top:1px}
+.wf-chip{width:28px;height:20px;border-radius:4px;border:1px solid rgba(255,255,255,.2);display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center}
+.wf-chip-line{width:16px;height:1.5px;background:rgba(255,255,255,.3);border-radius:1px}
+.wf-mid{margin-top:10px}
+.wf-label{font-size:8px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.wf-name{font-size:14px;font-weight:600;color:#fff;letter-spacing:-.02em}
+.wf-tier{display:inline-block;font-size:8px;padding:2px 7px;border-radius:8px;background:rgba(14,165,160,.25);color:#7dd3d1;margin-top:4px}
+.wf-bot{display:flex;justify-content:space-between;align-items:flex-end}
+.wf-pts-val{font-size:24px;font-weight:700;color:#fff;line-height:1;letter-spacing:-.04em}
+.wf-pts-label{font-size:8px;color:rgba(255,255,255,.45);margin-top:1px}
+.wf-appt{text-align:right}
+.wf-appt-label{font-size:8px;color:rgba(255,255,255,.45)}
+.wf-appt-date{font-size:10px;color:#7dd3d1;font-weight:500;margin-top:1px}
+/* notification */
+.notif{background:rgba(30,32,38,.95);border-radius:14px;margin:8px;padding:10px 12px}
+.notif-hdr{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.notif-icon{width:20px;height:20px;border-radius:6px;background:#0d3348;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-app{font-size:9px;color:rgba(255,255,255,.4);flex:1}
+.notif-time{font-size:9px;color:rgba(255,255,255,.3)}
+.notif-title{font-size:10px;font-weight:600;color:#fff;margin-bottom:3px}
+.notif-body{font-size:9px;color:rgba(255,255,255,.6);line-height:1.4}
+.notif-actions{display:flex;gap:6px;margin-top:8px}
+.na{flex:1;padding:5px;text-align:center;border-radius:7px;font-size:9px;font-weight:500;border:none;cursor:pointer}
+.na-d{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6)}
+.na-b{background:var(--teal);color:#fff}
+/* back */
+.wallet-back{background:#f5f7fa;padding:12px 14px}
+.wb-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid #e0e4ea;font-size:9px}
+.wb-row:last-child{border-bottom:none}
+.wb-l{color:#7b8494}
+.wb-v{color:#1a2035;font-weight:500}
+.wb-link{color:var(--teal)}
+.wb-ref{background:#eff8f8;border:1px solid #b2e8e6;border-radius:8px;padding:7px 9px;margin-top:6px}
+.wb-ref-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.wb-ref-l{font-size:8px;font-weight:600;color:#0d7b77}
+.wb-ref-pts{font-size:8px;background:#0ea5a0;color:#fff;padding:1px 6px;border-radius:5px}
+.wb-ref-link{font-size:8px;color:var(--teal)}
+.wb-ref-btn{width:100%;margin-top:5px;background:var(--teal);color:#fff;border:none;border-radius:6px;padding:4px;font-size:8px;font-weight:600;cursor:pointer}
+.wb-stars{display:flex;gap:1px;margin-top:6px}
+.star{width:9px;height:9px;background:#f4b400;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.wb-review{background:#fffbe6;border:1px solid #f0c040;border-radius:8px;padding:6px 9px;display:flex;align-items:center;gap:7px;margin-top:5px}
+.wb-review-txt{font-size:8px;color:#7a5c00;flex:1}
+.wb-review-btn{font-size:8px;background:#f4b400;color:#3a2800;border:none;border-radius:5px;padding:3px 7px;font-weight:600;cursor:pointer}
+
+/* ── STATS ── */
+.stats{padding:80px 32px;background:var(--ink)}
+.stats-in{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.stat{padding:32px 28px;border-radius:var(--r-lg);background:rgba(255,255,255,.04);border:.5px solid rgba(255,255,255,.08)}
+.stat-num{font-family:'Instrument Serif',serif;font-size:clamp(40px,4vw,56px);color:var(--teal);line-height:1;margin-bottom:10px;letter-spacing:-.03em}
+.stat-label{font-size:14px;color:rgba(255,255,255,.5);line-height:1.6;font-weight:300}
+.stat-label strong{color:rgba(255,255,255,.85);font-weight:500;display:block;margin-bottom:4px}
+
+/* ── SECTION ── */
+.sec{padding:120px 32px}
+.sec-off{background:var(--off)}
+.sec-in{max-width:1100px;margin:0 auto}
+.eyebrow{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);display:block;margin-bottom:16px}
+h2{font-family:'Instrument Serif',serif;font-size:clamp(36px,4vw,54px);line-height:1.06;letter-spacing:-.03em;color:var(--ink);margin-bottom:20px}
+h2 em{font-style:italic;color:var(--teal)}
+.lead{font-size:18px;color:var(--muted);line-height:1.7;font-weight:300;max-width:560px}
+
+/* ── PAIN / SOLUTION ── */
+.pain-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:64px}
+.pain-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-xl);padding:40px 36px;transition:transform .2s,box-shadow .2s}
+.pain-card:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(0,0,0,.08)}
+.pain-card.dark{background:var(--ink);border-color:rgba(255,255,255,.07)}
+.pain-num{font-family:'Instrument Serif',serif;font-size:64px;line-height:1;color:var(--border);letter-spacing:-.05em;margin-bottom:20px;display:block}
+.pain-card.dark .pain-num{color:rgba(255,255,255,.08)}
+.pain-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-bottom:12px}
+.pain-card.dark .pain-title{color:#fff}
+.pain-body{font-size:15px;color:var(--muted);line-height:1.7}
+.pain-card.dark .pain-body{color:rgba(255,255,255,.5)}
+.pain-badge{display:inline-flex;align-items:center;gap:6px;margin-top:20px;font-size:12px;font-weight:500;padding:6px 14px;border-radius:980px}
+.pb-bad{background:#fef2f2;color:#b91c1c;border:.5px solid #fecaca}
+.pb-good{background:var(--teal-lt);color:var(--teal-dk);border:.5px solid var(--teal-mid)}
+
+/* ── FEATURES ── */
+.feat-layout{display:grid;grid-template-columns:1fr 1fr;gap:96px;align-items:center;margin-top:80px}
+.feat-layout.flip{direction:rtl}
+.feat-layout.flip>*{direction:ltr}
+.feat-visual{position:relative;display:flex;justify-content:center}
+.feat-list{display:flex;flex-direction:column;gap:32px}
+.feat-item{display:flex;gap:18px;align-items:flex-start}
+.feat-ico{width:44px;height:44px;border-radius:13px;background:var(--teal-lt);border:.5px solid var(--teal-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feat-ico svg{width:20px;height:20px}
+.feat-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-bottom:6px}
+.feat-desc{font-size:14px;color:var(--muted);line-height:1.7}
+
+/* ── SCAN FLOW ── */
+.scan-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:72px;border-radius:var(--r-xl);overflow:hidden}
+.scan-step{background:var(--white);padding:40px 32px;position:relative}
+.scan-step:nth-child(2){background:#f0fdf4}
+.scan-step:nth-child(3){background:#e0f5f4}
+.scan-step:nth-child(4){background:var(--ink)}
+.ss-num{font-family:'Instrument Serif',serif;font-size:52px;color:var(--border);line-height:1;margin-bottom:20px}
+.scan-step:nth-child(2) .ss-num{color:rgba(34,197,94,.15)}
+.scan-step:nth-child(3) .ss-num{color:rgba(14,165,160,.15)}
+.scan-step:nth-child(4) .ss-num{color:rgba(255,255,255,.06)}
+.ss-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--ink);margin-bottom:10px}
+.scan-step:nth-child(4) .ss-title{color:#fff}
+.ss-body{font-size:13px;color:var(--muted);line-height:1.65}
+.scan-step:nth-child(4) .ss-body{color:rgba(255,255,255,.5)}
+.ss-tag{display:inline-block;margin-top:16px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:980px;background:var(--teal-lt);color:var(--teal-dk)}
+.scan-step:nth-child(4) .ss-tag{background:rgba(14,165,160,.15);color:var(--teal)}
+.ss-arrow{position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:var(--off);border:.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);z-index:1}
+.scan-step:last-child .ss-arrow{display:none}
+
+/* ── POINTS TABLE ── */
+.pts-table-wrap{margin-top:64px;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--border)}
+.pts-table{width:100%;border-collapse:collapse}
+.pts-table th{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:16px 24px;background:var(--ink);color:rgba(255,255,255,.5);text-align:left}
+.pts-table th:last-child{text-align:right}
+.pts-table td{padding:16px 24px;font-size:14px;color:var(--ink);border-top:.5px solid var(--border);vertical-align:middle}
+.pts-table tr:hover td{background:var(--off)}
+.pts-val{font-weight:600;color:var(--teal);text-align:right}
+.trigger-badge{font-size:11px;padding:3px 10px;border-radius:980px;font-weight:500}
+.t-auto{background:var(--teal-lt);color:var(--teal-dk)}
+.t-staff{background:#f0f9ff;color:#0369a1;border:.5px solid #bae6fd}
+.t-system{background:var(--gold-lt);color:#92400e;border:.5px solid #fde68a}
+
+/* ── TIER CARDS ── */
+.tier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px}
+.tier-card{border-radius:var(--r-xl);padding:36px 32px;border:.5px solid var(--border);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.tier-card:hover{transform:translateY(-4px);box-shadow:0 20px 60px rgba(0,0,0,.1)}
+.tier-card.bronze{background:linear-gradient(145deg,#fafaf8,#f5f3ee)}
+.tier-card.silver{background:linear-gradient(145deg,#f0f4fa,#e8eef8);border-color:#c8d8f0}
+.tier-card.gold{background:linear-gradient(145deg,#0d1117,#131b26);border-color:rgba(201,168,76,.3)}
+.tier-icon{font-size:36px;margin-bottom:20px;display:block}
+.tier-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.03em;margin-bottom:6px}
+.tier-card.bronze .tier-name{color:#78350f}
+.tier-card.silver .tier-name{color:#1e3a5f}
+.tier-card.gold .tier-name{color:var(--gold)}
+.tier-range{font-size:13px;font-weight:500;margin-bottom:20px}
+.tier-card.bronze .tier-range{color:#a16207}
+.tier-card.silver .tier-range{color:#3b5c8a}
+.tier-card.gold .tier-range{color:rgba(201,168,76,.6)}
+.tier-perks{list-style:none;display:flex;flex-direction:column;gap:10px}
+.tier-perks li{font-size:14px;display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.tier-card.bronze .tier-perks li{color:#6b5a3e}
+.tier-card.silver .tier-perks li{color:#2c4a6e}
+.tier-card.gold .tier-perks li{color:rgba(255,255,255,.7)}
+.tp-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:7px}
+.tier-card.bronze .tp-dot{background:#c0892c}
+.tier-card.silver .tp-dot{background:#3b82f6}
+.tier-card.gold .tp-dot{background:var(--gold)}
+
+/* ── COMPARE ── */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:64px}
+.cmp-card{border-radius:var(--r-xl);padding:44px 40px;border:.5px solid var(--border)}
+.cmp-card.without{background:var(--white)}
+.cmp-card.with{background:var(--ink);border-color:rgba(14,165,160,.3)}
+.cmp-overline{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.cmp-card.without .cmp-overline{color:var(--muted)}
+.cmp-card.with .cmp-overline{color:var(--teal)}
+.cmp-title{font-family:'Instrument Serif',serif;font-size:28px;line-height:1.15;letter-spacing:-.02em;margin-bottom:36px}
+.cmp-card.without .cmp-title{color:#aeaeb2}
+.cmp-card.with .cmp-title{color:#fff}
+.cmp-list{display:flex;flex-direction:column;gap:14px}
+.cmp-item{display:flex;align-items:flex-start;gap:13px;font-size:14.5px;line-height:1.55}
+.cmp-card.without .cmp-item{color:var(--muted)}
+.cmp-card.with .cmp-item{color:rgba(255,255,255,.6)}
+.cmp-card.with .cmp-item.yes{color:rgba(255,255,255,.85)}
+.ci{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.ci-yes{background:rgba(14,165,160,.15)}
+.ci-no{background:rgba(0,0,0,.04)}
+.cmp-card.with .ci-no{background:rgba(255,255,255,.05)}
+.cmp-badge{display:inline-flex;align-items:center;gap:8px;margin-top:36px;background:rgba(14,165,160,.12);border-radius:980px;padding:10px 20px;font-size:12px;font-weight:500;color:var(--teal)}
+
+/* ── DEMO CARD ── */
+.demo-wrap{margin-top:72px;display:flex;gap:24px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.demo-card{width:300px;border-radius:18px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.15)}
+.demo-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+.dtab{font-size:12px;padding:6px 16px;border-radius:20px;border:.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .18s}
+.dtab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.notif-preview{width:300px;background:#1c1c1e;border-radius:20px;padding:14px}
+.np-time{font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:10px}
+.np-card{background:rgba(255,255,255,.1);border-radius:12px;padding:11px}
+.np-hdr{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.np-icon{width:22px;height:22px;border-radius:6px;background:#0d3348;flex-shrink:0}
+.np-app{font-size:11px;color:rgba(255,255,255,.45);flex:1}
+.np-ts{font-size:11px;color:rgba(255,255,255,.3)}
+.np-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px}
+.np-body{font-size:12px;color:rgba(255,255,255,.6);line-height:1.4}
+.np-actions{display:flex;gap:8px;margin-top:9px}
+.np-a{flex:1;padding:7px;text-align:center;border-radius:8px;font-size:12px;font-weight:500;border:none;cursor:pointer}
+.np-dismiss{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+.np-cta{background:var(--teal);color:#fff}
+.notif-toggle{display:flex;gap:6px;margin-top:16px;justify-content:center;flex-wrap:wrap}
+.ntab{font-size:11px;padding:5px 12px;border-radius:980px;border:.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.ntab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* ── ROI ── */
+.roi-section{background:var(--ink);padding:120px 32px}
+.roi-in{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.roi-math{display:flex;flex-direction:column;gap:0}
+.roi-step{display:flex;gap:20px;padding:24px 0;border-bottom:.5px solid rgba(255,255,255,.07)}
+.roi-step:last-child{border-bottom:none}
+.roi-n{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);min-width:60px;padding-top:2px}
+.roi-body{}
+.roi-title{font-size:16px;font-weight:500;color:#fff;margin-bottom:4px;letter-spacing:-.01em}
+.roi-desc{font-size:13px;color:rgba(255,255,255,.45);line-height:1.6}
+.roi-val{display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:var(--teal);background:rgba(14,165,160,.1);border-radius:6px;padding:3px 10px}
+.roi-big{text-align:center}
+.roi-number{font-family:'Instrument Serif',serif;font-size:clamp(80px,10vw,140px);color:var(--teal);line-height:1;letter-spacing:-.06em;margin-bottom:8px}
+.roi-label{font-size:clamp(20px,2.5vw,28px);font-weight:500;color:#fff;line-height:1.25;margin-bottom:14px;letter-spacing:-.02em}
+.roi-caption{font-size:13px;color:rgba(255,255,255,.4);max-width:300px;line-height:1.6;margin:0 auto}
+
+/* ── CARD PREVIEW ── */
+.card-preview-wrap{margin-top:72px}
+.cp-tabs{display:flex;gap:10px;justify-content:center;margin-bottom:48px}
+.cp-tab{display:flex;align-items:center;gap:8px;padding:10px 24px;border-radius:980px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s}
+.cp-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.cp-tab-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.4;flex-shrink:0}
+.cp-tab.active .cp-tab-dot{background:var(--teal);opacity:1}
+
+.cp-stage{display:flex;justify-content:center;align-items:center;min-height:580px}
+.cp-face{display:flex;gap:64px;align-items:center;justify-content:center;width:100%}
+
+/* Phone frame */
+.cp-phone-frame{background:#0d0f14;border-radius:44px;padding:14px;box-shadow:0 48px 96px rgba(0,0,0,.2),0 2px 0 rgba(255,255,255,.05) inset;width:280px;flex-shrink:0}
+.cp-notch{width:60px;height:7px;background:rgba(255,255,255,.07);border-radius:4px;margin:0 auto 12px}
+.cp-screen{background:#f2f2f7;border-radius:30px;overflow:hidden}
+.cp-wallet-chrome{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;background:#f2f2f7}
+.cp-wallet-label{font-size:17px;font-weight:700;color:#1a1a1a;letter-spacing:-.03em}
+.cp-add-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:#f2f2f7;font-size:14px;font-weight:600;color:#1a1a1a;letter-spacing:-.01em}
+
+/* Card front */
+.cp-card-front{background:linear-gradient(145deg,#0d3348 0%,#0f4c6e 60%,#0e5a82 100%);padding:20px 18px;margin:0 0 1px}
+.cpf-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.cpf-brand-block{display:flex;align-items:center;gap:10px}
+.cpf-logo-circle{width:34px;height:34px;border-radius:9px;background:#2e86c1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cpf-clinic-name{font-size:13px;font-weight:700;color:#fff;letter-spacing:-.02em}
+.cpf-clinic-sub{font-size:9px;color:rgba(255,255,255,.45);margin-top:1px}
+.cpf-wallet-wordmark{font-size:9px;font-weight:600;color:rgba(255,255,255,.25);letter-spacing:.1em}
+.cpf-mid{margin-bottom:18px}
+.cpf-member-label{font-size:9px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.cpf-member-name{font-size:18px;font-weight:600;color:#fff;letter-spacing:-.02em;margin-bottom:6px}
+.cpf-tier-pill{display:inline-block;font-size:9px;padding:3px 9px;border-radius:10px;background:rgba(14,165,160,.25);color:#7dd3d1;font-weight:500}
+.cpf-bot{display:flex;justify-content:space-between;align-items:flex-end}
+.cpf-pts-num{font-size:30px;font-weight:700;color:#fff;line-height:1;letter-spacing:-.04em}
+.cpf-pts-label{font-size:9px;color:rgba(255,255,255,.4);margin-top:2px}
+.cpf-appt{text-align:right}
+.cpf-appt-label{font-size:9px;color:rgba(255,255,255,.4)}
+.cpf-appt-date{font-size:11px;color:#7dd3d1;font-weight:600;margin-top:2px}
+
+/* Card back */
+.cp-card-back{background:#f7f9fc;padding:14px 16px}
+.cpb-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.cpb-clinic{font-size:13px;font-weight:700;color:#1a3a5c}
+.cpb-id{font-size:9px;color:#6a8faf;margin-top:2px}
+.cpb-qr{text-align:center}
+.cpb-qr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1.5px;width:44px;height:44px;padding:3px;background:#fff;border:.5px solid #c8d8e8;border-radius:4px}
+.qc{border-radius:.5px}.qc.b{background:#1a3a5c}.qc.w{background:transparent}
+.cpb-qr-label{font-size:7px;color:#aaa;margin-top:3px;text-align:center}
+.cpb-rows{display:flex;flex-direction:column;margin-bottom:8px}
+.cpb-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid #e0e8f0;font-size:10px}
+.cpb-row:last-child{border-bottom:none}
+.cpb-l{color:#6a8faf}.cpb-v{color:#1a3a5c;font-weight:500}.cpb-teal{color:var(--teal)!important;font-weight:500}.cpb-link{color:var(--teal);font-weight:500}
+.cpb-ref{background:#eff8f8;border:.5px solid #b2e8e6;border-radius:8px;padding:8px 10px;margin-bottom:7px}
+.cpb-ref-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.cpb-ref-label{font-size:9px;font-weight:600;color:#0d7b77}
+.cpb-ref-pts{font-size:8px;background:var(--teal);color:#fff;padding:2px 6px;border-radius:5px}
+.cpb-ref-link{font-size:9px;color:var(--teal);margin-bottom:5px}
+.cpb-ref-btn{width:100%;background:var(--teal);color:#fff;border:none;border-radius:6px;padding:5px;font-size:9px;font-weight:600;cursor:pointer}
+.cpb-social{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid #e0e8f0;margin-bottom:6px}
+.cpb-social-label{font-size:9px;color:#6a8faf;flex:1}
+.cpb-social-icons{display:flex;gap:5px}
+.cpb-si{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center}
+.cpb-si-fb{background:#1877f2}
+.cpb-si-g{background:#fff;border:.5px solid #ddd}
+.cpb-review{background:#fffbe6;border:.5px solid #f0c040;border-radius:8px;padding:7px 10px;display:flex;align-items:center;gap:7px}
+.cpb-stars{font-size:10px;color:#f4b400}
+.cpb-review-txt{font-size:9px;color:#7a5c00;flex:1;line-height:1.3}
+.cpb-review-btn{font-size:8px;background:#f4b400;color:#3a2800;border:none;border-radius:5px;padding:3px 7px;font-weight:600;cursor:pointer;white-space:nowrap}
+
+/* Callouts */
+.cp-callouts{display:flex;flex-direction:column;gap:0;position:relative;width:220px;flex-shrink:0}
+.cp-callouts-front{align-items:flex-start}
+.cp-callouts-back{align-items:flex-start}
+.cp-callout{display:flex;align-items:center;gap:8px;margin:12px 0}
+.cp-callout-bubble{background:var(--off);border:.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--ink);font-weight:500;white-space:nowrap;letter-spacing:-.01em}
+.cp-callout-line{height:1px;width:32px;background:var(--border);flex-shrink:0}
+.cp-callout-tr,.cp-callout-br{flex-direction:row-reverse;align-self:flex-end}
+
+/* Pills */
+.cp-pills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:48px}
+.cp-pill{display:flex;align-items:center;gap:7px;background:var(--off);border:.5px solid var(--border);border-radius:980px;padding:8px 18px;font-size:13px;color:var(--ink);font-weight:400}
+.cp-pill-dot{width:5px;height:5px;border-radius:50%;background:var(--teal);flex-shrink:0}
+
+@media(max-width:860px){
+  .cp-face{flex-direction:column;gap:40px}
+  .cp-callouts{display:none}
+  .cp-phone-frame{width:260px}
+}
+
+/* ── FOOTER ── */
+footer{background:#000;padding:28px 32px;border-top:.5px solid #111}
+.footer-in{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.footer-logo{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;letter-spacing:-.03em}
+.footer-logo span{color:var(--teal)}
+.footer-copy{font-size:12px;color:#48484a}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px){
+  .hero-in,.pain-grid,.feat-layout,.feat-layout.flip,.compare,.roi-in,.pricing-grid{grid-template-columns:1fr;gap:48px}
+  .scan-flow{grid-template-columns:1fr 1fr}
+  .tier-grid{grid-template-columns:1fr}
+  .stats-in{grid-template-columns:1fr 1fr;gap:16px}
+  .phone.side{display:none}
+  .hero{padding-bottom:60px}
+  .feat-layout.flip{direction:ltr}
+}
+@media(max-width:560px){
+  .scan-flow{grid-template-columns:1fr}
+  .stats-in{grid-template-columns:1fr}
+  .demo-wrap{flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-in">
+    <div class="logo">Denta<span>Pass</span></div>
+    <button class="nav-cta" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">Join waitlist</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-in">
+    <div>
+      <div class="hero-tag reveal"><span class="live-dot"></span>Coming soon to Edmonton, AB</div>
+      <h1 class="reveal d1">Your patients leave.<br>Their loyalty <em>shouldn't.</em></h1>
+      <p class="hero-sub reveal d2">DentaPass puts a branded loyalty card inside every patient's Apple or Google Wallet. Recall reminders, Google review requests, referral programs — all automated. <strong>No app needed.</strong></p>
+      <div class="hero-btns reveal d3">
+        <button class="btn-primary" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">Join the waitlist →</button>
+        <button class="btn-outline" onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})">See how it works</button>
+      </div>
+      <div class="hero-proof reveal d4">
+        <div class="proof-avatars">
+          <div class="av">AB</div><div class="av">CD</div><div class="av">EF</div>
+        </div>
+        <div class="proof-text">Built for independent dental clinics in <strong>Edmonton, AB</strong></div>
+      </div>
+    </div>
+    <div class="phone-wrap reveal d3">
+      <!-- Side phone: back of card -->
+      <div class="phone side">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="wallet-back">
+            <div class="wb-row"><span class="wb-l">Points balance</span><span class="wb-v">850 pts</span></div>
+            <div class="wb-row"><span class="wb-l">Next checkup</span><span class="wb-v" style="color:var(--teal)">Sep 6, 2026</span></div>
+            <div class="wb-row"><span class="wb-l">Book now</span><a class="wb-link">smartdentalart.com/book</a></div>
+            <div class="wb-row"><span class="wb-l">Call us</span><a class="wb-link">(587) 855-9300</a></div>
+            <div class="wb-ref">
+              <div class="wb-ref-top"><span class="wb-ref-l">Refer a friend</span><span class="wb-ref-pts">+250 pts</span></div>
+              <div class="wb-ref-link">dentapass.ca/join/SDA-4821</div>
+              <button class="wb-ref-btn">Share with a friend</button>
+            </div>
+            <div class="wb-review">
+              <div class="wb-stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div>
+              <div class="wb-review-txt">Love Dr. Maged? Leave a Google review!</div>
+              <button class="wb-review-btn">Review ↗</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Main phone: card front + notification -->
+      <div class="phone main">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="wallet-front">
+            <div class="wf-top">
+              <div>
+                <div class="wf-brand">Smart Dental Art</div>
+                <div class="wf-sub">Windermere · Edmonton, AB</div>
+              </div>
+              <div class="wf-chip"><div class="wf-chip-line"></div><div class="wf-chip-line"></div></div>
+            </div>
+            <div class="wf-mid">
+              <div class="wf-label">Member</div>
+              <div class="wf-name">Sarah Thompson</div>
+              <div class="wf-tier">Gold Member</div>
+            </div>
+            <div class="wf-bot">
+              <div>
+                <div class="wf-pts-val">1,240</div>
+                <div class="wf-pts-label">reward points</div>
+              </div>
+              <div class="wf-appt">
+                <div class="wf-appt-label">Next checkup</div>
+                <div class="wf-appt-date">Sep 6, 2026</div>
+              </div>
+            </div>
+          </div>
+          <div class="notif">
+            <div class="notif-hdr">
+              <div class="notif-icon"></div>
+              <div class="notif-app">Smart Dental Art</div>
+              <div class="notif-time">now</div>
+            </div>
+            <div class="notif-title">Time for your checkup, Sarah ✦</div>
+            <div class="notif-body">Your 6-month cleaning with Dr. Maged is due. Book now — earn 200 bonus points.</div>
+            <div class="notif-actions">
+              <button class="na na-d">Dismiss</button>
+              <button class="na na-b">Book now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="stats-in">
+    <div class="stat reveal">
+      <div class="stat-num">38%</div>
+      <div class="stat-label"><strong>Patients never rebook</strong>Not because they're unhappy — because nobody followed up.</div>
+    </div>
+    <div class="stat reveal d1">
+      <div class="stat-num">$650</div>
+      <div class="stat-label"><strong>Average patient value</strong>Per year in a typical dental clinic. Every lapsed patient is real lost revenue.</div>
+    </div>
+    <div class="stat reveal d2">
+      <div class="stat-num">10×</div>
+      <div class="stat-label"><strong>More Google reviews</strong>When patients are asked at the right moment — automatically.</div>
+    </div>
+    <div class="stat reveal d3">
+      <div class="stat-num">33×</div>
+      <div class="stat-label"><strong>Potential ROI</strong>A clinic with 1,000 patients needs just 5 recalls/month to cover the cost.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PAIN POINTS -->
+<section class="sec sec-off">
+  <div class="sec-in">
+    <span class="eyebrow reveal">The problem</span>
+    <h2 class="reveal d1">Dental clinics have a <em>retention leak.</em></h2>
+    <p class="lead reveal d2">Your recall system relies on phone calls, postcards, and hope. Patients mean to come back. Life gets busy. Nothing pulls them back.</p>
+    <div class="pain-grid">
+      <div class="pain-card reveal">
+        <span class="pain-num">01</span>
+        <div class="pain-title">Recall reminders that get ignored</div>
+        <p class="pain-body">Phone call recall has a sub-20% success rate. Postcards go straight in the recycling. Emails land in spam. Your front desk spends hours chasing patients who never respond.</p>
+        <span class="pain-badge pb-bad">⚠ Average recall rate: 62%</span>
+      </div>
+      <div class="pain-card reveal d1">
+        <span class="pain-num">02</span>
+        <div class="pain-title">No loyalty program to drive return visits</div>
+        <p class="pain-body">Every major retailer, coffee shop, and pharmacy has a loyalty card. Your patients have 15 of them in their wallets. Your clinic isn't one of them. There's no incentive to choose you over the dentist down the street.</p>
+        <span class="pain-badge pb-bad">⚠ No loyalty = no habit</span>
+      </div>
+      <div class="pain-card dark reveal d2">
+        <span class="pain-num">03</span>
+        <div class="pain-title">Google reviews left to chance</div>
+        <p class="pain-body">New patients in Edmonton Google you before they call. Your competitors have 200 reviews. You have 24. Most happy patients intend to leave a review — and forget by the time they get to the car. There's no systematic ask.</p>
+        <span class="pain-badge pb-bad">⚠ Average local clinic: 3–5 reviews/month</span>
+      </div>
+      <div class="pain-card reveal d3">
+        <span class="pain-num">04</span>
+        <div class="pain-title">No referral engine in place</div>
+        <p class="pain-body">Word of mouth is your best patient acquisition channel — but it happens by accident. You have no way to incentivize referrals, track who sent who, or reward the patients who are already your biggest advocates.</p>
+        <span class="pain-badge pb-bad">⚠ Referrals: entirely untracked</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="sec">
+  <div class="sec-in">
+    <span class="eyebrow reveal">The solution</span>
+    <h2 class="reveal d1">One card. Every problem <em>solved.</em></h2>
+    <p class="lead reveal d2">DentaPass puts a branded loyalty card in every patient's Apple or Google Wallet — permanently on their lock screen. No app download. No login. One QR scan at the front desk and they're enrolled.</p>
+    <div class="scan-flow">
+      <div class="scan-step reveal">
+        <div class="ss-arrow">→</div>
+        <div class="ss-num">01</div>
+        <div class="ss-title">Patient scans at reception</div>
+        <p class="ss-body">A QR code sits at the front desk. Patients scan with their phone camera — no app needed. They fill in name and email in 30 seconds.</p>
+        <span class="ss-tag">QR code provided</span>
+      </div>
+      <div class="scan-step reveal d1">
+        <div class="ss-arrow">→</div>
+        <div class="ss-num">02</div>
+        <div class="ss-title">Card added to wallet instantly</div>
+        <p class="ss-body">Their branded DentaPass card appears in Apple Wallet or Google Wallet in seconds. Points balance, next checkup date, booking link — all live.</p>
+        <span class="ss-tag">Apple & Google Wallet</span>
+      </div>
+      <div class="scan-step reveal d2">
+        <div class="ss-arrow">→</div>
+        <div class="ss-num">03</div>
+        <div class="ss-title">Automations run themselves</div>
+        <p class="ss-body">Recall reminders fire at 5 months. Review requests send 2 hours post-visit. Referral nudges go out at 7 days. All automatic — nothing for staff to remember.</p>
+        <span class="ss-tag">Fully automated</span>
+      </div>
+      <div class="scan-step reveal d3">
+        <div class="ss-arrow">→</div>
+        <div class="ss-num">04</div>
+        <div class="ss-title">Patients come back, review, refer</div>
+        <p class="ss-body">Every action — visit, review, referral — earns points that update live on the card. Patients have a real reason to return and bring friends.</p>
+        <span class="ss-tag">Revenue loop closed</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE: RECALL -->
+<section class="sec sec-off">
+  <div class="sec-in">
+    <div class="feat-layout">
+      <div class="feat-visual reveal">
+        <div style="background:var(--white);border-radius:var(--r-xl);padding:32px;border:.5px solid var(--border);width:100%;max-width:400px">
+          <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:20px">Automated recall timeline</div>
+          <div style="display:flex;flex-direction:column;gap:0">
+            <div style="display:flex;gap:16px;align-items:flex-start;padding-bottom:24px;position:relative">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--teal-lt);border:.5px solid var(--teal-mid);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal-dk)">✓</div>
+                <div style="width:1px;flex:1;background:var(--border);margin-top:4px;min-height:32px"></div>
+              </div>
+              <div style="padding-top:6px">
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px">Visit completed</div>
+                <div style="font-size:12px;color:var(--muted)">Day 0 — Staff scan awards 100 points instantly</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;padding-bottom:24px;position:relative">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+                <div style="width:32px;height:32px;border-radius:50%;background:#fff8e6;border:.5px solid #f0c040;display:flex;align-items:center;justify-content:center;font-size:13px">⭐</div>
+                <div style="width:1px;flex:1;background:var(--border);margin-top:4px;min-height:32px"></div>
+              </div>
+              <div style="padding-top:6px">
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px">Review request fires</div>
+                <div style="font-size:12px;color:var(--muted)">2 hours later — lock screen ping with bonus points offer</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;padding-bottom:24px;position:relative">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+                <div style="width:32px;height:32px;border-radius:50%;background:#f0f9ff;border:.5px solid #bae6fd;display:flex;align-items:center;justify-content:center;font-size:13px">🔗</div>
+                <div style="width:1px;flex:1;background:var(--border);margin-top:4px;min-height:32px"></div>
+              </div>
+              <div style="padding-top:6px">
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px">Referral nudge</div>
+                <div style="font-size:12px;color:var(--muted)">7 days later — "Share your link, earn 250 points"</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;padding-bottom:24px;position:relative">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--teal-lt);border:.5px solid var(--teal-mid);display:flex;align-items:center;justify-content:center;font-size:13px">📅</div>
+                <div style="width:1px;flex:1;background:var(--border);margin-top:4px;min-height:32px"></div>
+              </div>
+              <div style="padding-top:6px">
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px">Recall reminder fires</div>
+                <div style="font-size:12px;color:var(--muted)">5 months later — straight to lock screen, one-tap book</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex-shrink:0">
+                <div style="width:32px;height:32px;border-radius:50%;background:#fef2f2;border:.5px solid #fecaca;display:flex;align-items:center;justify-content:center;font-size:13px">💤</div>
+              </div>
+              <div style="padding-top:6px">
+                <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px">Lapsed patient re-engagement</div>
+                <div style="font-size:12px;color:var(--muted)">90 days no visit — automatic "We miss you" with 150 bonus points</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span class="eyebrow reveal">Automated recall</span>
+        <h2 class="reveal d1">The reminder that actually <em>lands.</em></h2>
+        <p class="lead reveal d2">Postcards get recycled. Calls go to voicemail. A push notification on the lock screen — from a card patients chose to add — gets seen.</p>
+        <div class="feat-list" style="margin-top:36px">
+          <div class="feat-item reveal d2">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2a6 6 0 016 6c0 3-1.3 4.7-1.7 6H5.7C5.3 12.7 4 11 4 8a6 6 0 016-6z" stroke="var(--teal)" stroke-width="1.5"/><path d="M7.5 14c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div><div class="feat-name">Lock screen delivery</div><p class="feat-desc">Recall reminders appear directly on the patient's lock screen — no competing with email inboxes or spam folders. The card update triggers the notification automatically.</p></div>
+          </div>
+          <div class="feat-item reveal d3">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="var(--teal)" stroke-width="1.5"/><path d="M10 7v3l2 2" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div><div class="feat-name">Precision timing</div><p class="feat-desc">Reminders fire at exactly 5 months — not a blast to your whole list, but a personal ping to each patient based on their last actual visit date. No scheduling required.</p></div>
+          </div>
+          <div class="feat-item reveal d4">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><path d="M3 10l5 5L17 5" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div><div class="feat-name">One-tap rebooking</div><p class="feat-desc">The notification has a "Book now" button that goes directly to your booking page. Zero friction between the reminder and the appointment — patients book before they put their phone down.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE: POINTS & SCANNING -->
+<section class="sec">
+  <div class="sec-in">
+    <span class="eyebrow reveal">Points & scanning</span>
+    <h2 class="reveal d1">A loyalty loop that <em>runs itself.</em></h2>
+    <p class="lead reveal d2">Staff scan the patient's card at checkout. Points update on their phone in real time — while they're still standing at the desk. The card turns every visit into a moment.</p>
+    <div class="pts-table-wrap reveal d2">
+      <table class="pts-table">
+        <thead>
+          <tr>
+            <th>Action</th>
+            <th>How it's triggered</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Completed visit</td>
+            <td><span class="trigger-badge t-staff">Staff scans card at front desk</span></td>
+            <td class="pts-val">+100</td>
+          </tr>
+          <tr>
+            <td>Left Google review</td>
+            <td><span class="trigger-badge t-auto">Auto — tracked review link tap</span></td>
+            <td class="pts-val">+100</td>
+          </tr>
+          <tr>
+            <td>Referred a friend</td>
+            <td><span class="trigger-badge t-auto">Auto — fires when referral enrolls</span></td>
+            <td class="pts-val">+250</td>
+          </tr>
+          <tr>
+            <td>Birthday bonus</td>
+            <td><span class="trigger-badge t-system">Auto — cron on patient birthday</span></td>
+            <td class="pts-val">+100</td>
+          </tr>
+          <tr>
+            <td>Recall reminder tapped</td>
+            <td><span class="trigger-badge t-auto">Auto — link tap tracked</span></td>
+            <td class="pts-val">+50</td>
+          </tr>
+          <tr>
+            <td>Manual award</td>
+            <td><span class="trigger-badge t-staff">Staff — dashboard, any reason</span></td>
+            <td class="pts-val">Custom</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tier-grid" style="margin-top:48px">
+      <div class="tier-card bronze reveal">
+        <span class="tier-icon">🪙</span>
+        <div class="tier-name">Bronze</div>
+        <div class="tier-range">0 – 499 points</div>
+        <ul class="tier-perks">
+          <li><span class="tp-dot"></span>Recall reminders & booking links</li>
+          <li><span class="tp-dot"></span>Review request notifications</li>
+          <li><span class="tp-dot"></span>Referral code on card</li>
+        </ul>
+      </div>
+      <div class="tier-card silver reveal d1">
+        <span class="tier-icon">🥈</span>
+        <div class="tier-name">Silver</div>
+        <div class="tier-range">500 – 999 points</div>
+        <ul class="tier-perks">
+          <li><span class="tp-dot"></span>Everything in Bronze</li>
+          <li><span class="tp-dot"></span>Priority scheduling</li>
+          <li><span class="tp-dot"></span>10% off teeth whitening</li>
+        </ul>
+      </div>
+      <div class="tier-card gold reveal d2">
+        <span class="tier-icon">✦</span>
+        <div class="tier-name">Gold</div>
+        <div class="tier-range">1,000+ points</div>
+        <ul class="tier-perks">
+          <li><span class="tp-dot"></span>Everything in Silver</li>
+          <li><span class="tp-dot"></span>Free whitening consult</li>
+          <li><span class="tp-dot"></span>VIP label on patient record</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE: GOOGLE REVIEWS -->
+<section class="sec sec-off">
+  <div class="sec-in">
+    <div class="feat-layout flip">
+      <div>
+        <span class="eyebrow reveal">Google reviews</span>
+        <h2 class="reveal d1">Turn every visit into a <em>5-star moment.</em></h2>
+        <p class="lead reveal d2">2 hours after a patient's appointment, a notification fires to their lock screen: "How was your visit? Leave a review and earn 100 bonus points." One tap goes straight to Google.</p>
+        <div class="feat-list" style="margin-top:36px">
+          <div class="feat-item reveal d2">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2l2.4 4.8L18 7.6l-4 3.9.95 5.5L10 14.5l-4.95 2.5.95-5.5-4-3.9 5.6-.8L10 2z" stroke="var(--teal)" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+            <div><div class="feat-name">Perfect timing, every time</div><p class="feat-desc">The request fires 2 hours post-visit — when the patient is home, relaxed, and still thinking about how great the appointment was. Not while they're still in the parking lot, not 3 days later when they've forgotten.</p></div>
+          </div>
+          <div class="feat-item reveal d3">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3a7 7 0 100 14A7 7 0 0010 3z" stroke="var(--teal)" stroke-width="1.5"/><path d="M13.5 10H10V6.5" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div><div class="feat-name">90-day cooldown prevents abuse</div><p class="feat-desc">The system automatically prevents repeat review requests to the same patient within 90 days — protecting your credibility while keeping the program running cleanly.</p></div>
+          </div>
+          <div class="feat-item reveal d4">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><path d="M3 10h14M10 3l7 7-7 7" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div><div class="feat-name">Tracked click, instant reward</div><p class="feat-desc">The review link routes through DentaPass — so when a patient taps it, 100 points are awarded instantly and their card updates. The reward is immediate, making it feel real.</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="feat-visual reveal" style="justify-content:flex-start">
+        <div style="width:100%;max-width:400px">
+          <div style="background:var(--ink);border-radius:20px;padding:16px;margin-bottom:12px">
+            <div style="font-size:10px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:10px">9:41 AM</div>
+            <div style="background:rgba(255,255,255,.1);border-radius:12px;padding:12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <div style="width:22px;height:22px;border-radius:6px;background:#0d3348;flex-shrink:0"></div>
+                <div style="font-size:11px;color:rgba(255,255,255,.45);flex:1">Smart Dental Art</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.3)">2h ago</div>
+              </div>
+              <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px">How was your visit today? ⭐</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.4">Thanks for coming in, Sarah! A quick Google review means the world to Dr. Maged — and earns you 100 bonus points.</div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="np-a np-dismiss">Maybe later</button>
+                <button class="np-a np-cta" style="background:var(--gold);color:#3a2800">Leave a review ↗</button>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--white);border-radius:var(--r-lg);padding:24px;border:.5px solid var(--border)">
+            <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px">Review impact — Smart Dental Art</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div style="background:var(--off);border-radius:12px;padding:14px">
+                <div style="font-family:'Instrument Serif',serif;font-size:32px;color:var(--muted);line-height:1;margin-bottom:4px">3–5</div>
+                <div style="font-size:11px;color:var(--muted)">reviews/month without DentaPass</div>
+              </div>
+              <div style="background:var(--teal-lt);border-radius:12px;padding:14px;border:.5px solid var(--teal-mid)">
+                <div style="font-family:'Instrument Serif',serif;font-size:32px;color:var(--teal);line-height:1;margin-bottom:4px">30+</div>
+                <div style="font-size:11px;color:var(--teal-dk)">reviews/month with automated ask</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURE: REFERRALS -->
+<section class="sec">
+  <div class="sec-in">
+    <div class="feat-layout">
+      <div class="feat-visual reveal">
+        <div style="width:100%;max-width:400px">
+          <div style="background:var(--off);border-radius:var(--r-xl);padding:28px;border:.5px solid var(--border)">
+            <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:20px">Referral math — 500 patients</div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;background:var(--white);border-radius:12px;padding:14px 16px;border:.5px solid var(--border)">
+                <div style="font-size:13px;color:var(--ink)">Patients enrolled</div>
+                <div style="font-family:'Instrument Serif',serif;font-size:24px;color:var(--ink)">500</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;background:var(--white);border-radius:12px;padding:14px 16px;border:.5px solid var(--border)">
+                <div style="font-size:13px;color:var(--ink)">10% refer one friend</div>
+                <div style="font-family:'Instrument Serif',serif;font-size:24px;color:var(--ink)">50 <span style="font-size:14px;color:var(--muted)">new patients</span></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;background:var(--teal-lt);border-radius:12px;padding:14px 16px;border:.5px solid var(--teal-mid)">
+                <div style="font-size:13px;color:var(--teal-dk);font-weight:500">Annual revenue added</div>
+                <div style="font-family:'Instrument Serif',serif;font-size:24px;color:var(--teal)">$32,500</div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);text-align:center;padding-top:4px">Based on $650 avg patient value/yr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span class="eyebrow reveal">Referral program</span>
+        <h2 class="reveal d1">Your happiest patients become your <em>sales team.</em></h2>
+        <p class="lead reveal d2">Every patient gets a unique referral link on the back of their card. When a friend enrolls using their link, 250 points fire instantly — while they're still at dinner together.</p>
+        <div class="feat-list" style="margin-top:36px">
+          <div class="feat-item reveal d2">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><circle cx="8" cy="7" r="3" stroke="var(--teal)" stroke-width="1.5"/><path d="M2 17c0-3.31 2.69-6 6-6" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round"/><circle cx="15" cy="13" r="3" stroke="var(--teal)" stroke-width="1.5"/><path d="M15 10v3l2 2" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div><div class="feat-name">Unique link on every card</div><p class="feat-desc">The back of the card shows each patient's personal referral link — dentapass.ca/join/SDA-4821. The "Share with a friend" button opens their phone's native share sheet — iMessage, WhatsApp, wherever they text.</p></div>
+          </div>
+          <div class="feat-item reveal d3">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><path d="M10 2l2.4 4.8L18 7.6l-4 3.9.95 5.5L10 14.5l-4.95 2.5.95-5.5-4-3.9 5.6-.8L10 2z" stroke="var(--teal)" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+            <div><div class="feat-name">Instant points, instant notification</div><p class="feat-desc">The moment a referred friend completes enrollment, the referrer's card updates with 250 new points and a push notification fires: "Your friend just joined — 250 points added!"</p></div>
+          </div>
+          <div class="feat-item reveal d4">
+            <div class="feat-ico"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="3" stroke="var(--teal)" stroke-width="1.5"/><path d="M7 10h6M10 7v6" stroke="var(--teal)" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div><div class="feat-name">Leaderboard in your dashboard</div><p class="feat-desc">See your top referrers, total referrals this month, and points awarded. Adjust the referral bonus anytime — run a seasonal double-points promotion in minutes.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section class="sec sec-off">
+  <div class="sec-in">
+    <span class="eyebrow reveal">The difference</span>
+    <h2 class="reveal d1">DentaPass vs. doing nothing.</h2>
+    <div class="compare">
+      <div class="cmp-card without reveal">
+        <div class="cmp-overline">Without DentaPass</div>
+        <div class="cmp-title">Flying blind, one patient at a time</div>
+        <div class="cmp-list">
+          <div class="cmp-item"><span class="ci ci-no"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 3l5 5M8 3l-5 5" stroke="#aeaeb2" stroke-width="1.4" stroke-linecap="round"/></svg></span>Recall by phone call — sub-20% success rate</div>
+          <div class="cmp-item"><span class="ci ci-no"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 3l5 5M8 3l-5 5" stroke="#aeaeb2" stroke-width="1.4" stroke-linecap="round"/></svg></span>3–5 Google reviews per month at best</div>
+          <div class="cmp-item"><span class="ci ci-no"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 3l5 5M8 3l-5 5" stroke="#aeaeb2" stroke-width="1.4" stroke-linecap="round"/></svg></span>No loyalty program — patients have no reason to choose you</div>
+          <div class="cmp-item"><span class="ci ci-no"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 3l5 5M8 3l-5 5" stroke="#aeaeb2" stroke-width="1.4" stroke-linecap="round"/></svg></span>Referrals happen by accident, if at all</div>
+          <div class="cmp-item"><span class="ci ci-no"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 3l5 5M8 3l-5 5" stroke="#aeaeb2" stroke-width="1.4" stroke-linecap="round"/></svg></span>No visibility into patient retention or engagement</div>
+          <div class="cmp-item"><span class="ci ci-no"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3 3l5 5M8 3l-5 5" stroke="#aeaeb2" stroke-width="1.4" stroke-linecap="round"/></svg></span>Front desk spends hours manually chasing patients</div>
+        </div>
+      </div>
+      <div class="cmp-card with reveal d1">
+        <div class="cmp-overline">With DentaPass</div>
+        <div class="cmp-title">Every patient permanently in your pocket</div>
+        <div class="cmp-list">
+          <div class="cmp-item yes"><span class="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Lock screen recall at exactly 5 months — automated</div>
+          <div class="cmp-item yes"><span class="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>30+ Google reviews per month with post-visit requests</div>
+          <div class="cmp-item yes"><span class="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Points, tiers, and perks — patients have a real reason to return</div>
+          <div class="cmp-item yes"><span class="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Referral link on every card — tracked, rewarded, automatic</div>
+          <div class="cmp-item yes"><span class="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Analytics dashboard — retention, reviews, referrals, revenue</div>
+          <div class="cmp-item yes"><span class="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Zero front desk effort — everything runs automatically</div>
+        </div>
+        <div class="cmp-badge">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="var(--teal)" stroke-width="1.2"/><path d="M4 6.5l1.8 1.8L9 5" stroke="var(--teal)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Live in your clinic within 7 days
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CARD PREVIEW -->
+<section class="sec" id="card-preview">
+  <div class="sec-in">
+    <span class="eyebrow reveal">Sample card mockup</span>
+    <h2 class="reveal d1">What your patients will carry — <em>always.</em></h2>
+    <p class="lead reveal d2">Every card is fully branded to your clinic. Here's an example of what it looks like — front and back. Yours would carry your name, colors, and logo.</p>
+
+    <div class="card-preview-wrap reveal d2">
+
+      <!-- Tabs -->
+      <div class="cp-tabs">
+        <button class="cp-tab active" onclick="showFace('front',this)">
+          <span class="cp-tab-dot"></span>Card front
+        </button>
+        <button class="cp-tab" onclick="showFace('back',this)">
+          <span class="cp-tab-dot"></span>Card back
+        </button>
+      </div>
+
+      <div class="cp-stage">
+
+        <!-- FRONT -->
+        <div class="cp-face" id="cp-front">
+          <div class="cp-phone-frame">
+            <div class="cp-notch"></div>
+            <div class="cp-screen">
+              <!-- Wallet chrome -->
+              <div class="cp-wallet-chrome">
+                <span class="cp-wallet-label">Wallet</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="rgba(0,0,0,.25)" stroke-width="1"/><path d="M5 8h6M8 5v6" stroke="rgba(0,0,0,.25)" stroke-width="1" stroke-linecap="round"/></svg>
+              </div>
+              <!-- The actual wallet card -->
+              <div class="cp-card-front">
+                <div class="cpf-top">
+                  <div class="cpf-brand-block">
+                    <div class="cpf-logo-circle">
+                      <svg width="14" height="16" viewBox="0 0 14 16" fill="none"><rect x="1" y="1" width="12" height="14" rx="2" stroke="white" stroke-width="1.5"/><path d="M4 6h6M4 9h4" stroke="white" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    </div>
+                    <div>
+                      <div class="cpf-clinic-name">Smart Dental Art</div>
+                      <div class="cpf-clinic-sub">Windermere · Edmonton, AB</div>
+                    </div>
+                  </div>
+                  <div class="cpf-wallet-wordmark">WALLET</div>
+                </div>
+                <div class="cpf-mid">
+                  <div class="cpf-member-label">Member</div>
+                  <div class="cpf-member-name">Sarah Thompson</div>
+                  <div class="cpf-tier-pill">✦ Gold Member</div>
+                </div>
+                <div class="cpf-bot">
+                  <div>
+                    <div class="cpf-pts-num">1,240</div>
+                    <div class="cpf-pts-label">reward points</div>
+                  </div>
+                  <div class="cpf-appt">
+                    <div class="cpf-appt-label">Next checkup</div>
+                    <div class="cpf-appt-date">Sep 6, 2026</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Add to wallet bar -->
+              <div class="cp-add-bar">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="10" rx="2" stroke="#1a1a1a" stroke-width="1.2"/><path d="M6 4V3a3 3 0 016 0v1" stroke="#1a1a1a" stroke-width="1.2"/><circle cx="9" cy="9" r="1.5" fill="#1a1a1a"/></svg>
+                <span>Add to Apple Wallet</span>
+              </div>
+            </div>
+          </div>
+          <!-- Callouts -->
+          <div class="cp-callouts cp-callouts-front">
+            <div class="cp-callout cp-callout-tl">
+              <div class="cp-callout-line cp-cl-right"></div>
+              <div class="cp-callout-bubble">Clinic name &amp; location</div>
+            </div>
+            <div class="cp-callout cp-callout-tr">
+              <div class="cp-callout-bubble">Native Wallet integration</div>
+              <div class="cp-callout-line cp-cl-left"></div>
+            </div>
+            <div class="cp-callout cp-callout-ml">
+              <div class="cp-callout-line cp-cl-right"></div>
+              <div class="cp-callout-bubble">Patient name &amp; tier</div>
+            </div>
+            <div class="cp-callout cp-callout-bl">
+              <div class="cp-callout-line cp-cl-right"></div>
+              <div class="cp-callout-bubble">Live points balance</div>
+            </div>
+            <div class="cp-callout cp-callout-br">
+              <div class="cp-callout-bubble">Next checkup date</div>
+              <div class="cp-callout-line cp-cl-left"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BACK -->
+        <div class="cp-face" id="cp-back" style="display:none">
+          <div class="cp-phone-frame">
+            <div class="cp-notch"></div>
+            <div class="cp-screen">
+              <div class="cp-wallet-chrome">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="rgba(0,0,0,.35)" stroke-width="1.4" stroke-linecap="round"/></svg>
+                <span class="cp-wallet-label">Smart Dental Art</span>
+              </div>
+              <div class="cp-card-back">
+                <div class="cpb-header">
+                  <div>
+                    <div class="cpb-clinic">Smart Dental Art</div>
+                    <div class="cpb-id">Member #SDA-00247</div>
+                  </div>
+                  <div class="cpb-qr">
+                    <div class="cpb-qr-grid">
+                      <div class="qc b"></div><div class="qc b"></div><div class="qc w"></div><div class="qc b"></div><div class="qc b"></div>
+                      <div class="qc b"></div><div class="qc w"></div><div class="qc b"></div><div class="qc w"></div><div class="qc b"></div>
+                      <div class="qc w"></div><div class="qc b"></div><div class="qc b"></div><div class="qc b"></div><div class="qc w"></div>
+                      <div class="qc b"></div><div class="qc w"></div><div class="qc w"></div><div class="qc b"></div><div class="qc b"></div>
+                      <div class="qc b"></div><div class="qc b"></div><div class="qc w"></div><div class="qc w"></div><div class="qc b"></div>
+                    </div>
+                    <div class="cpb-qr-label">Scan at desk</div>
+                  </div>
+                </div>
+                <div class="cpb-rows">
+                  <div class="cpb-row"><span class="cpb-l">Points balance</span><span class="cpb-v">1,240 pts</span></div>
+                  <div class="cpb-row"><span class="cpb-l">Member since</span><span class="cpb-v">Jan 2025</span></div>
+                  <div class="cpb-row"><span class="cpb-l">Next checkup</span><span class="cpb-v cpb-teal">Sep 6, 2026</span></div>
+                  <div class="cpb-row"><span class="cpb-l">Book appointment</span><a class="cpb-link">Book online →</a></div>
+                  <div class="cpb-row"><span class="cpb-l">Call us</span><a class="cpb-link">(587) 855-9300</a></div>
+                  <div class="cpb-row"><span class="cpb-l">Get directions</span><a class="cpb-link">Open in Maps</a></div>
+                </div>
+                <div class="cpb-ref">
+                  <div class="cpb-ref-top">
+                    <span class="cpb-ref-label">Refer a friend</span>
+                    <span class="cpb-ref-pts">+250 pts</span>
+                  </div>
+                  <div class="cpb-ref-link">dentapass.ca/join/SDA-4821</div>
+                  <button class="cpb-ref-btn">Share with a friend</button>
+                </div>
+                <div class="cpb-social">
+                  <span class="cpb-social-label">Follow us</span>
+                  <div class="cpb-social-icons">
+                    <div class="cpb-si cpb-si-fb">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                    </div>
+                    <div class="cpb-si cpb-si-g">
+                      <svg width="12" height="12" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="cpb-review">
+                  <div class="cpb-stars">★★★★★</div>
+                  <div class="cpb-review-txt">Loved your visit? Leave Dr. Maged a review!</div>
+                  <button class="cpb-review-btn">Review ↗</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Callouts back -->
+          <div class="cp-callouts cp-callouts-back">
+            <div class="cp-callout cp-callout-tl">
+              <div class="cp-callout-line cp-cl-right"></div>
+              <div class="cp-callout-bubble">QR scan for points</div>
+            </div>
+            <div class="cp-callout cp-callout-ml">
+              <div class="cp-callout-line cp-cl-right"></div>
+              <div class="cp-callout-bubble">One-tap booking &amp; call</div>
+            </div>
+            <div class="cp-callout cp-callout-bl">
+              <div class="cp-callout-line cp-cl-right"></div>
+              <div class="cp-callout-bubble">Referral link — unique per patient</div>
+            </div>
+            <div class="cp-callout cp-callout-br">
+              <div class="cp-callout-bubble">Google review prompt</div>
+              <div class="cp-callout-line cp-cl-left"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end cp-stage -->
+
+      <!-- Feature pills below -->
+      <div class="cp-pills reveal d3">
+        <div class="cp-pill"><span class="cp-pill-dot"></span>Updates live on patient's phone</div>
+        <div class="cp-pill"><span class="cp-pill-dot"></span>Works offline in Wallet</div>
+        <div class="cp-pill"><span class="cp-pill-dot"></span>No app download needed</div>
+        <div class="cp-pill"><span class="cp-pill-dot"></span>Fully branded to your clinic</div>
+        <div class="cp-pill"><span class="cp-pill-dot"></span>Apple &amp; Google Wallet</div>
+      </div>
+
+    </div><!-- end card-preview-wrap -->
+  </div>
+</section>
+
+<!-- ROI -->
+<section class="roi-section">
+  <div class="roi-in">
+    <div class="roi-big reveal">
+      <div class="roi-number">33×</div>
+      <div class="roi-label">potential return on<br>your subscription</div>
+      <p class="roi-caption">A clinic with 1,000 patients recovering just 5 lapsed patients per month covers the cost of DentaPass many times over.</p>
+    </div>
+    <div class="roi-math reveal d1">
+      <div class="roi-step">
+        <div class="roi-n">Step 1</div>
+        <div class="roi-body">
+          <div class="roi-title">Recall reminders recover lapsed patients</div>
+          <div class="roi-desc">Automated 5-month pings bring back patients who would otherwise fall through the cracks. Each recovered patient is worth $650/year.</div>
+          <span class="roi-val">5 recovered patients/month = $3,250 MRR</span>
+        </div>
+      </div>
+      <div class="roi-step">
+        <div class="roi-n">Step 2</div>
+        <div class="roi-body">
+          <div class="roi-title">Google reviews drive new patient acquisition</div>
+          <div class="roi-desc">30+ reviews/month compounds your local ranking. New patients find you first in search instead of the clinic down the road.</div>
+          <span class="roi-val">Higher ranking = passive new patient flow</span>
+        </div>
+      </div>
+      <div class="roi-step">
+        <div class="roi-n">Step 3</div>
+        <div class="roi-body">
+          <div class="roi-title">Referrals add patients at zero acquisition cost</div>
+          <div class="roi-desc">10% of 500 patients referring one friend = 50 new patients. At $650/year, that's $32,500 in annual revenue from a link on a card.</div>
+          <span class="roi-val">$32,500 from referrals alone</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WAITLIST -->
+<section id="waitlist" class="waitlist-section">
+  <div class="wl-in">
+    <div class="wl-left reveal">
+      <span class="eyebrow" style="color:var(--teal);margin-bottom:20px;display:block">Early access</span>
+      <h2>Be the first clinic in Edmonton with <em>DentaPass.</em></h2>
+      <p>We're onboarding founding clinics now. Join the waitlist and we'll reach out personally to set up a live demo — no commitment, no credit card.</p>
+      <div class="wl-perks">
+        <div class="wl-perk"><span class="wl-perk-dot"></span>Free custom card mockup with your clinic's branding</div>
+        <div class="wl-perk"><span class="wl-perk-dot"></span>First 2 months free for founding clinics</div>
+        <div class="wl-perk"><span class="wl-perk-dot"></span>Live in your clinic within 7 days of go-ahead</div>
+        <div class="wl-perk"><span class="wl-perk-dot"></span>Locked-in founding pricing — never increases</div>
+        <div class="wl-perk"><span class="wl-perk-dot"></span>Personal setup call with the DentaPass team</div>
+      </div>
+      <div class="wl-count">
+        <div class="wl-avatars">
+          <div class="wlav">AB</div>
+          <div class="wlav">CD</div>
+          <div class="wlav">EF</div>
+        </div>
+        <div class="wl-count-text">Be among the <strong>first clinics</strong> in Edmonton to launch</div>
+      </div>
+    </div>
+    <div class="reveal d1">
+      <div class="wl-form-wrap">
+        <div id="wl-form-body">
+          <div class="wl-form-title">Request early access</div>
+          <div class="wl-form-sub">We'll reach out within 24 hours.</div>
+          <div class="fg">
+            <div class="f">
+              <label for="f-fname">First name</label>
+              <input type="text" id="f-fname" placeholder="Sarah" autocomplete="given-name">
+              <span class="ferr" id="err-fname">Please enter your first name.</span>
+            </div>
+            <div class="f">
+              <label for="f-lname">Last name</label>
+              <input type="text" id="f-lname" placeholder="Thompson" autocomplete="family-name">
+              <span class="ferr" id="err-lname">Please enter your last name.</span>
+            </div>
+          </div>
+          <div class="fg full" style="margin-bottom:12px">
+            <div class="f">
+              <label for="f-email">Email address</label>
+              <input type="email" id="f-email" placeholder="you@yourclinic.com" autocomplete="email">
+              <span class="ferr" id="err-email">Please enter a valid email.</span>
+            </div>
+          </div>
+          <div class="fg full" style="margin-bottom:12px">
+            <div class="f">
+              <label for="f-phone">Phone number</label>
+              <input type="tel" id="f-phone" placeholder="(587) 555-0000" autocomplete="tel">
+            </div>
+          </div>
+          <div class="fg full" style="margin-bottom:12px">
+            <div class="f">
+              <label for="f-clinic">Clinic name</label>
+              <input type="text" id="f-clinic" placeholder="Smart Dental Art" autocomplete="organization">
+              <span class="ferr" id="err-clinic">Please enter your clinic name.</span>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:12px">
+            <div class="f">
+              <label for="f-size">Number of patients</label>
+              <select id="f-size">
+                <option value="">Select range...</option>
+                <option>Under 500</option>
+                <option>500 – 1,000</option>
+                <option>1,000 – 2,000</option>
+                <option>2,000+</option>
+              </select>
+            </div>
+            <div class="f">
+              <label for="f-locations">Locations</label>
+              <select id="f-locations">
+                <option value="">Select...</option>
+                <option>1 location</option>
+                <option>2–3 locations</option>
+                <option>4+ locations</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg full" style="margin-bottom:16px">
+            <div class="f">
+              <label for="f-msg">Biggest patient retention challenge (optional)</label>
+              <textarea id="f-msg" placeholder="e.g. patients not rebooking after cleanings, struggling to get Google reviews..."></textarea>
+            </div>
+          </div>
+          <button class="wl-submit" id="wl-btn" onclick="handleWL()">Request early access →</button>
+          <div class="wl-note">No spam. No credit card. Just a personal call from our team.</div>
+        </div>
+        <div class="wl-success" id="wl-success">
+          <div class="wl-success-icon">✦</div>
+          <div class="wl-success-title">You're on the list.</div>
+          <p class="wl-success-sub">We'll reach out within 24 hours to set up your free demo and build your clinic's branded card mockup.</p>
+          <div class="wl-success-num" id="wl-count-display"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-in">
+    <div class="footer-logo">Denta<span>Pass</span></div>
+    <p class="footer-copy">© 2026 DentaPass. Built for dental clinics in Edmonton, AB.</p>
+  </div>
+</footer>
+
+<script>
+/* Card face toggle */
+function showFace(face, btn){
+  document.querySelectorAll('.cp-face').forEach(f=>f.style.display='none');
+  document.getElementById('cp-'+face).style.display='flex';
+  document.querySelectorAll('.cp-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* Scroll reveal */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('up');io.unobserve(e.target)} });
+},{threshold:.1,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* Nav tint */
+const nav = document.querySelector('nav');
+window.addEventListener('scroll',()=>{
+  nav.style.background = scrollY>20?'rgba(255,255,255,.95)':'rgba(255,255,255,.86)';
+},{passive:true});
+
+/* Waitlist form */
+function showErr(id,show){
+  const el=document.getElementById(id);
+  if(el) el.style.display=show?'block':'none';
+}
+
+function handleWL(){
+  const fname=document.getElementById('f-fname').value.trim();
+  const lname=document.getElementById('f-lname').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  const clinic=document.getElementById('f-clinic').value.trim();
+  const emailOk=email&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  let ok=true;
+  showErr('err-fname',!fname); if(!fname) ok=false;
+  showErr('err-lname',!lname); if(!lname) ok=false;
+  showErr('err-email',!emailOk); if(!emailOk) ok=false;
+  showErr('err-clinic',!clinic); if(!clinic) ok=false;
+  if(!ok) return;
+
+  const btn=document.getElementById('wl-btn');
+  btn.disabled=true;
+  btn.textContent='Saving your spot…';
+
+  setTimeout(()=>{
+    document.getElementById('wl-form-body').style.display='none';
+    document.getElementById('wl-success').style.display='block';
+    document.getElementById('wl-count-display').textContent='You\'re one of our first — we\'ll be in touch within 24 hours.';
+  },900);
+}
+</script>
+</body>
+</html>
