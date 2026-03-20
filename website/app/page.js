@@ -152,18 +152,43 @@ export default function Home() {
                   </div>
                   <div className="wb-row">
                     <span className="wb-l">Next checkup</span>
-                    <span className="wb-v" style={{ color: 'var(--teal)' }}>
-                      Sep 6, 2026
-                    </span>
+                    <span className="wb-v" style={{ color: 'var(--teal)' }}>Sep 6, 2026</span>
                   </div>
                   <div className="wb-row">
-                    <span className="wb-l">Book now</span>
-                    <a className="wb-link">smartdentalart.com/book</a>
+                    <span className="wb-l">Book appointment</span>
+                    <button className="wb-book-btn">Book now</button>
                   </div>
                   <div className="wb-row">
                     <span className="wb-l">Call us</span>
                     <a className="wb-link">(587) 855-9300</a>
                   </div>
+                  {/* Socials */}
+                  <div className="wb-social">
+                    <span className="wb-l">Follow us</span>
+                    <div className="wb-social-icons">
+                      <div className="wb-si wb-si-fb">
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+                      </div>
+                      <div className="wb-si wb-si-g">
+                        <svg width="9" height="9" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Reviews */}
+                  <div className="wb-review">
+                    <div className="wb-review-txt">Love Dr. Maged? Leave a Google review!</div>
+                    <div className="wb-review-bottom">
+                      <div className="wb-stars">
+                        <div className="star"></div>
+                        <div className="star"></div>
+                        <div className="star"></div>
+                        <div className="star"></div>
+                        <div className="star"></div>
+                      </div>
+                      <button className="wb-review-btn">Review ↗</button>
+                    </div>
+                  </div>
+                  {/* Referral */}
                   <div className="wb-ref">
                     <div className="wb-ref-top">
                       <span className="wb-ref-l">Refer a friend</span>
@@ -171,17 +196,6 @@ export default function Home() {
                     </div>
                     <div className="wb-ref-link">dentapass.ca/join/SDA-4821</div>
                     <button className="wb-ref-btn">Share with a friend</button>
-                  </div>
-                  <div className="wb-review">
-                    <div className="wb-stars">
-                      <div className="star"></div>
-                      <div className="star"></div>
-                      <div className="star"></div>
-                      <div className="star"></div>
-                      <div className="star"></div>
-                    </div>
-                    <div className="wb-review-txt">Love Dr. Maged? Leave a Google review!</div>
-                    <button className="wb-review-btn">Review ↗</button>
                   </div>
                 </div>
               </div>
@@ -257,17 +271,17 @@ export default function Home() {
             </div>
           </div>
           <div className="stat reveal d2">
-            <div className="stat-num">10×</div>
+            <div className="stat-num">5×</div>
             <div className="stat-label">
-              <strong>More Google reviews</strong>When patients are asked at the
-              right moment — automatically.
+              <strong>More Google reviews</strong>Clinics using automated post-visit
+              requests see 4–6× their previous monthly average.
             </div>
           </div>
           <div className="stat reveal d3">
-            <div className="stat-num">33×</div>
+            <div className="stat-num">22×</div>
             <div className="stat-label">
-              <strong>Potential ROI</strong>A clinic with 1,000 patients needs just 5
-              recalls/month to cover the cost.
+              <strong>Annual ROI</strong>Recovering 5 lapsed patients per month
+              returns ~22× the annual subscription cost.
             </div>
           </div>
         </div>
@@ -561,7 +575,16 @@ export default function Home() {
           </div>
           <div className="tier-grid" style={{ marginTop: '48px' }}>
             <div className="tier-card bronze reveal">
-              <span className="tier-icon">🪙</span>
+              <span className="tier-icon">
+                <svg width="40" height="52" viewBox="0 0 40 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 0h12l4 18H10L14 0z" fill="#c0892c" opacity=".35"/>
+                  <path d="M16 0h8l2 10h-12L16 0z" fill="#c0892c" opacity=".55"/>
+                  <circle cx="20" cy="38" r="14" fill="#c0892c"/>
+                  <circle cx="20" cy="38" r="11" fill="#d4a044"/>
+                  <circle cx="20" cy="38" r="8" fill="#c0892c" opacity=".4"/>
+                  <text x="20" y="43" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff" fontFamily="serif">B</text>
+                </svg>
+              </span>
               <div className="tier-name">Bronze</div>
               <div className="tier-range">0 – 499 points</div>
               <ul className="tier-perks">
@@ -571,7 +594,16 @@ export default function Home() {
               </ul>
             </div>
             <div className="tier-card silver reveal d1">
-              <span className="tier-icon">🥈</span>
+              <span className="tier-icon">
+                <svg width="40" height="52" viewBox="0 0 40 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 0h12l4 18H10L14 0z" fill="#7a9cbf" opacity=".35"/>
+                  <path d="M16 0h8l2 10h-12L16 0z" fill="#7a9cbf" opacity=".55"/>
+                  <circle cx="20" cy="38" r="14" fill="#7a9cbf"/>
+                  <circle cx="20" cy="38" r="11" fill="#aec6de"/>
+                  <circle cx="20" cy="38" r="8" fill="#7a9cbf" opacity=".4"/>
+                  <text x="20" y="43" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff" fontFamily="serif">S</text>
+                </svg>
+              </span>
               <div className="tier-name">Silver</div>
               <div className="tier-range">500 – 999 points</div>
               <ul className="tier-perks">
@@ -581,12 +613,21 @@ export default function Home() {
               </ul>
             </div>
             <div className="tier-card gold reveal d2">
-              <span className="tier-icon">✦</span>
+              <span className="tier-icon">
+                <svg width="40" height="52" viewBox="0 0 40 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 0h12l4 18H10L14 0z" fill="#c9a84c" opacity=".35"/>
+                  <path d="M16 0h8l2 10h-12L16 0z" fill="#c9a84c" opacity=".65"/>
+                  <circle cx="20" cy="38" r="14" fill="#c9a84c"/>
+                  <circle cx="20" cy="38" r="11" fill="#e8c96a"/>
+                  <circle cx="20" cy="38" r="8" fill="#c9a84c" opacity=".4"/>
+                  <text x="20" y="43" textAnchor="middle" fontSize="11" fontWeight="700" fill="#3a2800" fontFamily="serif">G</text>
+                </svg>
+              </span>
               <div className="tier-name">Gold</div>
               <div className="tier-range">1,000+ points</div>
               <ul className="tier-perks">
                 <li><span className="tp-dot"></span>Everything in Silver</li>
-                <li><span className="tp-dot"></span>Free whitening consult</li>
+                <li><span className="tp-dot"></span>Whitening consult</li>
                 <li><span className="tp-dot"></span>VIP label on patient record</li>
               </ul>
             </div>
@@ -671,7 +712,7 @@ export default function Home() {
                       <div style={{ fontSize: '11px', color: 'var(--muted)' }}>reviews/month without DentaPass</div>
                     </div>
                     <div style={{ background: 'var(--teal-lt)', borderRadius: '12px', padding: '14px', border: '.5px solid var(--teal-mid)' }}>
-                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '32px', color: 'var(--teal)', lineHeight: '1', marginBottom: '4px' }}>30+</div>
+                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '32px', color: 'var(--teal)', lineHeight: '1', marginBottom: '4px' }}>20+</div>
                       <div style={{ fontSize: '11px', color: 'var(--teal-dk)' }}>reviews/month with automated ask</div>
                     </div>
                   </div>
@@ -787,7 +828,7 @@ export default function Home() {
               <div className="cmp-title">Every patient permanently in your pocket</div>
               <div className="cmp-list">
                 <div className="cmp-item yes"><span className="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Lock screen recall at exactly 5 months — automated</div>
-                <div className="cmp-item yes"><span className="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg></span>30+ Google reviews per month with post-visit requests</div>
+                <div className="cmp-item yes"><span className="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg></span>20+ Google reviews per month with post-visit requests</div>
                 <div className="cmp-item yes"><span className="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Points, tiers, and perks — patients have a real reason to return</div>
                 <div className="cmp-item yes"><span className="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Referral link on every card — tracked, rewarded, automatic</div>
                 <div className="cmp-item yes"><span className="ci ci-yes"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--teal)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg></span>Analytics dashboard — retention, reviews, referrals, revenue</div>
@@ -943,17 +984,9 @@ export default function Home() {
                         <div className="cpb-row"><span className="cpb-l">Points balance</span><span className="cpb-v">1,240 pts</span></div>
                         <div className="cpb-row"><span className="cpb-l">Member since</span><span className="cpb-v">Jan 2025</span></div>
                         <div className="cpb-row"><span className="cpb-l">Next checkup</span><span className="cpb-v cpb-teal">Sep 6, 2026</span></div>
-                        <div className="cpb-row"><span className="cpb-l">Book appointment</span><a className="cpb-link">Book online →</a></div>
+                        <div className="cpb-row"><span className="cpb-l">Book appointment</span><button className="cpb-book-btn">Book online →</button></div>
                         <div className="cpb-row"><span className="cpb-l">Call us</span><a className="cpb-link">(587) 855-9300</a></div>
                         <div className="cpb-row"><span className="cpb-l">Get directions</span><a className="cpb-link">Open in Maps</a></div>
-                      </div>
-                      <div className="cpb-ref">
-                        <div className="cpb-ref-top">
-                          <span className="cpb-ref-label">Refer a friend</span>
-                          <span className="cpb-ref-pts">+250 pts</span>
-                        </div>
-                        <div className="cpb-ref-link">dentapass.ca/join/SDA-4821</div>
-                        <button className="cpb-ref-btn">Share with a friend</button>
                       </div>
                       <div className="cpb-social">
                         <span className="cpb-social-label">Follow us</span>
@@ -974,9 +1007,19 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="cpb-review">
-                        <div className="cpb-stars">★★★★★</div>
                         <div className="cpb-review-txt">Loved your visit? Leave Dr. Maged a review!</div>
-                        <button className="cpb-review-btn">Review ↗</button>
+                        <div className="cpb-review-bottom">
+                          <div className="cpb-stars">★★★★★</div>
+                          <button className="cpb-review-btn">Review ↗</button>
+                        </div>
+                      </div>
+                      <div className="cpb-ref">
+                        <div className="cpb-ref-top">
+                          <span className="cpb-ref-label">Refer a friend</span>
+                          <span className="cpb-ref-pts">+250 pts</span>
+                        </div>
+                        <div className="cpb-ref-link">dentapass.ca/join/SDA-4821</div>
+                        <button className="cpb-ref-btn">Share with a friend</button>
                       </div>
                     </div>
                   </div>
@@ -1017,13 +1060,13 @@ export default function Home() {
       <section className="roi-section">
         <div className="roi-in">
           <div className="roi-big reveal">
-            <div className="roi-number">33×</div>
+            <div className="roi-number">22×</div>
             <div className="roi-label">
-              potential return on<br />your subscription
+              annual return on<br />your subscription
             </div>
             <p className="roi-caption">
-              A clinic with 1,000 patients recovering just 5 lapsed patients per month
-              covers the cost of DentaPass many times over.
+              A clinic recovering just 5 lapsed patients per month adds ~$39,000 in
+              annual patient value — against a subscription that costs a fraction of that.
             </p>
           </div>
           <div className="roi-math reveal d1">
@@ -1032,14 +1075,14 @@ export default function Home() {
               <div className="roi-body">
                 <div className="roi-title">Recall reminders recover lapsed patients</div>
                 <div className="roi-desc">Automated 5-month pings bring back patients who would otherwise fall through the cracks. Each recovered patient is worth $650/year.</div>
-                <span className="roi-val">5 recovered patients/month = $3,250 MRR</span>
+                <span className="roi-val">5 recovered patients/month = $39,000/yr in patient value</span>
               </div>
             </div>
             <div className="roi-step">
               <div className="roi-n">Step 2</div>
               <div className="roi-body">
                 <div className="roi-title">Google reviews drive new patient acquisition</div>
-                <div className="roi-desc">30+ reviews/month compounds your local ranking. New patients find you first in search instead of the clinic down the road.</div>
+                <div className="roi-desc">4–6× your current review volume compounds your local ranking. New patients find you first in search instead of the clinic down the road.</div>
                 <span className="roi-val">Higher ranking = passive new patient flow</span>
               </div>
             </div>
@@ -1071,8 +1114,8 @@ export default function Home() {
               card.
             </p>
             <div className="wl-perks">
-              <div className="wl-perk"><span className="wl-perk-dot"></span>Free custom card mockup with your clinic&apos;s branding</div>
-              <div className="wl-perk"><span className="wl-perk-dot"></span>First 2 months free for founding clinics</div>
+              <div className="wl-perk"><span className="wl-perk-dot"></span>Custom card mockup with your clinic&apos;s branding</div>
+              <div className="wl-perk"><span className="wl-perk-dot"></span>Priority access for founding clinics</div>
               <div className="wl-perk"><span className="wl-perk-dot"></span>Live in your clinic within 7 days of go-ahead</div>
               <div className="wl-perk"><span className="wl-perk-dot"></span>Locked-in founding pricing — never increases</div>
               <div className="wl-perk"><span className="wl-perk-dot"></span>Personal setup call with the DentaPass team</div>
@@ -1093,7 +1136,7 @@ export default function Home() {
               {!wlSuccess ? (
                 <div>
                   <div className="wl-form-title">Request early access</div>
-                  <div className="wl-form-sub">We&apos;ll reach out within 24 hours.</div>
+                  <div className="wl-form-sub">We&apos;ll reach out soon.</div>
                   <div className="fg">
                     <div className="f">
                       <label htmlFor="f-fname">First name</label>
@@ -1168,11 +1211,11 @@ export default function Home() {
                   <div className="wl-success-icon">✦</div>
                   <div className="wl-success-title">You&apos;re on the list.</div>
                   <p className="wl-success-sub">
-                    We&apos;ll reach out within 24 hours to set up your free demo and
+                    We&apos;ll be in touch soon to set up your demo and
                     build your clinic&apos;s branded card mockup.
                   </p>
                   <div className="wl-success-num">
-                    You&apos;re one of our first — we&apos;ll be in touch within 24 hours.
+                    You&apos;re one of our first founding clinics in Edmonton.
                   </div>
                 </div>
               )}

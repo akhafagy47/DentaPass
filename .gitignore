@@ -1,6 +1,8 @@
 # ── Environment & secrets ──────────────────────────────────────────────────────
 .env
 .env.local
+website/.env
+website/.env.local
 .env.*.local
 .env.development
 .env.production
