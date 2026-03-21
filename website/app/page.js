@@ -280,8 +280,8 @@ export default function Home() {
           <div className="stat reveal d3">
             <div className="stat-num">22×</div>
             <div className="stat-label">
-              <strong>Annual ROI</strong>Recovering 5 lapsed patients per month
-              returns ~22× the annual subscription cost.
+              <strong>Annual ROI</strong>Combined recall recovery and referral
+              revenue routinely returns 20–25× the annual subscription cost.
             </div>
           </div>
         </div>
@@ -730,23 +730,23 @@ export default function Home() {
             <div className="feat-visual reveal">
               <div style={{ width: '100%', maxWidth: '400px' }}>
                 <div style={{ background: 'var(--off)', borderRadius: 'var(--r-xl)', padding: '28px', border: '.5px solid var(--border)' }}>
-                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '11px', fontWeight: '700', color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '20px' }}>Referral math — 500 patients</div>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '13px', fontWeight: '700', color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: '20px' }}>Referral math — 500 patients</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--white)', borderRadius: '12px', padding: '14px 16px', border: '.5px solid var(--border)' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--ink)' }}>Patients enrolled</div>
-                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '24px', color: 'var(--ink)' }}>500</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--white)', borderRadius: '12px', padding: '18px 20px', border: '.5px solid var(--border)' }}>
+                      <div style={{ fontSize: '16px', color: 'var(--ink)' }}>Patients enrolled</div>
+                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '28px', color: 'var(--ink)' }}>500</div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--white)', borderRadius: '12px', padding: '14px 16px', border: '.5px solid var(--border)' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--ink)' }}>10% refer one friend</div>
-                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '24px', color: 'var(--ink)' }}>
-                        50 <span style={{ fontSize: '14px', color: 'var(--muted)' }}>new patients</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--white)', borderRadius: '12px', padding: '18px 20px', border: '.5px solid var(--border)' }}>
+                      <div style={{ fontSize: '16px', color: 'var(--ink)' }}>10% refer one friend</div>
+                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '28px', color: 'var(--ink)' }}>
+                        50 <span style={{ fontSize: '16px', color: 'var(--muted)' }}>new patients</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--teal-lt)', borderRadius: '12px', padding: '14px 16px', border: '.5px solid var(--teal-mid)' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--teal-dk)', fontWeight: '500' }}>Annual revenue added</div>
-                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '24px', color: 'var(--teal)' }}>$32,500</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--teal-lt)', borderRadius: '12px', padding: '18px 20px', border: '.5px solid var(--teal-mid)' }}>
+                      <div style={{ fontSize: '16px', color: 'var(--teal-dk)', fontWeight: '500' }}>Annual revenue added</div>
+                      <div style={{ fontFamily: "'Instrument Serif',serif", fontSize: '28px', color: 'var(--teal)' }}>$32,500</div>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'center', paddingTop: '4px' }}>Based on $650 avg patient value/yr</div>
+                    <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', paddingTop: '4px' }}>Based on $650 avg patient value/yr</div>
                   </div>
                 </div>
               </div>
@@ -1066,7 +1066,8 @@ export default function Home() {
             </div>
             <p className="roi-caption">
               A clinic recovering just 5 lapsed patients per month adds ~$39,000 in
-              annual patient value — against a subscription that costs a fraction of that.
+              annual patient value. Stack referral revenue on top and you&apos;re
+              looking at 20–25× your subscription cost — in year one.
             </p>
           </div>
           <div className="roi-math reveal d1">
@@ -1075,7 +1076,7 @@ export default function Home() {
               <div className="roi-body">
                 <div className="roi-title">Recall reminders recover lapsed patients</div>
                 <div className="roi-desc">Automated 5-month pings bring back patients who would otherwise fall through the cracks. Each recovered patient is worth $650/year.</div>
-                <span className="roi-val">5 recovered patients/month = $39,000/yr in patient value</span>
+                <span className="roi-val">5 recovered patients/month = $39,000/yr in retained patient value</span>
               </div>
             </div>
             <div className="roi-step">

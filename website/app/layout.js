@@ -1,4 +1,5 @@
 import './globals.css';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = {
   title: "DentaPass — The loyalty card that lives in your patients' wallets",
@@ -14,7 +15,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>{children}<SpeedInsights /></body>
     </html>
   );
 }

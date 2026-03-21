@@ -240,9 +240,9 @@ h2 em{font-style:italic;color:var(--teal)}
 /* ── POINTS TABLE ── */
 .pts-table-wrap{margin-top:64px;border-radius:var(--r-xl);overflow:hidden;border:1px solid var(--border)}
 .pts-table{width:100%;border-collapse:collapse}
-.pts-table th{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:16px 24px;background:var(--ink);color:rgba(255,255,255,.5);text-align:left}
+.pts-table th{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:20px 28px;background:var(--ink);color:rgba(255,255,255,.5);text-align:left}
 .pts-table th:last-child{text-align:right}
-.pts-table td{padding:16px 24px;font-size:14px;color:var(--ink);border-top:.5px solid var(--border);vertical-align:middle}
+.pts-table td{padding:20px 28px;font-size:16px;color:var(--ink);border-top:.5px solid var(--border);vertical-align:middle}
 .pts-table tr:hover td{background:var(--off)}
 .pts-val{font-weight:600;color:var(--teal);text-align:right}
 .trigger-badge{font-size:11px;padding:3px 10px;border-radius:980px;font-weight:500}
@@ -284,11 +284,11 @@ h2 em{font-style:italic;color:var(--teal)}
 .cmp-overline{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
 .cmp-card.without .cmp-overline{color:var(--muted)}
 .cmp-card.with .cmp-overline{color:var(--teal)}
-.cmp-title{font-family:'Instrument Serif',serif;font-size:28px;line-height:1.15;letter-spacing:-.02em;margin-bottom:36px}
+.cmp-title{font-family:'Instrument Serif',serif;font-size:32px;line-height:1.15;letter-spacing:-.02em;margin-bottom:36px}
 .cmp-card.without .cmp-title{color:#aeaeb2}
 .cmp-card.with .cmp-title{color:#fff}
-.cmp-list{display:flex;flex-direction:column;gap:14px}
-.cmp-item{display:flex;align-items:flex-start;gap:13px;font-size:16px;line-height:1.65}
+.cmp-list{display:flex;flex-direction:column;gap:16px}
+.cmp-item{display:flex;align-items:flex-start;gap:13px;font-size:17px;line-height:1.65}
 .cmp-card.without .cmp-item{color:var(--muted)}
 .cmp-card.with .cmp-item{color:rgba(255,255,255,.6)}
 .cmp-card.with .cmp-item.yes{color:rgba(255,255,255,.85)}
