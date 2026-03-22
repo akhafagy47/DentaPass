@@ -449,3 +449,63 @@ footer{background:#000;padding:28px 48px;border-top:.5px solid #111}
   .stats-in{grid-template-columns:1fr}
   .demo-wrap{flex-direction:column;align-items:center}
 }
+
+/* ── MOBILE RESPONSIVE (ADDITIONS) ── */
+
+@media(max-width:860px){
+  nav{padding:0 24px}
+  .hero{padding:96px 24px 64px}
+  .phone-wrap{justify-content:center}
+  .stats{padding:60px 24px}
+  .sec{padding:72px 24px}
+  .pain-card{padding:28px 24px}
+  .pts-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .scan-step{padding:28px 24px}
+  .feat-layout{margin-top:56px}
+  .tier-card{padding:28px 24px}
+  .cmp-card{padding:32px 24px}
+  .cmp-title{font-size:26px;margin-bottom:24px}
+  .roi-section{padding:72px 24px}
+  .waitlist-section{padding:72px 24px}
+  .wl-form-wrap{padding:28px 24px}
+  footer{padding:24px 24px}
+  .cp-stage{min-height:auto}
+}
+
+@media(max-width:560px){
+  nav{padding:0 20px;height:72px}
+  .logo{font-size:26px}
+  .nav-cta{padding:10px 20px;font-size:14px}
+  .hero{padding:84px 20px 48px;min-height:auto}
+  h1{font-size:clamp(40px,10vw,60px)}
+  .hero-sub{font-size:17px;margin-bottom:32px}
+  .hero-btns{flex-direction:column;align-items:stretch}
+  .btn-primary,.btn-outline{justify-content:center}
+  .stats{padding:48px 20px}
+  .stat{padding:24px 20px}
+  .sec{padding:56px 20px}
+  h2{font-size:clamp(32px,8vw,48px)}
+  .lead{font-size:17px}
+  .pain-card{padding:24px 20px}
+  .pain-num{font-size:48px}
+  .scan-step{padding:24px 20px}
+  .ss-num{font-size:40px}
+  .tier-card{padding:24px 20px}
+  .pts-table th,.pts-table td{padding:14px 16px;font-size:14px}
+  .cmp-card{padding:24px 20px}
+  .cmp-title{font-size:24px;margin-bottom:20px}
+  .cmp-item{font-size:15px}
+  .roi-section{padding:56px 20px}
+  .roi-step{padding:20px 0;gap:14px}
+  .roi-title{font-size:16px}
+  .roi-n{min-width:46px}
+  .waitlist-section{padding:56px 20px}
+  .wl-form-wrap{padding:24px 20px}
+  .wl-form-title{font-size:19px}
+  footer{padding:20px 20px}
+  .footer-in{flex-direction:column;align-items:flex-start;gap:6px}
+  .cp-phone-frame{width:236px}
+  .feat-layout{margin-top:40px}
+  .feat-item{gap:14px}
+  .feat-ico{width:38px;height:38px;flex-shrink:0}
+}
