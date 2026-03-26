@@ -5,17 +5,16 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const PASSKIT_BASE = 'https://api.pub1.passkit.io';
+const PASSKIT_BASE = 'https://api.pub2.passkit.io';
 
 async function pkPush(serialNumber: string, message: string) {
-  const creds = btoa(`${Deno.env.get('PASSKIT_API_KEY')}:${Deno.env.get('PASSKIT_API_SECRET')}`);
-  const res = await fetch(`${PASSKIT_BASE}/membership/member/${serialNumber}/push`, {
-    method: 'POST',
+  const res = await fetch(`${PASSKIT_BASE}/members/member`, {
+    method: 'PUT',
     headers: {
-      Authorization: `Basic ${creds}`,
+      Authorization: `Bearer ${Deno.env.get('PASSKIT_API_TOKEN')}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ pushMessage: message }),
+    body: JSON.stringify({ id: serialNumber, notes: [{ header: 'DentaPass', body: message }] }),
   });
   if (!res.ok) {
     const body = await res.text();

@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
       if (existing) {
         return res.json({
           ok: true,
-          walletUrl: `https://pub1.pskt.io/${existing.passkit_serial_number}`,
+          walletUrl: `https://pub2.pskt.io/m/${existing.passkit_serial_number}`,
           alreadyEnrolled: true,
         });
       }

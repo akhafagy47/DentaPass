@@ -40,9 +40,3 @@ select cron.schedule(
     )
   $$
 );
-
--- ─────────────────────────────────────────────
--- To set app settings (run once):
--- ─────────────────────────────────────────────
--- alter database postgres set "app.supabase_url" = 'https://your-project.supabase.co';
--- alter database postgres set "app.supabase_service_role_key" = 'your-service-role-key';
