@@ -13,7 +13,11 @@
     "react": "^18",
     "react-dom": "^18",
     "@supabase/supabase-js": "^2.45.0",
-    "@vercel/speed-insights": "^1"
+    "@supabase/ssr": "^0.5.1",
+    "@vercel/speed-insights": "^1",
+    "stripe": "^16.0.0",
+    "nanoid": "^3.3.7",
+    "jsqr": "^1.4.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.0.1",
