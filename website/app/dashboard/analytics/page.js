@@ -316,7 +316,8 @@ export default async function AnalyticsPage({ searchParams }) {
       .gte('created_at', sinceISO).order('created_at'),
     supabase.from('point_events').select('points, reason, created_at').eq('clinic_id', cid)
       .gte('created_at', sinceISO),
-    supabase.from('notifications').select('type, sent_at').eq('clinic_id', cid)
+    // Include clicked_at so we can compute CTR and click trends
+    supabase.from('notifications').select('type, sent_at, clicked_at').eq('clinic_id', cid)
       .gte('sent_at', sinceISO),
     supabase.from('patients').select('tier').eq('clinic_id', cid),
     supabase.from('patients').select('referred_by').eq('clinic_id', cid)
@@ -369,12 +370,35 @@ export default async function AnalyticsPage({ searchParams }) {
   });
   const pointsTrend = buckets.map((b) => ({ label: b.label, value: pointsMap[b.key] || 0 }));
 
-  // ── Notifications ──
-  const notifCounts = { review: 0, recall: 0 };
+  // ── Notifications + Review click tracking ──
+  const notifCounts  = { review: 0, recall: 0 };
+  let reviewClicks   = 0;
+  const clickTrendMap = {};
+
   (notificationsRaw || []).forEach((n) => {
     if (notifCounts[n.type] !== undefined) notifCounts[n.type]++;
+    if (n.type === 'review' && n.clicked_at) {
+      reviewClicks++;
+      const k = bucketKey(n.clicked_at, period);
+      clickTrendMap[k] = (clickTrendMap[k] || 0) + 1;
+    }
   });
-  const totalNotifs = notifCounts.review + notifCounts.recall;
+
+  const totalNotifs   = notifCounts.review + notifCounts.recall;
+  const reviewCTR     = notifCounts.review > 0
+    ? Math.round((reviewClicks / notifCounts.review) * 100)
+    : 0;
+  const clickTrend    = buckets.map((b) => ({ label: b.label, value: clickTrendMap[b.key] || 0 }));
+
+  // Average time-to-click (hours) for clicked reviews
+  const clickedNotifs = (notificationsRaw || []).filter(
+    (n) => n.type === 'review' && n.clicked_at && n.sent_at
+  );
+  const avgHoursToClick = clickedNotifs.length === 0 ? null : Math.round(
+    clickedNotifs.reduce((sum, n) =>
+      sum + (new Date(n.clicked_at) - new Date(n.sent_at)) / (1000 * 60 * 60), 0
+    ) / clickedNotifs.length
+  );
 
   // ── Top referrers ──
   const refMap = {};
@@ -471,6 +495,13 @@ export default async function AnalyticsPage({ searchParams }) {
             color="#d97706"
             delay="0.16s"
           />
+          <StatCard
+            label="Review click rate"
+            value={`${reviewCTR}%`}
+            sub={`${reviewClicks} of ${notifCounts.review} tapped`}
+            color="#e11d48"
+            delay="0.2s"
+          />
         </div>
 
         {/* Enrollment trend + Points trend */}
@@ -512,34 +543,60 @@ export default async function AnalyticsPage({ searchParams }) {
           </Card>
         </div>
 
-        {/* Notifications + Referrers */}
+        {/* Google Review performance + Referrers */}
         <div className="an-two-col">
-          <Card title="Notifications" subtitle={`Automated messages sent · ${periodLabel}`}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Card title="Google Review performance" subtitle={`Tap-through from wallet notifications · ${periodLabel}`}>
+            {/* CTR meter */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>Click-through rate</span>
+                <span style={{ fontSize: 22, fontWeight: 800, color: '#e11d48', letterSpacing: '-0.03em' }}>
+                  {reviewCTR}%
+                </span>
+              </div>
+              <div style={{ height: 8, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 99,
+                  width: `${reviewCTR}%`,
+                  background: reviewCTR >= 30
+                    ? 'linear-gradient(90deg,#16a34a,#22c55e)'
+                    : reviewCTR >= 15
+                    ? 'linear-gradient(90deg,#d97706,#f59e0b)'
+                    : 'linear-gradient(90deg,#e11d48,#f43f5e)',
+                  minWidth: reviewCTR > 0 ? 6 : 0,
+                }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>0%</span>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                  {reviewCTR >= 30 ? '🟢 Strong' : reviewCTR >= 15 ? '🟡 Average' : reviewCTR > 0 ? '🔴 Low' : 'No data yet'}
+                </span>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>Industry avg ~20%</span>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
               {[
-                { label: 'Review requests', count: notifCounts.review, color: '#7c3aed', bg: '#faf5ff' },
-                { label: 'Recall reminders', count: notifCounts.recall, color: '#d97706',  bg: '#fffbeb' },
-              ].map((n) => (
-                <div key={n.label} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 10,
-                    background: n.bg, color: n.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 18, fontWeight: 800, flexShrink: 0,
-                  }}>
-                    {n.count}
+                { label: 'Sent',    value: notifCounts.review, color: '#7c3aed' },
+                { label: 'Clicked', value: reviewClicks,        color: '#e11d48' },
+                { label: 'Avg response', value: avgHoursToClick !== null ? `${avgHoursToClick}h` : '—', color: '#059669' },
+              ].map((item) => (
+                <div key={item.label} style={{
+                  background: '#f8fafc', borderRadius: 10, padding: '10px 12px', textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: item.color, letterSpacing: '-0.02em' }}>
+                    {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
                   </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{n.label}</div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
-                      {pct(n.count, totalNotifs)}% of total notifications
-                    </div>
-                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{item.label}</div>
                 </div>
               ))}
-              {totalNotifs === 0 && (
-                <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>No notifications sent yet.</p>
-              )}
+            </div>
+
+            {/* Click trend */}
+            <div>
+              <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>Clicks over time</div>
+              <AreaChart data={clickTrend} color="#e11d48" height={90} />
             </div>
           </Card>
 

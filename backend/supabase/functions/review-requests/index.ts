@@ -6,6 +6,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const PASSKIT_BASE = 'https://api.pub2.passkit.io';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://denta-pass.vercel.app';
 
 async function pkPush(serialNumber: string, message: string) {
   const res = await fetch(`${PASSKIT_BASE}/members/member`, {
@@ -30,7 +31,7 @@ Deno.serve(async () => {
 
   const now = new Date();
   // Window: visits between 1.5h and 2.5h ago (catches the 2-hour mark)
-  const windowEnd = new Date(now.getTime() - 90 * 60 * 1000);   // 1.5h ago
+  const windowEnd   = new Date(now.getTime() - 90  * 60 * 1000); // 1.5h ago
   const windowStart = new Date(now.getTime() - 150 * 60 * 1000); // 2.5h ago
 
   const cooldownCutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000); // 90 days ago
@@ -73,20 +74,29 @@ Deno.serve(async () => {
       continue;
     }
 
-    const message = `How was your visit with ${patient.clinic.name}? Tap to leave a review and earn 100 bonus points!`;
-
     try {
-      await pkPush(patient.passkit_serial_number, message);
+      // Insert notification first to get its ID for the tracking URL
+      const { data: notif, error: insertErr } = await supabase
+        .from('notifications')
+        .insert({
+          patient_id: patient.id,
+          clinic_id:  patient.clinic_id,
+          type:       'review',
+        })
+        .select('id')
+        .single();
 
-      await supabase.from('notifications').insert({
-        patient_id: patient.id,
-        clinic_id: patient.clinic_id,
-        type: 'review',
-      });
+      if (insertErr || !notif) throw insertErr ?? new Error('No notification returned');
+
+      // Tracking URL — logs the click then redirects to Google Reviews
+      const trackingUrl = `${APP_URL}/api/review/track/${notif.id}`;
+      const message = `How was your visit with ${patient.clinic.name}? Tap to leave a Google review & earn 100 pts: ${trackingUrl}`;
+
+      await pkPush(patient.passkit_serial_number, message);
 
       sent++;
     } catch (err) {
-      console.error(`Failed push to ${patient.passkit_serial_number}:`, err);
+      console.error(`Failed for patient ${patient.id}:`, err);
       failed++;
     }
   }
