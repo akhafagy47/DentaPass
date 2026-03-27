@@ -3,10 +3,54 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { getSupabaseBrowser } from '../../lib/supabase-browser';
 
+function IconGrid() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+    </svg>
+  );
+}
+function IconUsers() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  );
+}
+function IconSettings() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  );
+}
+function IconChart() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  );
+}
+function IconScan() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+      <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+      <line x1="7" y1="12" x2="17" y2="12"/>
+    </svg>
+  );
+}
+
 const NAV = [
-  { href: '/dashboard', label: 'Home', icon: '📊', exact: true },
-  { href: '/dashboard/patients', label: 'Patients', icon: '👥' },
-  { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/dashboard', label: 'Home', Icon: IconGrid, exact: true },
+  { href: '/dashboard/patients',  label: 'Patients',  Icon: IconUsers },
+  { href: '/dashboard/analytics', label: 'Analytics', Icon: IconChart },
+  { href: '/dashboard/settings',  label: 'Settings',  Icon: IconSettings },
 ];
 
 export default function DashboardShell({ children, clinic, userEmail }) {
@@ -14,144 +58,155 @@ export default function DashboardShell({ children, clinic, userEmail }) {
   const router = useRouter();
 
   async function handleLogout() {
-    const supabase = getSupabaseBrowser();
-    await supabase.auth.signOut();
+    await getSupabaseBrowser().auth.signOut();
     router.push('/login');
     router.refresh();
   }
 
   function isActive(href, exact) {
-    if (exact) return pathname === href;
-    return pathname.startsWith(href);
+    return exact ? pathname === href : pathname.startsWith(href);
   }
 
   return (
-    <div style={shell.root}>
-      {/* Sidebar */}
-      <aside style={shell.sidebar}>
-        <div style={shell.sidebarTop}>
-          <div style={shell.brand}>
-            <span style={shell.brandIcon}>🦷</span>
-            <div>
-              <div style={shell.brandName}>DentaPass</div>
-              {clinic && <div style={shell.clinicName}>{clinic.name}</div>}
+    <>
+      <style>{`
+        .dp-nav { transition: background 0.15s, color 0.15s; }
+        .dp-nav:hover { background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.9) !important; }
+        .dp-nav.active { background: rgba(0,111,238,0.18) !important; color: #fff !important; }
+        .dp-logout:hover { background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.7) !important; }
+        .dp-content { animation: dpSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes dpSlideIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+      <div style={s.root}>
+        <aside style={s.sidebar}>
+          <div style={s.sidebarTop}>
+            {/* Brand */}
+            <div style={s.brand}>
+              <div style={s.brandMark}>🦷</div>
+              <div>
+                <div style={s.brandName}>DentaPass</div>
+                {clinic && <div style={s.clinicName}>{clinic.name}</div>}
+              </div>
             </div>
+
+            {/* Nav */}
+            <nav style={s.nav}>
+              <div style={s.navLabel}>MENU</div>
+              {NAV.map(({ href, label, Icon, exact }) => {
+                const active = isActive(href, exact);
+                return (
+                  <a
+                    key={href}
+                    href={href}
+                    className={`dp-nav${active ? ' active' : ''}`}
+                    style={{ ...s.navItem, ...(active ? s.navActive : {}) }}
+                  >
+                    <span style={{ ...s.navIcon, ...(active ? { color: '#60a5fa' } : {}) }}>
+                      <Icon />
+                    </span>
+                    {label}
+                    {active && <span style={s.activePip} />}
+                  </a>
+                );
+              })}
+              {clinic && (
+                <a
+                  href={`/scan/${clinic.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dp-nav"
+                  style={s.navItem}
+                >
+                  <span style={s.navIcon}><IconScan /></span>
+                  QR Scanner
+                  <span style={s.externalBadge}>↗</span>
+                </a>
+              )}
+            </nav>
           </div>
 
-          <nav style={shell.nav}>
-            {NAV.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                style={{
-                  ...shell.navItem,
-                  ...(isActive(item.href, item.exact) ? shell.navActive : {}),
-                }}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </a>
-            ))}
-            {clinic && (
-              <a
-                href={`/scan/${clinic.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={shell.navItem}
-              >
-                <span>📷</span>
-                <span>QR Scanner</span>
-              </a>
-            )}
-          </nav>
-        </div>
-
-        <div style={shell.sidebarBottom}>
-          <div style={shell.userRow}>
-            <div style={shell.avatar}>{userEmail?.[0]?.toUpperCase()}</div>
-            <div style={shell.userEmail}>{userEmail}</div>
+          {/* Bottom */}
+          <div style={s.sidebarBottom}>
+            <div style={s.divider} />
+            <div style={s.userRow}>
+              <div style={s.avatar}>{userEmail?.[0]?.toUpperCase()}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={s.userEmail}>{userEmail}</div>
+                {clinic && (
+                  <div style={s.userPlan}>
+                    {clinic.plan.charAt(0).toUpperCase() + clinic.plan.slice(1)} plan
+                  </div>
+                )}
+              </div>
+            </div>
+            <button onClick={handleLogout} className="dp-logout" style={s.logoutBtn}>
+              Sign out
+            </button>
           </div>
-          <button onClick={handleLogout} style={shell.logoutBtn}>
-            Sign out
-          </button>
-        </div>
-      </aside>
+        </aside>
 
-      {/* Main */}
-      <main style={shell.main}>{children}</main>
-    </div>
+        <main style={s.main}>
+          <div className="dp-content">{children}</div>
+        </main>
+      </div>
+    </>
   );
 }
 
-const shell = {
+const s = {
   root: {
-    display: 'flex',
-    minHeight: '100vh',
+    display: 'flex', minHeight: '100vh',
     fontFamily: "'DM Sans', sans-serif",
-    background: '#f8fafc',
+    background: '#f4f6f9',
   },
   sidebar: {
-    width: 220,
-    minWidth: 220,
-    background: '#fff',
-    borderRight: '1px solid #e2e8f0',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    padding: '24px 0',
-    position: 'sticky',
-    top: 0,
-    height: '100vh',
-    overflowY: 'auto',
+    width: 240, minWidth: 240,
+    background: '#111318',
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+    padding: '24px 0 20px',
+    position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
+    borderRight: '1px solid rgba(255,255,255,0.04)',
   },
-  sidebarTop: { display: 'flex', flexDirection: 'column', gap: 24 },
+  sidebarTop: { display: 'flex', flexDirection: 'column', gap: 28 },
   brand: { display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px' },
-  brandIcon: { fontSize: 26 },
-  brandName: { fontWeight: 700, fontSize: 15, color: '#111', lineHeight: 1.2 },
-  clinicName: { fontSize: 12, color: '#64748b', lineHeight: 1.3 },
-  nav: { display: 'flex', flexDirection: 'column', gap: 2, padding: '0 12px' },
+  brandMark: {
+    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+    background: 'rgba(0,111,238,0.2)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+  },
+  brandName: { fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.2 },
+  clinicName: { fontSize: 11, color: 'rgba(255,255,255,0.35)', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 },
+  nav: { display: 'flex', flexDirection: 'column', gap: 1, padding: '0 10px' },
+  navLabel: { fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', padding: '0 10px', marginBottom: 6 },
   navItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: '10px 12px',
-    borderRadius: 10,
-    textDecoration: 'none',
-    color: '#374151',
-    fontSize: 14,
-    fontWeight: 500,
-    transition: 'background 0.15s',
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '9px 10px', borderRadius: 8,
+    textDecoration: 'none', color: 'rgba(255,255,255,0.5)',
+    fontSize: 14, fontWeight: 500, position: 'relative',
   },
-  navActive: {
-    background: '#eff6ff',
-    color: '#006FEE',
-    fontWeight: 600,
-  },
-  sidebarBottom: { padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10 },
-  userRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  navActive: { color: '#fff', fontWeight: 600 },
+  navIcon: { display: 'flex', alignItems: 'center', flexShrink: 0, color: 'rgba(255,255,255,0.35)' },
+  activePip: { marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#006FEE', flexShrink: 0 },
+  externalBadge: { marginLeft: 'auto', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
+  sidebarBottom: { padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 10 },
+  divider: { height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 2 },
+  userRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '2px 0' },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: '50%',
-    background: '#006FEE',
-    color: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 700,
-    fontSize: 14,
-    flexShrink: 0,
+    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+    background: 'linear-gradient(135deg, #006FEE 0%, #0ea5e9 100%)',
+    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontWeight: 700, fontSize: 13,
   },
-  userEmail: { fontSize: 12, color: '#64748b', wordBreak: 'break-all' },
+  userEmail: { fontSize: 12, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  userPlan: { fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 1 },
   logoutBtn: {
-    background: 'none',
-    border: '1px solid #e2e8f0',
-    borderRadius: 8,
-    padding: '8px',
-    fontSize: 13,
-    color: '#64748b',
-    cursor: 'pointer',
-    width: '100%',
+    background: 'none', border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 8, padding: '8px 12px', fontSize: 13,
+    color: 'rgba(255,255,255,0.35)', cursor: 'pointer', width: '100%',
+    textAlign: 'center', transition: 'background 0.15s, color 0.15s',
   },
-  main: { flex: 1, padding: '32px', overflowY: 'auto' },
+  main: { flex: 1, padding: '40px 44px', overflowY: 'auto', minWidth: 0 },
 };
