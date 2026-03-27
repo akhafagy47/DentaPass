@@ -184,11 +184,11 @@ const s = {
   navItem: {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '9px 10px', borderRadius: 8,
-    textDecoration: 'none', color: 'rgba(255,255,255,0.5)',
+    textDecoration: 'none', color: 'rgba(255,255,255,0.72)',
     fontSize: 14, fontWeight: 500, position: 'relative',
   },
   navActive: { color: '#fff', fontWeight: 600 },
-  navIcon: { display: 'flex', alignItems: 'center', flexShrink: 0, color: 'rgba(255,255,255,0.35)' },
+  navIcon: { display: 'flex', alignItems: 'center', flexShrink: 0, color: 'rgba(255,255,255,0.5)' },
   activePip: { marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#006FEE', flexShrink: 0 },
   externalBadge: { marginLeft: 'auto', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
   sidebarBottom: { padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 10 },
