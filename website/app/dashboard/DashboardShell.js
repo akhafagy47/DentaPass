@@ -93,7 +93,7 @@ export default function DashboardShell({ children, clinic, userEmail }) {
             </div>
 
             {/* Nav */}
-            <nav style={s.nav}>
+            <div style={s.nav}>
               <div style={s.navLabel}>MENU</div>
               {NAV.map(({ href, label, Icon, exact }) => {
                 const active = isActive(href, exact);
@@ -125,7 +125,7 @@ export default function DashboardShell({ children, clinic, userEmail }) {
                   <span style={s.externalBadge}>↗</span>
                 </a>
               )}
-            </nav>
+            </div>
           </div>
 
           {/* Bottom */}
