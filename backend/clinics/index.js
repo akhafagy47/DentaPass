@@ -176,7 +176,8 @@ router.patch('/:slug', requireAuth, async (req, res) => {
     return res.status(403).json({ error: 'Forbidden.' });
   }
 
-  const allowed = ['name', 'google_review_url', 'booking_url', 'brand_color', 'logo_url'];
+  const allowed = ['name', 'google_review_url', 'booking_url', 'brand_color', 'logo_url',
+                   'rewards_mode', 'points_per_dollar', 'points_label'];
   const updates = Object.fromEntries(
     Object.entries(req.body).filter(([k]) => allowed.includes(k))
   );
