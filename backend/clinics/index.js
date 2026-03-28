@@ -100,6 +100,56 @@ router.post('/onboard', async (req, res) => {
   }
 });
 
+/**
+ * POST /clinics/onboard/dev
+ * DEV ONLY — bypasses Stripe, creates auth user + clinic directly.
+ * Blocked in production.
+ */
+router.post('/onboard/dev', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Not found.' });
+  }
+
+  const { email, clinicName, password, plan = 'solo' } = req.body;
+  if (!email || !clinicName || !password) {
+    return res.status(400).json({ error: 'email, clinicName, and password are required.' });
+  }
+  if (!PLANS[plan]) return res.status(400).json({ error: 'Invalid plan.' });
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+
+  const supabase = getSupabase();
+
+  // Idempotency
+  const { data: existing } = await supabase
+    .from('clinics').select('id').eq('owner_email', email).maybeSingle();
+  if (existing) return res.json({ ok: true, alreadyExists: true });
+
+  const { error: authErr } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (authErr && !authErr.message.includes('already been registered')) {
+    return res.status(400).json({ error: authErr.message });
+  }
+
+  let slug = slugify(clinicName);
+  const { count } = await supabase
+    .from('clinics').select('id', { count: 'exact', head: true }).eq('slug', slug);
+  if (count > 0) slug = `${slug}-${Date.now().toString(36)}`;
+
+  const { error: clinicErr } = await supabase.from('clinics').insert({
+    name: clinicName,
+    slug,
+    owner_email: email,
+    plan,
+    patient_limit: PLANS[plan]?.patientLimit ?? null,
+  });
+
+  if (clinicErr) return res.status(500).json({ error: 'Failed to create clinic.' });
+  res.json({ ok: true, email, slug });
+});
+
 // ── Dynamic :slug routes must come after fixed paths ─────────────────────────
 
 /**
