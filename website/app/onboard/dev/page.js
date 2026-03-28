@@ -81,7 +81,7 @@ function DevForm({ router }) {
 
         <form onSubmit={handleSubmit} style={s.form}>
           <Field label="Email" value={email} onChange={setEmail} placeholder="owner@clinic.com" />
-          <Field label="Clinic name" value={clinicName} onChange={setClinicName} placeholder="Smart Dental Art" />
+          <Field label="Clinic name" value={clinicName} onChange={setClinicName} placeholder="Clinic Name" />
           <Field label="Password (min 8 chars)" value={password} onChange={setPassword} type="password" placeholder="••••••••" />
           <div style={s.field}>
             <label style={s.label}>Plan</label>
