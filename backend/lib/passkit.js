@@ -10,7 +10,7 @@
  *
  * Structure:
  *   Program  (one per DentaPass account)  →  PASSKIT_MEMBER_PROGRAM_ID
- *   Tier     (one per DentaPass account, shared across clinics for MVP)  →  "base"
+ *   Tier     (one per clinic)             →  clinics.passkit_template_id
  *   Member   (one per patient)
  */
 
@@ -88,15 +88,109 @@ async function pkFetch(path, options = {}, retry = true) {
   return res.json();
 }
 
+// ── Design helpers ─────────────────────────────────────────────────────────────
+
+function hexToRgb(hex) {
+  const n = parseInt((hex || '#006FEE').replace('#', ''), 16);
+  return { r: n >> 16, g: (n >> 8) & 0xff, b: n & 0xff };
+}
+
+/**
+ * Build the PassKit tier pass design from clinic settings.
+ * Uses Apple Wallet Generic pass conventions — backgroundColor drives the
+ * header and strip; foreground and label colors are derived for legibility.
+ *
+ * PassKit tier pass fields reference:
+ *   https://docs.passkit.io/protocols/member/#tag/Membership-Tiers
+ */
+function buildPassDesign(clinic) {
+  const color     = clinic.brand_color || '#006FEE';
+  const { r, g, b } = hexToRgb(color);
+  const isLight   = (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
+  const fg        = isLight ? '#1a1a1a' : '#ffffff';
+  const fgMuted   = isLight ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.60)';
+  const label     = clinic.points_label || 'Points';
+
+  return {
+    backgroundColor: color,
+    foregroundColor:  fg,
+    labelColor:       fgMuted,
+    logoText:         clinic.name,
+    // Logo image URL — PassKit renders this in the card header
+    ...(clinic.logo_url ? { logoImageUrl: clinic.logo_url } : {}),
+    // Strip image — the large colored banner area below the header
+    stripColor: color,
+    // Primary field: points balance (value populated per-member)
+    primaryFields: [
+      { key: 'points', label, value: '{{points}}' },
+    ],
+    // Secondary fields: member name, tier/redemption info, expiry
+    secondaryFields: [
+      { key: 'member',   label: 'Member',   value: '{{person.forename}} {{person.surname}}' },
+      { key: 'tier',     label: clinic.rewards_mode === 'discounts' ? 'Redemption' : 'Tier',
+        value: clinic.rewards_mode === 'discounts' && clinic.points_per_dollar
+          ? `${clinic.points_per_dollar} pts = $1`
+          : '{{metaData.tier}}' },
+      { key: 'expires',  label: 'Expires',  value: '03/2028' },
+    ],
+    // Auxiliary fields: next checkup, member since, referral code
+    auxiliaryFields: [
+      { key: 'checkup',  label: 'Next checkup',  value: '{{metaData.nextCheckupDate}}' },
+      { key: 'since',    label: 'Member since',   value: '{{joinDate}}' },
+      { key: 'referral', label: 'Referral code',  value: '{{id}}' },
+    ],
+    // Back fields shown when card is flipped
+    backFields: [
+      { key: 'program',  label: 'Program',         value: `${clinic.name} Loyalty` },
+      { key: 'earn',     label: 'How to earn',      value: `Visit (+100 ${label})  •  Google review (+100 ${label})  •  Refer a friend (+250 ${label})` },
+      ...(clinic.rewards_mode === 'discounts' && clinic.points_per_dollar
+        ? [{ key: 'redeem', label: 'Redeeming', value: `${clinic.points_per_dollar} ${label} = $1 discount. Ask at the front desk.` }]
+        : [{ key: 'tiers',  label: 'Tiers',     value: 'Bronze → Silver → Gold. Ask staff for tier thresholds.' }]
+      ),
+      ...(clinic.booking_url ? [{ key: 'booking', label: 'Book online', value: clinic.booking_url }] : []),
+      { key: 'terms', label: 'Terms', value: `${label} have no cash value. ${clinic.name} reserves the right to modify the programme at any time.` },
+    ],
+  };
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
- * For MVP all clinics share the single "base" tier in the DentaPass program.
- * Call this during clinic onboarding and store the returned value in
- * clinics.passkit_template_id.
+ * Create a PassKit tier (card template) for a clinic.
+ * Called during onboarding. Returns the tier ID to store in clinics.passkit_template_id.
  */
-export async function createClinicTemplate(/* { clinic } */) {
-  return 'base';
+export async function createClinicTemplate({ clinic }) {
+  const tierId = `clinic-${clinic.slug}`;
+
+  await pkFetch('/membership/tier', {
+    method: 'POST',
+    body: JSON.stringify({
+      id:        tierId,
+      programId: process.env.PASSKIT_MEMBER_PROGRAM_ID,
+      name:      `${clinic.name} Loyalty Card`,
+      pass:      buildPassDesign(clinic),
+    }),
+  });
+
+  return tierId;
+}
+
+/**
+ * Update a clinic's PassKit tier template after settings change.
+ * PassKit automatically pushes the updated design to all installed passes on this tier.
+ */
+export async function updateClinicTemplate({ clinic }) {
+  if (!clinic.passkit_template_id) return;
+
+  await pkFetch('/membership/tier', {
+    method: 'PUT',
+    body: JSON.stringify({
+      id:        clinic.passkit_template_id,
+      programId: process.env.PASSKIT_MEMBER_PROGRAM_ID,
+      name:      `${clinic.name} Loyalty Card`,
+      pass:      buildPassDesign(clinic),
+    }),
+  });
 }
 
 /**

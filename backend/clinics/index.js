@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getSupabase } from '../lib/supabase.js';
 import { getStripe, PLANS } from '../lib/stripe.js';
 import { requireAuth } from '../lib/authMiddleware.js';
+import { createClinicTemplate, updateClinicTemplate } from '../lib/passkit.js';
 
 const router = Router();
 
@@ -93,6 +94,15 @@ router.post('/onboard', async (req, res) => {
     });
 
     if (clinicErr) return res.status(500).json({ error: 'Failed to create clinic.' });
+
+    // Create PassKit tier for this clinic and store the tier ID
+    try {
+      const tierId = await createClinicTemplate({ clinic: { name: clinicName, slug } });
+      await supabase.from('clinics').update({ passkit_template_id: tierId }).eq('slug', slug);
+    } catch (pkErr) {
+      console.error('PassKit tier creation failed (non-fatal):', pkErr.message);
+    }
+
     res.json({ ok: true });
   } catch (err) {
     console.error('Onboard error:', err);
@@ -147,6 +157,15 @@ router.post('/onboard/dev', async (req, res) => {
   });
 
   if (clinicErr) return res.status(500).json({ error: 'Failed to create clinic.' });
+
+  // Create PassKit tier for this clinic and store the tier ID
+  try {
+    const tierId = await createClinicTemplate({ clinic: { name: clinicName, slug } });
+    await supabase.from('clinics').update({ passkit_template_id: tierId }).eq('slug', slug);
+  } catch (pkErr) {
+    console.error('PassKit tier creation failed (non-fatal):', pkErr.message);
+  }
+
   res.json({ ok: true, email, slug });
 });
 
@@ -186,8 +205,33 @@ router.patch('/:slug', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'No valid fields.' });
   }
 
-  const { error } = await getSupabase().from('clinics').update(updates).eq('slug', req.params.slug);
+  const supabase = getSupabase();
+  const { error } = await supabase.from('clinics').update(updates).eq('slug', req.params.slug);
   if (error) return res.status(500).json({ error: error.message });
+
+  // Push updated card design to all patients' wallet passes if any design field changed
+  const DESIGN_FIELDS = ['name', 'brand_color', 'logo_url', 'points_label', 'rewards_mode',
+                         'points_per_dollar', 'booking_url'];
+  const designChanged = Object.keys(updates).some((k) => DESIGN_FIELDS.includes(k));
+
+  if (designChanged) {
+    // Fire-and-forget — don't block the response
+    (async () => {
+      try {
+        const { data: clinic } = await supabase
+          .from('clinics')
+          .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, passkit_template_id')
+          .eq('slug', req.params.slug)
+          .single();
+        if (clinic?.passkit_template_id) {
+          await updateClinicTemplate({ clinic });
+        }
+      } catch (pkErr) {
+        console.error('PassKit tier update failed:', pkErr.message);
+      }
+    })();
+  }
+
   res.json({ ok: true });
 });
 
