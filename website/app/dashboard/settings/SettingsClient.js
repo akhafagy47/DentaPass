@@ -6,108 +6,225 @@ import { updateClinic, getBillingPortalUrl } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
 
 // ─── Wallet Card Preview ─────────────────────────────────────────────────────
+// Accurate replica of a PassKit Apple Wallet Generic pass.
+// Dimensions scaled from Apple's 375pt card width → 320px display width.
+// Scale factor: 0.853
 
-function darken(hex, amt = 30) {
+function hexToRgb(hex) {
   const n = parseInt(hex.replace('#', ''), 16);
-  const r = Math.max(0, (n >> 16) - amt);
-  const g = Math.max(0, ((n >> 8) & 0xff) - amt);
-  const b = Math.max(0, (n & 0xff) - amt);
-  return `#${[r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
+  return { r: n >> 16, g: (n >> 8) & 0xff, b: n & 0xff };
+}
+function luminance(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+function onColor(hex) {
+  return luminance(hex) > 0.55 ? '#1a1a1a' : '#ffffff';
+}
+function onColorMuted(hex) {
+  return luminance(hex) > 0.55 ? 'rgba(0,0,0,0.42)' : 'rgba(255,255,255,0.55)';
+}
+function mix(hex, ratio = 0.72) {
+  // Darken by blending with black
+  const { r, g, b } = hexToRgb(hex);
+  return `rgb(${Math.round(r * ratio)},${Math.round(g * ratio)},${Math.round(b * ratio)})`;
 }
 
-function textColor(hex) {
-  const n = parseInt(hex.replace('#', ''), 16);
-  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 0xff) + 0.114 * (n & 0xff)) / 255;
-  return lum > 0.55 ? '#111' : '#fff';
+// Deterministic barcode — same every render
+const BARCODE_WIDTHS = [2,1,3,1,2,1,1,2,1,3,2,1,1,2,3,1,2,1,1,2,1,1,3,1,2,2,1,1,2,1,3,1,2,1,1,2,1,2,1,1,3,2,1,2,1,1];
+
+function Barcode() {
+  let x = 0;
+  return (
+    <svg width="196" height="52" viewBox="0 0 196 52" style={{ display: 'block' }}>
+      {BARCODE_WIDTHS.map((w, i) => {
+        const bar = (
+          <rect key={i} x={x} y={0} width={w * 2.2} height={52}
+            fill={i % 2 === 0 ? '#1a1a1a' : 'transparent'} />
+        );
+        x += w * 2.2 + (i % 2 === 0 ? 1.1 : 0);
+        return bar;
+      })}
+    </svg>
+  );
+}
+
+function PassField({ label, value, align = 'left', color }) {
+  return (
+    <div style={{ textAlign: align }}>
+      <div style={{
+        fontSize: 8.5, fontWeight: 500, letterSpacing: '0.07em',
+        color: '#8e8e93', textTransform: 'uppercase', marginBottom: 2,
+        fontFamily: '-apple-system, "SF Pro Text", "Helvetica Neue", sans-serif',
+      }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: 13.5, fontWeight: 600, color: color || '#1c1c1e', lineHeight: 1.2,
+        fontFamily: '-apple-system, "SF Pro Text", "Helvetica Neue", sans-serif',
+      }}>
+        {value}
+      </div>
+    </div>
+  );
 }
 
 function WalletCardPreview({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPerDollar, logoUrl }) {
-  const color  = brandColor || '#006FEE';
-  const fg     = textColor(color);
-  const dark   = darken(color, 25);
-  const fgMute = fg === '#fff' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)';
-  const label  = pointsLabel || 'Points';
+  const color     = brandColor || '#006FEE';
+  const fg        = onColor(color);
+  const fgMuted   = onColorMuted(color);
+  const stripDark = mix(color, 0.78);
+  const label     = pointsLabel || 'Points';
+  const name      = clinicName || 'Your Clinic';
+
+  const tierValue = rewardsMode === 'discounts'
+    ? (pointsPerDollar ? `${pointsPerDollar} pts = $1` : '5 pts = $1')
+    : 'Gold Member';
 
   return (
-    <div style={{
-      width: 320, borderRadius: 20, overflow: 'hidden',
-      boxShadow: '0 16px 48px rgba(0,0,0,0.18)',
-      fontFamily: "'DM Sans', -apple-system, sans-serif",
-      userSelect: 'none',
-    }}>
-      {/* Card header strip */}
+    // Outer wrapper — simulates the wallet card stack + background
+    <div style={{ position: 'relative', width: 320 }}>
+
+      {/* Stacked cards behind (depth effect) */}
       <div style={{
-        background: `linear-gradient(135deg, ${color} 0%, ${dark} 100%)`,
-        padding: '20px 22px 18px',
+        position: 'absolute', bottom: -8, left: 10, right: 10,
+        height: 20, background: 'rgba(0,0,0,0.08)', borderRadius: '0 0 18px 18px',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: -4, left: 5, right: 5,
+        height: 14, background: 'rgba(0,0,0,0.05)', borderRadius: '0 0 16px 16px',
+      }} />
+
+      {/* The actual pass */}
+      <div style={{
+        width: 320,
+        borderRadius: 16,
+        overflow: 'hidden',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.1)',
+        background: '#ffffff',
+        fontFamily: '-apple-system, "SF Pro Text", "Helvetica Neue", sans-serif',
+        userSelect: 'none',
+        position: 'relative',
+        zIndex: 1,
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
-          <div>
-            {logoUrl
-              ? <img src={logoUrl} alt="logo" style={{ height: 32, objectFit: 'contain' }} />
-              : <div style={{ fontSize: 13, fontWeight: 700, color: fg, opacity: 0.9, letterSpacing: '0.04em' }}>
-                  {clinicName || 'Your Clinic'}
-                </div>
-            }
+
+        {/* ── HEADER BAR (44pt → 38px) ── */}
+        <div style={{
+          background: color,
+          padding: '0 14px',
+          height: 38,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          {/* Logo / clinic name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, maxWidth: 180, overflow: 'hidden' }}>
+            {logoUrl ? (
+              <img src={logoUrl} alt="logo"
+                style={{ height: 22, maxWidth: 120, objectFit: 'contain', display: 'block' }} />
+            ) : (
+              <span style={{
+                fontSize: 13, fontWeight: 700, color: fg,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                letterSpacing: '-0.01em',
+              }}>
+                {name}
+              </span>
+            )}
           </div>
-          <div style={{ fontSize: 10, fontWeight: 600, color: fgMute, letterSpacing: '0.08em' }}>
-            DENTAPASS
+
+          {/* Header field — points balance (top-right) */}
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 7.5, fontWeight: 500, color: fgMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {label}
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: fg, lineHeight: 1, letterSpacing: '-0.02em' }}>
+              500
+            </div>
           </div>
         </div>
 
-        {/* Points / value display */}
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: fgMute, letterSpacing: '0.06em', marginBottom: 2 }}>
-            {label.toUpperCase()}
-          </div>
-          <div style={{ fontSize: 42, fontWeight: 800, color: fg, lineHeight: 1, letterSpacing: '-0.03em' }}>
-            500
-          </div>
-          {rewardsMode === 'discounts' && pointsPerDollar && (
-            <div style={{ fontSize: 12, color: fgMute, marginTop: 4 }}>
-              ≈ ${(500 / pointsPerDollar).toFixed(2)} discount value
+        {/* ── STRIP IMAGE AREA (123pt → 105px) ── */}
+        {/* This is where PassKit renders the strip image. We simulate it with a gradient. */}
+        <div style={{
+          height: 105,
+          background: `linear-gradient(160deg, ${color} 0%, ${stripDark} 100%)`,
+          position: 'relative',
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+        }}>
+          {/* Subtle texture overlay */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.015) 2px, rgba(255,255,255,0.015) 4px)',
+          }} />
+
+          {/* Primary field — overlaid on strip */}
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 8.5, fontWeight: 500, color: fgMuted, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>
+              {label}
             </div>
-          )}
+            <div style={{ fontSize: 40, fontWeight: 800, color: fg, lineHeight: 1, letterSpacing: '-0.04em' }}>
+              500
+            </div>
+            {rewardsMode === 'discounts' && pointsPerDollar && (
+              <div style={{ fontSize: 11, color: fgMuted, marginTop: 3, fontWeight: 500 }}>
+                ≈ ${(500 / parseFloat(pointsPerDollar)).toFixed(2)} discount value
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── SECONDARY FIELDS ── */}
+        <div style={{
+          padding: '11px 16px 8px',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          borderBottom: '0.5px solid rgba(0,0,0,0.08)',
+        }}>
+          <PassField label="Member" value="Jane Smith" />
+          <PassField label={rewardsMode === 'discounts' ? 'Redemption' : 'Tier'} value={tierValue} align="center" color={color} />
+          <PassField label="Expires" value="03/2028" align="right" />
+        </div>
+
+        {/* ── AUXILIARY FIELDS ── */}
+        <div style={{
+          padding: '8px 16px 11px',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          borderBottom: '0.5px solid rgba(0,0,0,0.08)',
+        }}>
+          <PassField label="Next checkup" value="Jun 2026" />
+          <PassField label="Member since" value="Mar 2026" align="center" />
+          <PassField label="Referral code" value="AB3XK9" align="right" color={color} />
+        </div>
+
+        {/* ── BARCODE AREA ── */}
+        <div style={{
+          padding: '14px 16px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          background: '#fafafa',
+        }}>
+          <Barcode />
+          <div style={{
+            fontSize: 9, color: '#8e8e93', letterSpacing: '0.12em', fontWeight: 500,
+          }}>
+            DP-2026-AB3XK9
+          </div>
         </div>
       </div>
 
-      {/* Card body */}
-      <div style={{ background: '#fff', padding: '14px 22px 18px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 0', marginBottom: 14 }}>
-          <div>
-            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em' }}>MEMBER</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#111', marginTop: 2 }}>Jane Smith</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em' }}>
-              {rewardsMode === 'discounts' ? 'REDEMPTION' : 'TIER'}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: color, marginTop: 2 }}>
-              {rewardsMode === 'discounts'
-                ? `${pointsPerDollar || 5} pts = $1`
-                : '🥇 Gold'}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em' }}>NEXT CHECKUP</div>
-            <div style={{ fontSize: 13, color: '#374151', marginTop: 2 }}>Jun 2026</div>
-          </div>
-          <div>
-            <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em' }}>MEMBER SINCE</div>
-            <div style={{ fontSize: 13, color: '#374151', marginTop: 2 }}>Mar 2026</div>
-          </div>
-        </div>
-
-        {/* Barcode placeholder */}
-        <div style={{
-          height: 52, background: '#f8fafc', borderRadius: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <svg width="200" height="28" viewBox="0 0 200 28">
-            {Array.from({ length: 40 }, (_, i) => (
-              <rect key={i} x={i * 5} y={0} width={Math.random() > 0.4 ? 2 : 1} height={28} fill="#374151" opacity={0.7} />
-            ))}
-          </svg>
-        </div>
+      {/* "View" label beneath — mimics Wallet UI */}
+      <div style={{
+        textAlign: 'center', marginTop: 10,
+        fontSize: 11, color: 'rgba(0,0,0,0.3)', fontWeight: 500, letterSpacing: '0.02em',
+      }}>
+        Apple Wallet · PassKit
       </div>
     </div>
   );
