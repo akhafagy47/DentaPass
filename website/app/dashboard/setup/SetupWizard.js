@@ -141,7 +141,9 @@ function CardPreview({ form }) {
               isDiscount && form.points_per_dollar
                 ? ['Redeeming', `${form.points_per_dollar} ${label} = $1 discount at checkout`]
                 : ['Tiers', 'Bronze → Silver → Gold as you accumulate points'],
-              form.booking_url ? ['Book online', form.booking_url] : null,
+              form.address   ? ['Address',     form.address]      : null,
+            form.phone     ? ['Phone',       form.phone]        : null,
+            form.booking_url ? ['Book online', form.booking_url] : null,
               ['Terms', `${label} have no cash value. ${form.name || 'The clinic'} may modify the programme at any time.`],
             ].filter(Boolean).map(([lbl, val]) => (
               <div key={lbl} style={{ background: '#fff', borderRadius: 10, padding: '10px 12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
@@ -282,8 +284,21 @@ function StepLinks({ form, set }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <p style={{ margin: 0, fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
-        These links appear on the back of your patient's wallet card and in the Google Wallet detail view. Both are optional but highly recommended.
+        These appear on the back of your patients' wallet card as tappable buttons.
       </p>
+
+      <div>
+        <label style={s.label}>Clinic address <span style={s.hint}>optional — powers "Get Directions" on the card</span></label>
+        <input style={s.input} value={form.address} onChange={e => set('address', e.target.value)} placeholder="123 Main St, Edmonton, AB T6W 0L7" />
+        <p style={{ margin: '6px 0 0', fontSize: 12, color: '#94a3b8' }}>
+          Opens Google Maps on Android and Apple Maps on iOS.
+        </p>
+      </div>
+
+      <div>
+        <label style={s.label}>Phone number <span style={s.hint}>optional — powers "Call Us" on the card</span></label>
+        <input style={s.input} type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+1 (780) 555-0100" />
+      </div>
 
       <div>
         <label style={s.label}>Online booking URL <span style={s.hint}>optional</span></label>
@@ -361,7 +376,9 @@ export default function SetupWizard({ clinic }) {
     points_label:     clinic.points_label || 'Points',
     rewards_mode:     clinic.rewards_mode || 'tiers',
     points_per_dollar: clinic.points_per_dollar ? String(clinic.points_per_dollar) : '5',
-    booking_url:      clinic.booking_url      || '',
+    address:           clinic.address           || '',
+    phone:             clinic.phone             || '',
+    booking_url:       clinic.booking_url       || '',
     google_review_url: clinic.google_review_url || '',
   });
 

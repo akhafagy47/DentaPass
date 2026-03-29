@@ -247,19 +247,35 @@ function buildDataFields(clinic) {
  */
 function buildLinks(clinic) {
   const links = [];
-  if (clinic.google_review_url) {
+  if (clinic.address) {
     links.push({
-      title: 'Leave a Review',
-      url: clinic.google_review_url,
-      type: 'URI_WEB',
-      usage: ['USAGE_GOOGLE_PAY'],
+      title: 'Get Directions',
+      url:   `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
+      type:  'URI_LOCATION',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+    });
+  }
+  if (clinic.phone) {
+    links.push({
+      title: 'Call Us',
+      url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
+      type:  'URI_PHONE',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   if (clinic.booking_url) {
     links.push({
       title: 'Book an Appointment',
-      url: clinic.booking_url,
-      type: 'URI_WEB',
+      url:   clinic.booking_url,
+      type:  'URI_WEB',
+      usage: ['USAGE_GOOGLE_PAY'],
+    });
+  }
+  if (clinic.google_review_url) {
+    links.push({
+      title: 'Leave a Review',
+      url:   clinic.google_review_url,
+      type:  'URI_WEB',
       usage: ['USAGE_GOOGLE_PAY'],
     });
   }

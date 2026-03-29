@@ -202,7 +202,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
   }
 
   const allowed = ['name', 'google_review_url', 'booking_url', 'brand_color', 'logo_url',
-                   'rewards_mode', 'points_per_dollar', 'points_label', 'setup_completed'];
+                   'rewards_mode', 'points_per_dollar', 'points_label', 'setup_completed',
+                   'address', 'phone'];
   const updates = Object.fromEntries(
     Object.entries(req.body).filter(([k]) => allowed.includes(k))
   );

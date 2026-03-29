@@ -132,7 +132,7 @@ function CardFront({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPer
 
 // ─── Card back ────────────────────────────────────────────────────────────────
 
-function CardBack({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPerDollar, bookingUrl }) {
+function CardBack({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPerDollar, bookingUrl, address, phone }) {
   const color   = brandColor || '#006FEE';
   const label   = pointsLabel || 'Points';
   const FONT    = '-apple-system,"SF Pro Text","Helvetica Neue",sans-serif';
@@ -182,6 +182,14 @@ function CardBack({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPerD
           {
             label: rewardsMode === 'discounts' ? 'Redeem discount' : 'Tier rewards',
             value: redeemText,
+          },
+          address && {
+            label: 'Get directions',
+            value: address,
+          },
+          phone && {
+            label: 'Call us',
+            value: phone,
           },
           bookingUrl && {
             label: 'Book an appointment',
@@ -294,6 +302,8 @@ export default function SettingsClient({ clinic }) {
     points_label:      clinic.points_label      || 'Points',
     rewards_mode:      clinic.rewards_mode      || 'tiers',
     points_per_dollar: clinic.points_per_dollar || '',
+    address:           clinic.address           || '',
+    phone:             clinic.phone             || '',
   });
   const [saving, setSaving]         = useState(false);
   const [uploading, setUploading]   = useState(false);
@@ -380,6 +390,12 @@ export default function SettingsClient({ clinic }) {
             <Field label="Booking URL">
               <input className="st-input" type="url" value={form.booking_url} onChange={(e) => set('booking_url', e.target.value)} style={s.input} placeholder="https://yourclinic.com/book" />
             </Field>
+            <Field label="Address" hint="Shown as a 'Get Directions' button on the wallet pass">
+              <input className="st-input" value={form.address} onChange={(e) => set('address', e.target.value)} style={s.input} placeholder="123 Main St, Edmonton, AB T5J 2Z2" />
+            </Field>
+            <Field label="Phone" hint="Shown as a 'Call Us' button on the wallet pass">
+              <input className="st-input" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} style={s.input} placeholder="+1 (780) 555-0100" />
+            </Field>
           </Section>
 
           {/* ── Wallet card ── */}
@@ -453,6 +469,8 @@ export default function SettingsClient({ clinic }) {
                   pointsPerDollar={parseFloat(form.points_per_dollar) || null}
                   logoUrl={form.logo_url}
                   bookingUrl={form.booking_url}
+                  address={form.address}
+                  phone={form.phone}
                 />
               </div>
             </div>
