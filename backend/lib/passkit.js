@@ -346,7 +346,7 @@ export async function uploadClinicLogo({ imageUrl }) {
  * to store in clinics.passkit_template_id.
  */
 export async function createClinicTemplate({ clinic }) {
-  const data = await pkFetch('/membership/tier', {
+  const data = await pkFetch('/members/tier', {
     method: 'POST',
     body: JSON.stringify(buildTierBody(clinic)),
   });
@@ -361,7 +361,7 @@ export async function createClinicTemplate({ clinic }) {
 export async function updateClinicTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
 
-  await pkFetch(`/membership/tier/${clinic.passkit_template_id}`, {
+  await pkFetch(`/members/tier/${clinic.passkit_template_id}`, {
     method: 'PUT',
     body: JSON.stringify(buildTierBody(clinic)),
   });
