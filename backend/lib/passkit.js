@@ -91,88 +91,267 @@ async function pkFetch(path, options = {}, retry = true) {
 // ── Design helpers ─────────────────────────────────────────────────────────────
 
 function hexToRgb(hex) {
-  const n = parseInt((hex || '#006FEE').replace('#', ''), 16);
+  const n = parseInt((hex || '#0ea5a0').replace('#', ''), 16);
   return { r: n >> 16, g: (n >> 8) & 0xff, b: n & 0xff };
 }
 
-/**
- * Build the PassKit tier pass design from clinic settings.
- * Uses Apple Wallet Generic pass conventions — backgroundColor drives the
- * header and strip; foreground and label colors are derived for legibility.
- *
- * PassKit tier pass fields reference:
- *   https://docs.passkit.io/protocols/member/#tag/Membership-Tiers
- */
-function buildPassDesign(clinic) {
-  const color     = clinic.brand_color || '#006FEE';
-  const { r, g, b } = hexToRgb(color);
-  const isLight   = (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
-  const fg        = isLight ? '#1a1a1a' : '#ffffff';
-  const fgMuted   = isLight ? 'rgba(0,0,0,0.50)' : 'rgba(255,255,255,0.60)';
-  const label     = clinic.points_label || 'Points';
+function deriveTextColor(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? '#1a1a1a' : '#FFFFFF';
+}
 
+/**
+ * Colors object — matches the PassKit template `colors` schema exactly.
+ * Apple Wallet uses backgroundColor for the card strip/header;
+ * Google Wallet uses it for the card background.
+ */
+function buildColors(clinic) {
+  const bg   = clinic.brand_color || '#0ea5a0';
+  const text = deriveTextColor(bg);
+  return { backgroundColor: bg, labelColor: text, textColor: text };
+}
+
+/**
+ * Data fields — matches the `data.dataFields` array in the PassKit template.
+ *
+ * fieldType values:  1 = custom metadata, 2 = person field, 3 = back/info field, 4 = system field
+ * dataType values:   1 = string, 2 = multiline string, 3 = date, 8 = number
+ * section values (Apple Wallet positionSettings):
+ *   0 = header, 1 = back, 3 = secondary, 4 = auxiliary, 5 = primary/strip
+ */
+function buildDataFields(clinic) {
+  const label    = clinic.points_label || 'Points';
+  const isDiscount = clinic.rewards_mode === 'discounts' && clinic.points_per_dollar;
+  const infoText = isDiscount
+    ? `Earn ${label} at every visit. Redeem: ${clinic.points_per_dollar} ${label} = $1 discount.`
+    : `Earn ${label} at every visit. Bronze → Silver → Gold.`;
+
+  return [
+    // Program name — header area on Google Wallet, hidden on Apple Wallet
+    {
+      uniqueName: 'members.program.name',
+      fieldType: 4,
+      label: '',
+      dataType: 1,
+      defaultValue: 'DentaPass',
+      usage: ['USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 0,
+        positionSettings: { section: 0, priority: 0 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 300, textModulePriority: 0 },
+    },
+    // Points balance — primary strip field on Apple Wallet
+    {
+      uniqueName: 'members.member.points',
+      fieldType: 4,
+      label,
+      dataType: 8,
+      defaultValue: '0',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 3,
+        positionSettings: { section: 5, priority: 0 },
+        changeMessage: `You now have %@ ${label}!`,
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 301, textModulePriority: 0 },
+    },
+    // Patient display name — secondary field, also shown on data collection page
+    {
+      uniqueName: 'person.displayName',
+      fieldType: 2,
+      isRequired: true,
+      label: 'Name',
+      dataType: 1,
+      defaultValue: 'N/A',
+      userCanSetValue: true,
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY', 'USAGE_DATA_COLLECTION_PAGE'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 1,
+        positionSettings: { section: 3, priority: 0 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 303, textModulePriority: 0 },
+    },
+    // Tier name — secondary field alongside patient name
+    {
+      uniqueName: 'members.tier.name',
+      fieldType: 4,
+      label: isDiscount ? 'Redemption' : 'Tier',
+      dataType: 1,
+      defaultValue: isDiscount ? `${clinic.points_per_dollar} ${label} = $1` : 'Base',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 3,
+        positionSettings: { section: 3, priority: 1 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 305, textModulePriority: 0 },
+    },
+    // Info / back field — shown on card back (Apple) and detail view (Google)
+    {
+      uniqueName: 'universal.info',
+      fieldType: 3,
+      label: 'Information',
+      dataType: 2,
+      defaultValue: infoText,
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 0,
+        positionSettings: { section: 1, priority: 1 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 1000, textModulePriority: 1 },
+    },
+    // Next checkup date — Google Wallet detail view only
+    {
+      uniqueName: 'meta.nextCheckupDate',
+      fieldType: 1,
+      label: 'Next checkup date',
+      dataType: 3,
+      defaultValue: 'N/A',
+      userCanSetValue: true,
+      usage: ['USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 0,
+        positionSettings: { section: 0, priority: 0 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 1000, textModulePriority: 0 },
+    },
+  ];
+}
+
+/**
+ * Links shown in Google Wallet's detail view (Leave Review, Book Appointment).
+ * Apple Wallet uses back fields for the same info.
+ */
+function buildLinks(clinic) {
+  const links = [];
+  if (clinic.google_review_url) {
+    links.push({
+      title: 'Leave a Review',
+      url: clinic.google_review_url,
+      type: 'URI_WEB',
+      usage: ['USAGE_GOOGLE_PAY'],
+    });
+  }
+  if (clinic.booking_url) {
+    links.push({
+      title: 'Book an Appointment',
+      url: clinic.booking_url,
+      type: 'URI_WEB',
+      usage: ['USAGE_GOOGLE_PAY'],
+    });
+  }
+  return links;
+}
+
+/**
+ * Full tier body sent to PassKit on create and update.
+ * Matches the schema of the actual PassKit template object.
+ *
+ * Note on logos: PassKit requires images to be uploaded separately via
+ * POST /membership/image (returns an imageId). The imageId is stored in
+ * clinics.passkit_logo_image_id and injected here when present.
+ * Until the image is uploaded, the card uses no logo.
+ */
+function buildTierBody(clinic) {
   return {
-    backgroundColor: color,
-    foregroundColor:  fg,
-    labelColor:       fgMuted,
-    logoText:         clinic.name,
-    // Logo image URL — PassKit renders this in the card header
-    ...(clinic.logo_url ? { logoImageUrl: clinic.logo_url } : {}),
-    // Strip image — the large colored banner area below the header
-    stripColor: color,
-    // Primary field: points balance (value populated per-member)
-    primaryFields: [
-      { key: 'points', label, value: '{{points}}' },
-    ],
-    // Secondary fields: member name, tier/redemption info, expiry
-    secondaryFields: [
-      { key: 'member',   label: 'Member',   value: '{{person.forename}} {{person.surname}}' },
-      { key: 'tier',     label: clinic.rewards_mode === 'discounts' ? 'Redemption' : 'Tier',
-        value: clinic.rewards_mode === 'discounts' && clinic.points_per_dollar
-          ? `${clinic.points_per_dollar} pts = $1`
-          : '{{metaData.tier}}' },
-      { key: 'expires',  label: 'Expires',  value: '03/2028' },
-    ],
-    // Auxiliary fields: next checkup, member since, referral code
-    auxiliaryFields: [
-      { key: 'checkup',  label: 'Next checkup',  value: '{{metaData.nextCheckupDate}}' },
-      { key: 'since',    label: 'Member since',   value: '{{joinDate}}' },
-      { key: 'referral', label: 'Referral code',  value: '{{id}}' },
-    ],
-    // Back fields shown when card is flipped
-    backFields: [
-      { key: 'program',  label: 'Program',         value: `${clinic.name} Loyalty` },
-      { key: 'earn',     label: 'How to earn',      value: `Visit (+100 ${label})  •  Google review (+100 ${label})  •  Refer a friend (+250 ${label})` },
-      ...(clinic.rewards_mode === 'discounts' && clinic.points_per_dollar
-        ? [{ key: 'redeem', label: 'Redeeming', value: `${clinic.points_per_dollar} ${label} = $1 discount. Ask at the front desk.` }]
-        : [{ key: 'tiers',  label: 'Tiers',     value: 'Bronze → Silver → Gold. Ask staff for tier thresholds.' }]
-      ),
-      ...(clinic.booking_url ? [{ key: 'booking', label: 'Book online', value: clinic.booking_url }] : []),
-      { key: 'terms', label: 'Terms', value: `${label} have no cash value. ${clinic.name} reserves the right to modify the programme at any time.` },
-    ],
+    name: clinic.name,
+    organizationName: clinic.name,
+    protocol: 'MEMBERSHIP',
+    description: `${clinic.name} Loyalty Card`,
+    colors: buildColors(clinic),
+    ...(clinic.passkit_logo_image_id ? {
+      imageIds: { logo: clinic.passkit_logo_image_id },
+    } : {}),
+    data: {
+      dataFields: buildDataFields(clinic),
+      dataCollectionPageSettings: {
+        title: 'Register Below',
+        submitButtonText: 'Register',
+        loadingText: 'Hang on',
+        thankYouText: 'Thank you for registering, we will redirect you to your pass.',
+      },
+    },
+    barcode: {
+      format: 'QR',
+      payload: '${pid}',
+      altText: '${pid}',
+      messageEncoding: 'utf8',
+    },
+    links: buildLinks(clinic),
+    appleWalletSettings: { passType: 5 },  // 5 = GENERIC
+    googlePaySettings:   { passType: 4 },  // 4 = LOYALTY
+    expirySettings:      { expiryType: 'EXPIRE_NONE' },
+    defaultLanguage: 'EN',
   };
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
+ * Upload a clinic logo image to PassKit and return the PassKit image ID.
+ * Call this after the logo is uploaded to Supabase Storage.
+ * Store the returned ID in clinics.passkit_logo_image_id.
+ */
+export async function uploadClinicLogo({ imageUrl }) {
+  // Fetch the image binary from Supabase Storage
+  const imgRes = await fetch(imageUrl);
+  if (!imgRes.ok) throw new Error('Failed to fetch logo from storage.');
+  const buffer = Buffer.from(await imgRes.arrayBuffer());
+  const mime   = imgRes.headers.get('content-type') || 'image/png';
+
+  const token = await getToken();
+  const res   = await fetch(`${PASSKIT_BASE}/membership/image`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': mime,
+    },
+    body: buffer,
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`PassKit image upload error ${res.status}: ${body}`);
+  }
+  const data = await res.json();
+  // PassKit returns { id: '...' } or { imageId: '...' }
+  return data.id ?? data.imageId;
+}
+
+/**
  * Create a PassKit tier (card template) for a clinic.
- * Called during onboarding. Returns the tier ID to store in clinics.passkit_template_id.
+ * Called during onboarding. Returns the PassKit-generated tier ID
+ * to store in clinics.passkit_template_id.
  */
 export async function createClinicTemplate({ clinic }) {
-  const tierId = `clinic-${clinic.slug}`;
-
-  await pkFetch('/membership/tier', {
+  const data = await pkFetch('/membership/tier', {
     method: 'POST',
-    body: JSON.stringify({
-      id:        tierId,
-      programId: process.env.PASSKIT_MEMBER_PROGRAM_ID,
-      name:      `${clinic.name} Loyalty Card`,
-      pass:      buildPassDesign(clinic),
-    }),
+    body: JSON.stringify(buildTierBody(clinic)),
   });
-
-  return tierId;
+  // PassKit auto-generates the tier ID — store it in the DB
+  return data.id;
 }
 
 /**
@@ -182,14 +361,9 @@ export async function createClinicTemplate({ clinic }) {
 export async function updateClinicTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
 
-  await pkFetch('/membership/tier', {
+  await pkFetch(`/membership/tier/${clinic.passkit_template_id}`, {
     method: 'PUT',
-    body: JSON.stringify({
-      id:        clinic.passkit_template_id,
-      programId: process.env.PASSKIT_MEMBER_PROGRAM_ID,
-      name:      `${clinic.name} Loyalty Card`,
-      pass:      buildPassDesign(clinic),
-    }),
+    body: JSON.stringify(buildTierBody(clinic)),
   });
 }
 
