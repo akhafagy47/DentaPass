@@ -262,27 +262,27 @@ function WalletCardPreview(props) {
               <CardBack {...props} />
             </div>
           </div>
+          {/* Flip button — absolute overlay so it's never covered by the taller back face */}
+          <button
+            type="button"
+            onClick={() => setFlipped((f) => !f)}
+            title={flipped ? 'Show front' : 'Show back'}
+            style={{
+              position: 'absolute', top: 10, right: 10, zIndex: 20,
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(6px)',
+              border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 20,
+              padding: '5px 12px', fontSize: 11, color: '#374151',
+              cursor: 'pointer', fontFamily: '-apple-system,sans-serif',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {flipped ? 'Front' : 'Back'}
+          </button>
         </div>
-      </div>
-
-      {/* Flip button — mimics Apple Wallet ⓘ button */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10, paddingRight: 4 }}>
-        <button
-          type="button"
-          onClick={() => setFlipped((f) => !f)}
-          title={flipped ? 'Show front' : 'Show back'}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 5,
-            fontSize: 11, color: '#8e8e93', fontFamily: '-apple-system,sans-serif',
-            padding: '4px 2px',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          {flipped ? 'Front' : 'Back of card'}
-        </button>
       </div>
     </div>
   );

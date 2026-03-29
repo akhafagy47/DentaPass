@@ -153,19 +153,18 @@ function CardPreview({ form }) {
             ))}
           </div>
         </div>
+        {/* Flip button — absolute overlay so it's never covered by the taller back face */}
+        <button
+          type="button"
+          onClick={() => setFlipped(f => !f)}
+          style={{ position: 'absolute', top: 10, right: 10, zIndex: 20, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(6px)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 20, padding: '5px 12px', fontSize: 12, color: '#374151', cursor: 'pointer', fontFamily: FONT, boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+          {flipped ? 'Front' : 'Back'}
+        </button>
       </div>
-
-      {/* Flip button */}
-      <button
-        type="button"
-        onClick={() => setFlipped(f => !f)}
-        style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1.5px solid #e2e8f0', borderRadius: 20, padding: '5px 14px', fontSize: 12, color: '#64748b', cursor: 'pointer', fontFamily: FONT }}
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
-        </svg>
-        {flipped ? 'View front' : 'View back'}
-      </button>
     </div>
   );
 }
