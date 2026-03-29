@@ -285,7 +285,7 @@ function buildLinks(clinic) {
  * clinics.passkit_logo_image_id and injected here when present.
  * Until the image is uploaded, the card uses no logo.
  */
-function buildTierBody(clinic) {
+function buildTemplateBody(clinic) {
   return {
     name: clinic.name,
     organizationName: clinic.name,
@@ -327,7 +327,7 @@ function buildTierBody(clinic) {
  * Returns the PassKit-generated template ID.
  */
 async function createPassTemplate({ clinic }) {
-  const body = buildTierBody(clinic);
+  const body = buildTemplateBody(clinic);
   console.log('[PassKit] POST /template body:', JSON.stringify(body, null, 2));
   const data = await pkFetch('/template', {
     method: 'POST',
@@ -345,7 +345,7 @@ async function updatePassTemplate({ clinic }) {
   await pkFetch('/template', {
     method: 'PUT',
     body: JSON.stringify({
-      ...buildTierBody(clinic),
+      ...buildTemplateBody(clinic),
       id: clinic.passkit_template_design_id,
     }),
   });
