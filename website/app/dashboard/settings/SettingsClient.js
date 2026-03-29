@@ -335,7 +335,7 @@ export default function SettingsClient({ clinic }) {
       payload.points_per_dollar = payload.points_per_dollar === ''
         ? null
         : parseFloat(payload.points_per_dollar);
-      await updateClinic(clinic.slug, payload, token);
+      await updateClinic(clinic.id, payload, token);
       setFeedback('Settings saved!');
       setTimeout(() => setFeedback(''), 3000);
       router.refresh();

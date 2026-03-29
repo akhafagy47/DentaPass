@@ -187,11 +187,11 @@ router.get('/:slug', async (req, res) => {
 });
 
 /**
- * PATCH /clinics/:slug
+ * PATCH /clinics/:id
  * Auth protected — update clinic settings.
  */
-router.patch('/:slug', requireAuth, async (req, res) => {
-  if (req.clinic.slug !== req.params.slug) {
+router.patch('/:id', requireAuth, async (req, res) => {
+  if (req.clinic.id !== req.params.id) {
     return res.status(403).json({ error: 'Forbidden.' });
   }
 
@@ -206,7 +206,7 @@ router.patch('/:slug', requireAuth, async (req, res) => {
   }
 
   const supabase = getSupabase();
-  const { error } = await supabase.from('clinics').update(updates).eq('slug', req.params.slug);
+  const { error } = await supabase.from('clinics').update(updates).eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
 
   // Push updated card design to all patients' wallet passes if any design field changed
@@ -221,7 +221,7 @@ router.patch('/:slug', requireAuth, async (req, res) => {
         const { data: clinic } = await supabase
           .from('clinics')
           .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, passkit_template_id')
-          .eq('slug', req.params.slug)
+          .eq('id', req.params.id)
           .single();
         if (clinic?.passkit_template_id) {
           await updateClinicTemplate({ clinic });

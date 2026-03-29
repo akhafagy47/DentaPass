@@ -56,8 +56,8 @@ export function getClinic(slug) {
   return apiFetch(`/clinics/${slug}`);
 }
 
-export function updateClinic(slug, body, authToken) {
-  return apiFetch(`/clinics/${slug}`, { method: 'PATCH', body: JSON.stringify(body) }, authToken);
+export function updateClinic(id, body, authToken) {
+  return apiFetch(`/clinics/${id}`, { method: 'PATCH', body: JSON.stringify(body) }, authToken);
 }
 
 export function onboardClinic(body) {
