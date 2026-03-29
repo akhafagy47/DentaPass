@@ -341,59 +341,64 @@ export async function uploadClinicLogo({ imageUrl }) {
 }
 
 /**
- * Create a PassKit tier (card template) for a clinic.
- * Called during onboarding. Returns the PassKit-generated tier ID
- * to store in clinics.passkit_template_id.
- */
-/**
- * Create a PassKit tier for a clinic.
- * Tiers reference an existing pass template for the card design.
- * All clinics share the base template (PASSKIT_BASE_TEMPLATE_ID) for now —
- * per-clinic visual customization (colors, logo) requires the pass template
- * API endpoint which is separate from the tier API.
+ * Create a PassKit program + default tier for a clinic.
+ * Each clinic gets its own program so their patients are isolated and
+ * the card design can be customized independently.
+ * Returns { programId, tierId } — store both on the clinic row.
  */
 export async function createClinicTemplate({ clinic }) {
-  const data = await pkFetch('/members/tier', {
+  // 1. Create a program for this clinic
+  const program = await pkFetch('/members/program', {
     method: 'POST',
     body: JSON.stringify({
-      name:           clinic.name,
-      programId:      process.env.PASSKIT_MEMBER_PROGRAM_ID,
+      name:           `${clinic.name} Loyalty`,
+      passTemplateId: process.env.PASSKIT_BASE_TEMPLATE_ID,
+    }),
+  });
+
+  // 2. Create the default tier within that program
+  const tier = await pkFetch('/members/tier', {
+    method: 'POST',
+    body: JSON.stringify({
+      name:           'Member',
+      programId:      program.id,
       passTemplateId: process.env.PASSKIT_BASE_TEMPLATE_ID,
       tierIndex:      1,
       expirySettings: { expiryType: 'EXPIRE_NONE' },
     }),
   });
-  return data.id;
+
+  return { programId: program.id, tierId: tier.id };
 }
 
 /**
- * Update the tier name when a clinic renames itself.
- * Visual design updates (colors, logo) require the pass template API — TODO.
+ * Update the program name when a clinic renames itself.
+ * Per-clinic visual design updates (colors, logo) require the pass template
+ * API — to be implemented once the template endpoint is confirmed.
  */
 export async function updateClinicTemplate({ clinic }) {
-  if (!clinic.passkit_template_id) return;
+  if (!clinic.passkit_program_id) return;
 
-  await pkFetch(`/members/tier/${clinic.passkit_template_id}`, {
+  await pkFetch(`/members/program/${clinic.passkit_program_id}`, {
     method: 'PUT',
     body: JSON.stringify({
-      id:        clinic.passkit_template_id,
-      name:      clinic.name,
-      programId: process.env.PASSKIT_MEMBER_PROGRAM_ID,
+      id:   clinic.passkit_program_id,
+      name: `${clinic.name} Loyalty`,
     }),
   });
 }
 
 /**
  * Enroll a patient and create their wallet pass.
- * PassKit emails the patient their wallet link if emailAddress is set.
+ * Uses the clinic's own program ID (not the global DentaPass one).
  * Returns { serialNumber, walletUrl }.
  */
 export async function enrollPatient({ patient, clinic }) {
   const data = await pkFetch('/members/member', {
     method: 'POST',
     body: JSON.stringify({
-      tierId:    clinic.passkit_template_id || 'base',
-      programId: process.env.PASSKIT_MEMBER_PROGRAM_ID,
+      tierId:    clinic.passkit_template_id,
+      programId: clinic.passkit_program_id,
       person: {
         forename:     patient.first_name,
         surname:      patient.last_name,

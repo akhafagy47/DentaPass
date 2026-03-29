@@ -98,12 +98,12 @@ router.post('/onboard', async (req, res) => {
 
     if (clinicErr) return res.status(500).json({ error: 'Failed to create clinic.' });
 
-    // Create PassKit tier for this clinic and store the tier ID
+    // Create PassKit program + tier for this clinic
     try {
-      const tierId = await createClinicTemplate({ clinic: { name: clinicName, slug } });
-      await supabase.from('clinics').update({ passkit_template_id: tierId }).eq('slug', slug);
+      const { programId, tierId } = await createClinicTemplate({ clinic: { name: clinicName, slug } });
+      await supabase.from('clinics').update({ passkit_program_id: programId, passkit_template_id: tierId }).eq('slug', slug);
     } catch (pkErr) {
-      console.error('PassKit tier creation failed (non-fatal):', pkErr.message);
+      console.error('PassKit setup failed (non-fatal):', pkErr.message);
     }
 
     res.json({ ok: true });
@@ -164,12 +164,12 @@ router.post('/onboard/dev', async (req, res) => {
 
   if (clinicErr) return res.status(500).json({ error: 'Failed to create clinic.' });
 
-  // Create PassKit tier for this clinic and store the tier ID
+  // Create PassKit program + tier for this clinic
   try {
-    const tierId = await createClinicTemplate({ clinic: { name: clinicName, slug } });
-    await supabase.from('clinics').update({ passkit_template_id: tierId }).eq('slug', slug);
+    const { programId, tierId } = await createClinicTemplate({ clinic: { name: clinicName, slug } });
+    await supabase.from('clinics').update({ passkit_program_id: programId, passkit_template_id: tierId }).eq('slug', slug);
   } catch (pkErr) {
-    console.error('PassKit tier creation failed (non-fatal):', pkErr.message);
+    console.error('PassKit setup failed (non-fatal):', pkErr.message);
   }
 
   res.json({ ok: true, email, slug });
