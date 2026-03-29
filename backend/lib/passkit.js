@@ -130,9 +130,8 @@ function buildDataFields(clinic) {
     // Program name — header area on Google Wallet, hidden on Apple Wallet
     {
       uniqueName: 'members.program.name',
-      fieldType: 4,
       label: '',
-      dataType: 1,
+      dataType: 'TEXT',
       defaultValue: 'DentaPass',
       usage: ['USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
@@ -148,9 +147,8 @@ function buildDataFields(clinic) {
     // Points balance — primary strip field on Apple Wallet
     {
       uniqueName: 'members.member.points',
-      fieldType: 4,
       label,
-      dataType: 8,
+      dataType: 'INT',
       defaultValue: '0',
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
@@ -166,10 +164,9 @@ function buildDataFields(clinic) {
     // Patient display name — secondary field, also shown on data collection page
     {
       uniqueName: 'person.displayName',
-      fieldType: 2,
       isRequired: true,
       label: 'Name',
-      dataType: 1,
+      dataType: 'TEXT',
       defaultValue: 'N/A',
       userCanSetValue: true,
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY', 'USAGE_DATA_COLLECTION_PAGE'],
@@ -186,9 +183,8 @@ function buildDataFields(clinic) {
     // Tier name — secondary field alongside patient name
     {
       uniqueName: 'members.tier.name',
-      fieldType: 4,
       label: isDiscount ? 'Redemption' : 'Tier',
-      dataType: 1,
+      dataType: 'TEXT',
       defaultValue: isDiscount ? `${clinic.points_per_dollar} ${label} = $1` : 'Base',
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
@@ -204,9 +200,8 @@ function buildDataFields(clinic) {
     // Info / back field — shown on card back (Apple) and detail view (Google)
     {
       uniqueName: 'universal.info',
-      fieldType: 3,
       label: 'Information',
-      dataType: 2,
+      dataType: 'TEXT_LONG',
       defaultValue: infoText,
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
@@ -222,9 +217,8 @@ function buildDataFields(clinic) {
     // Next checkup date — Google Wallet detail view only
     {
       uniqueName: 'meta.nextCheckupDate',
-      fieldType: 1,
       label: 'Next checkup date',
-      dataType: 3,
+      dataType: 'DATE_YYYYMMDD',
       defaultValue: 'N/A',
       userCanSetValue: true,
       usage: ['USAGE_GOOGLE_PAY'],
@@ -295,9 +289,8 @@ function buildTierBody(clinic) {
   return {
     name: clinic.name,
     organizationName: clinic.name,
-    protocol: 'LOYALTY',
-    version: 1,
-    status: ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
+    protocol: 'MEMBERSHIP',
+    revision: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
     ...(clinic.passkit_logo_image_id ? {
