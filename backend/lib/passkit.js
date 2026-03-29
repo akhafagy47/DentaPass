@@ -345,25 +345,41 @@ export async function uploadClinicLogo({ imageUrl }) {
  * Called during onboarding. Returns the PassKit-generated tier ID
  * to store in clinics.passkit_template_id.
  */
+/**
+ * Create a PassKit tier for a clinic.
+ * Tiers reference an existing pass template for the card design.
+ * All clinics share the base template (PASSKIT_BASE_TEMPLATE_ID) for now —
+ * per-clinic visual customization (colors, logo) requires the pass template
+ * API endpoint which is separate from the tier API.
+ */
 export async function createClinicTemplate({ clinic }) {
   const data = await pkFetch('/members/tier', {
     method: 'POST',
-    body: JSON.stringify(buildTierBody(clinic)),
+    body: JSON.stringify({
+      name:           clinic.name,
+      programId:      process.env.PASSKIT_MEMBER_PROGRAM_ID,
+      passTemplateId: process.env.PASSKIT_BASE_TEMPLATE_ID,
+      tierIndex:      1,
+      expirySettings: { expiryType: 'EXPIRE_NONE' },
+    }),
   });
-  // PassKit auto-generates the tier ID — store it in the DB
   return data.id;
 }
 
 /**
- * Update a clinic's PassKit tier template after settings change.
- * PassKit automatically pushes the updated design to all installed passes on this tier.
+ * Update the tier name when a clinic renames itself.
+ * Visual design updates (colors, logo) require the pass template API — TODO.
  */
 export async function updateClinicTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
 
   await pkFetch(`/members/tier/${clinic.passkit_template_id}`, {
     method: 'PUT',
-    body: JSON.stringify(buildTierBody(clinic)),
+    body: JSON.stringify({
+      id:        clinic.passkit_template_id,
+      name:      clinic.name,
+      programId: process.env.PASSKIT_MEMBER_PROGRAM_ID,
+    }),
   });
 }
 
