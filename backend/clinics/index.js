@@ -79,9 +79,12 @@ router.post('/onboard', async (req, res) => {
 
     // Generate unique slug
     let slug = slugify(clinicName);
-    const { count } = await supabase
-      .from('clinics').select('id', { count: 'exact', head: true }).eq('slug', slug);
-    if (count > 0) slug = `${slug}-${Date.now().toString(36)}`;
+    for (let suffix = 2; ; suffix++) {
+      const { count } = await supabase
+        .from('clinics').select('id', { count: 'exact', head: true }).eq('slug', slug);
+      if (!count) break;
+      slug = `${slugify(clinicName)}-${suffix}`;
+    }
 
     const { error: clinicErr } = await supabase.from('clinics').insert({
       name: clinicName,
@@ -144,9 +147,12 @@ router.post('/onboard/dev', async (req, res) => {
   }
 
   let slug = slugify(clinicName);
-  const { count } = await supabase
-    .from('clinics').select('id', { count: 'exact', head: true }).eq('slug', slug);
-  if (count > 0) slug = `${slug}-${Date.now().toString(36)}`;
+  for (let suffix = 2; ; suffix++) {
+    const { count } = await supabase
+      .from('clinics').select('id', { count: 'exact', head: true }).eq('slug', slug);
+    if (!count) break;
+    slug = `${slugify(clinicName)}-${suffix}`;
+  }
 
   const { error: clinicErr } = await supabase.from('clinics').insert({
     name: clinicName,
