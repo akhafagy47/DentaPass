@@ -296,6 +296,7 @@ function buildTierBody(clinic) {
     name: clinic.name,
     organizationName: clinic.name,
     protocol: 'MEMBERSHIP',
+    version: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
     ...(clinic.passkit_logo_image_id ? {
