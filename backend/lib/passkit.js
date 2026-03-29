@@ -295,7 +295,7 @@ function buildTierBody(clinic) {
   return {
     name: clinic.name,
     organizationName: clinic.name,
-    protocol: 2,
+    protocol: 'LOYALTY',
     version: 1,
     status: ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
     description: `${clinic.name} Loyalty Card`,
@@ -334,9 +334,11 @@ function buildTierBody(clinic) {
  * Returns the PassKit-generated template ID.
  */
 async function createPassTemplate({ clinic }) {
+  const body = buildTierBody(clinic);
+  console.log('[PassKit] POST /template body:', JSON.stringify(body, null, 2));
   const data = await pkFetch('/template', {
     method: 'POST',
-    body: JSON.stringify(buildTierBody(clinic)),
+    body: JSON.stringify(body),
   });
   return data.id;
 }
@@ -394,37 +396,39 @@ export async function uploadClinicLogo({ imageUrl }) {
  *   Template (design) → Program → Tier → Members (patients)
  */
 export async function createClinicTemplate({ clinic }) {
-  // 1. Create a pass template with the clinic's design (colors, fields, logo)
+  // 1. Create program first — not contingent on template
+  const programBody = {
+    name:                     `${clinic.name} Loyalty`,
+    status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
+    pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
+    profileImageSettings:     'PROFILE_IMAGE_NONE',
+    autoDeleteDaysAfterExpiry: 0,
+    passRecoverySettings: {
+      enabled:  true,
+      delivery: 'DELIVERY_REDIRECT',
+      fieldsToMatchUponRecovery: ['person.emailAddress'],
+    },
+  };
+  console.log('[PassKit] Step 1: creating program for clinic:', clinic.name);
+  const program = await pkFetch('/members/program', { method: 'POST', body: JSON.stringify(programBody) });
+  console.log('[PassKit] Step 1 success — programId:', program.id);
+
+  // 2. Create pass template — not contingent on program
+  console.log('[PassKit] Step 2: creating pass template');
   const templateDesignId = await createPassTemplate({ clinic });
+  console.log('[PassKit] Step 2 success — templateDesignId:', templateDesignId);
 
-  // 2. Create a program (programs don't reference templates — that link is on the tier)
-  const program = await pkFetch('/members/program', {
-    method: 'POST',
-    body: JSON.stringify({
-      name:                     `${clinic.name} Loyalty`,
-      status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
-      pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
-      profileImageSettings:     'PROFILE_IMAGE_NONE',
-      autoDeleteDaysAfterExpiry: 0,
-      passRecoverySettings: {
-        enabled:  true,
-        delivery: 'DELIVERY_REDIRECT',
-        fieldsToMatchUponRecovery: ['person.emailAddress'],
-      },
-    }),
-  });
-
-  // 3. Create the default tier within the program
-  const tier = await pkFetch('/members/tier', {
-    method: 'POST',
-    body: JSON.stringify({
-      name:           'Member',
-      programId:      program.id,
-      passTemplateId: templateDesignId,
-      tierIndex:      1,
-      expirySettings: { expiryType: 'EXPIRE_NONE' },
-    }),
-  });
+  // 3. Create tier — needs both programId and passTemplateId
+  const tierBody = {
+    name:           'Member',
+    programId:      program.id,
+    passTemplateId: templateDesignId,
+    tierIndex:      1,
+    expirySettings: { expiryType: 'EXPIRE_NONE' },
+  };
+  console.log('[PassKit] Step 3: creating tier, body:', JSON.stringify(tierBody));
+  const tier = await pkFetch('/members/tier', { method: 'POST', body: JSON.stringify(tierBody) });
+  console.log('[PassKit] Step 3 success — tierId:', tier.id);
 
   return { templateDesignId, programId: program.id, tierId: tier.id };
 }
