@@ -295,7 +295,7 @@ function buildTierBody(clinic) {
   return {
     name: clinic.name,
     organizationName: clinic.name,
-    protocol: 'MEMBERSHIP',
+    protocol: 2,
     version: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
@@ -396,12 +396,12 @@ export async function createClinicTemplate({ clinic }) {
   // 1. Create a pass template with the clinic's design (colors, fields, logo)
   const templateDesignId = await createPassTemplate({ clinic });
 
-  // 2. Create a program referencing that template
+  // 2. Create a program (programs don't reference templates — that link is on the tier)
   const program = await pkFetch('/members/program', {
     method: 'POST',
     body: JSON.stringify({
-      name:           `${clinic.name} Loyalty`,
-      passTemplateId: templateDesignId,
+      name:       `${clinic.name} Loyalty`,
+      pointsType: { balanceType: 'BALANCE_TYPE_INT64' },
     }),
   });
 
