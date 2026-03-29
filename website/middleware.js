@@ -39,6 +39,8 @@ export async function middleware(request) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Expose pathname to server layouts (used by dashboard layout to skip setup redirect)
+  response.headers.set('x-pathname', pathname);
   return response;
 }
 
