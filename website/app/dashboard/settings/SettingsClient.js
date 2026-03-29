@@ -228,7 +228,7 @@ function WalletCardPreview(props) {
   const [flipped, setFlipped] = useState(false);
 
   return (
-    <div style={{ width: 320 }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
       <style>{`
         .card-scene { width: 320px; perspective: 900px; }
         .card-inner-flip {
@@ -248,42 +248,37 @@ function WalletCardPreview(props) {
         }
       `}</style>
 
-      {/* Stack shadows */}
+      {/* Card */}
       <div style={{ position: 'relative' }}>
         <div style={{ position: 'absolute', bottom: -8, left: 10, right: 10, height: 18, background: 'rgba(0,0,0,0.07)', borderRadius: '0 0 16px 16px' }} />
         <div style={{ position: 'absolute', bottom: -4, left: 5, right: 5,  height: 12, background: 'rgba(0,0,0,0.04)', borderRadius: '0 0 15px 15px' }} />
-
         <div className="card-scene">
           <div className={`card-inner-flip${flipped ? ' is-flipped' : ''}`}>
-            <div className="card-face">
-              <CardFront {...props} />
-            </div>
-            <div className="card-face card-face-back">
-              <CardBack {...props} />
-            </div>
+            <div className="card-face"><CardFront {...props} /></div>
+            <div className="card-face card-face-back"><CardBack {...props} /></div>
           </div>
-          {/* Flip button — absolute overlay so it's never covered by the taller back face */}
-          <button
-            type="button"
-            onClick={() => setFlipped((f) => !f)}
-            title={flipped ? 'Show front' : 'Show back'}
-            style={{
-              position: 'absolute', top: 10, right: 10, zIndex: 20,
-              display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(6px)',
-              border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 20,
-              padding: '5px 12px', fontSize: 11, color: '#374151',
-              cursor: 'pointer', fontFamily: '-apple-system,sans-serif',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            {flipped ? 'Front' : 'Back'}
-          </button>
         </div>
       </div>
+
+      {/* Flip button — beside the card so card height never covers it */}
+      <button
+        type="button"
+        onClick={() => setFlipped((f) => !f)}
+        title={flipped ? 'Show front' : 'Show back'}
+        style={{
+          marginTop: 8, flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: 5,
+          background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: 20,
+          padding: '6px 12px', fontSize: 11, color: '#64748b',
+          cursor: 'pointer', fontFamily: '-apple-system,sans-serif',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {flipped ? 'Front' : 'Back'}
+      </button>
     </div>
   );
 }
