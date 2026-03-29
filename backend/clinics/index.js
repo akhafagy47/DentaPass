@@ -100,8 +100,8 @@ router.post('/onboard', async (req, res) => {
 
     // Create PassKit program + tier for this clinic
     try {
-      const { programId, tierId } = await createClinicTemplate({ clinic: { name: clinicName, slug } });
-      await supabase.from('clinics').update({ passkit_program_id: programId, passkit_template_id: tierId }).eq('slug', slug);
+      const { templateDesignId, programId, tierId } = await createClinicTemplate({ clinic: { name: clinicName, slug } });
+      await supabase.from('clinics').update({ passkit_template_design_id: templateDesignId, passkit_program_id: programId, passkit_template_id: tierId }).eq('slug', slug);
     } catch (pkErr) {
       console.error('PassKit setup failed (non-fatal):', pkErr.message);
     }
@@ -226,7 +226,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
       try {
         const { data: clinic } = await supabase
           .from('clinics')
-          .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, passkit_template_id, passkit_logo_image_id')
+          .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, passkit_template_id, passkit_template_design_id, passkit_logo_image_id')
           .eq('id', req.params.id)
           .single();
         if (!clinic?.passkit_template_id) return;

@@ -311,6 +311,33 @@ function buildTierBody(clinic) {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
+ * Create a per-clinic pass template (card design) via POST /template.
+ * Returns the PassKit-generated template ID.
+ */
+async function createPassTemplate({ clinic }) {
+  const data = await pkFetch('/template', {
+    method: 'POST',
+    body: JSON.stringify(buildTierBody(clinic)),
+  });
+  return data.id;
+}
+
+/**
+ * Update a clinic's pass template design via PUT /template.
+ * PassKit automatically pushes the update to all installed passes using this template.
+ */
+async function updatePassTemplate({ clinic }) {
+  if (!clinic.passkit_template_id) return;
+  await pkFetch('/template', {
+    method: 'PUT',
+    body: JSON.stringify({
+      ...buildTierBody(clinic),
+      id: clinic.passkit_template_design_id,
+    }),
+  });
+}
+
+/**
  * Upload a clinic logo image to PassKit and return the PassKit image ID.
  * Call this after the logo is uploaded to Supabase Storage.
  * Store the returned ID in clinics.passkit_logo_image_id.
@@ -341,51 +368,46 @@ export async function uploadClinicLogo({ imageUrl }) {
 }
 
 /**
- * Create a PassKit program + default tier for a clinic.
- * Each clinic gets its own program so their patients are isolated and
- * the card design can be customized independently.
- * Returns { programId, tierId } — store both on the clinic row.
+ * Create a per-clinic pass template, program, and default tier.
+ * Returns { templateDesignId, programId, tierId } — store all three on the clinic row.
+ *
+ * PassKit hierarchy per clinic:
+ *   Template (design) → Program → Tier → Members (patients)
  */
 export async function createClinicTemplate({ clinic }) {
-  // 1. Create a program for this clinic
+  // 1. Create a pass template with the clinic's design (colors, fields, logo)
+  const templateDesignId = await createPassTemplate({ clinic });
+
+  // 2. Create a program referencing that template
   const program = await pkFetch('/members/program', {
     method: 'POST',
     body: JSON.stringify({
       name:           `${clinic.name} Loyalty`,
-      passTemplateId: process.env.PASSKIT_BASE_TEMPLATE_ID,
+      passTemplateId: templateDesignId,
     }),
   });
 
-  // 2. Create the default tier within that program
+  // 3. Create the default tier within the program
   const tier = await pkFetch('/members/tier', {
     method: 'POST',
     body: JSON.stringify({
       name:           'Member',
       programId:      program.id,
-      passTemplateId: process.env.PASSKIT_BASE_TEMPLATE_ID,
+      passTemplateId: templateDesignId,
       tierIndex:      1,
       expirySettings: { expiryType: 'EXPIRE_NONE' },
     }),
   });
 
-  return { programId: program.id, tierId: tier.id };
+  return { templateDesignId, programId: program.id, tierId: tier.id };
 }
 
 /**
- * Update the program name when a clinic renames itself.
- * Per-clinic visual design updates (colors, logo) require the pass template
- * API — to be implemented once the template endpoint is confirmed.
+ * Push updated card design (colors, logo, points label, etc.) to all patient passes.
+ * Updates the pass template — PassKit automatically propagates to all installed passes.
  */
 export async function updateClinicTemplate({ clinic }) {
-  if (!clinic.passkit_program_id) return;
-
-  await pkFetch(`/members/program/${clinic.passkit_program_id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      id:   clinic.passkit_program_id,
-      name: `${clinic.name} Loyalty`,
-    }),
-  });
+  await updatePassTemplate({ clinic });
 }
 
 /**
