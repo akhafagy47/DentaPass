@@ -270,13 +270,13 @@ function Card({ title, subtitle, children, className }) {
 
 export default async function AnalyticsPage({ searchParams }) {
   const supabase = createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) redirect('/login');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
 
   const { data: clinic } = await supabase
     .from('clinics')
     .select('id, name')
-    .eq('owner_email', session.user.email)
+    .eq('owner_email', user.email)
     .maybeSingle();
 
   if (!clinic) redirect('/dashboard');

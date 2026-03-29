@@ -321,6 +321,7 @@ function buildTierBody(clinic) {
     googlePaySettings:   { passType: 4 },  // 4 = LOYALTY
     expirySettings:      { expiryType: 'EXPIRE_NONE' },
     defaultLanguage: 'EN',
+    timezone: clinic.timezone || 'America/Edmonton',
   };
 }
 

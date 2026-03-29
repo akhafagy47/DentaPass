@@ -7,16 +7,16 @@ export const metadata = { title: 'Dashboard — DentaPass' };
 
 export default async function DashboardLayout({ children }) {
   const supabase = createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/login');
   }
 
   const { data: clinic } = await supabase
     .from('clinics')
     .select('id, name, slug, plan, patient_limit, setup_completed')
-    .eq('owner_email', session.user.email)
+    .eq('owner_email', user.email)
     .maybeSingle();
 
   // Redirect to setup wizard on first login — skip if already on the setup page
@@ -26,7 +26,7 @@ export default async function DashboardLayout({ children }) {
   }
 
   return (
-    <DashboardShell clinic={clinic} userEmail={session.user.email}>
+    <DashboardShell clinic={clinic} userEmail={user.email}>
       {children}
     </DashboardShell>
   );

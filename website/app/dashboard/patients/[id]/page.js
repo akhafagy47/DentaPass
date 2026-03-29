@@ -7,14 +7,14 @@ export const metadata = { title: 'Patient — DentaPass' };
 export default async function PatientProfilePage({ params }) {
   const { id } = params;
   const supabase = createSupabaseServerClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) redirect('/login');
+  if (!user) redirect('/login');
 
   const { data: clinic } = await supabase
     .from('clinics')
     .select('id, google_review_url')
-    .eq('owner_email', session.user.email)
+    .eq('owner_email', user.email)
     .maybeSingle();
 
   if (!clinic) return <div>No clinic found.</div>;
