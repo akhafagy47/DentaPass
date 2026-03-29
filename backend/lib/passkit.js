@@ -297,7 +297,7 @@ function buildTierBody(clinic) {
     organizationName: clinic.name,
     protocol: 2,
     version: 1,
-    status: ['PROJECT_STATUS_ACTIVE'],
+    status: ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
     ...(clinic.passkit_logo_image_id ? {
@@ -402,7 +402,7 @@ export async function createClinicTemplate({ clinic }) {
     method: 'POST',
     body: JSON.stringify({
       name:                     `${clinic.name} Loyalty`,
-      status:                   ['PROJECT_STATUS_ACTIVE'],
+      status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
       pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
       profileImageSettings:     'PROFILE_IMAGE_NONE',
       autoDeleteDaysAfterExpiry: 0,
