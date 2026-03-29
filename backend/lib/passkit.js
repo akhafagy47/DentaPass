@@ -297,6 +297,7 @@ function buildTierBody(clinic) {
     organizationName: clinic.name,
     protocol: 2,
     version: 1,
+    status: ['PROJECT_STATUS_ACTIVE'],
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
     ...(clinic.passkit_logo_image_id ? {
@@ -400,10 +401,10 @@ export async function createClinicTemplate({ clinic }) {
   const program = await pkFetch('/members/program', {
     method: 'POST',
     body: JSON.stringify({
-      name:                    `${clinic.name} Loyalty`,
-      defaultLanguage:         'EN',
-      pointsType:              { balanceType: 'BALANCE_TYPE_INT64' },
-      profileImageSettings:    'PROFILE_IMAGE_NONE',
+      name:                     `${clinic.name} Loyalty`,
+      status:                   ['PROJECT_STATUS_ACTIVE'],
+      pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
+      profileImageSettings:     'PROFILE_IMAGE_NONE',
       autoDeleteDaysAfterExpiry: 0,
       passRecoverySettings: {
         enabled:  true,
