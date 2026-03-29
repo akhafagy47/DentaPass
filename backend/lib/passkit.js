@@ -400,8 +400,16 @@ export async function createClinicTemplate({ clinic }) {
   const program = await pkFetch('/members/program', {
     method: 'POST',
     body: JSON.stringify({
-      name:       `${clinic.name} Loyalty`,
-      pointsType: { balanceType: 'BALANCE_TYPE_INT64' },
+      name:                    `${clinic.name} Loyalty`,
+      defaultLanguage:         'EN',
+      pointsType:              { balanceType: 'BALANCE_TYPE_INT64' },
+      profileImageSettings:    'PROFILE_IMAGE_NONE',
+      autoDeleteDaysAfterExpiry: 0,
+      passRecoverySettings: {
+        enabled:  true,
+        delivery: 'DELIVERY_REDIRECT',
+        fieldsToMatchUponRecovery: ['person.emailAddress'],
+      },
     }),
   });
 
