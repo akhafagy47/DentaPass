@@ -204,12 +204,16 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (updates.setup_completed === true) {
     (async () => {
       try {
-        const { data: clinic } = await supabase
+        const { data: clinic, error: clinicFetchErr } = await supabase
           .from('clinics')
           .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, passkit_logo_image_id, timezone')
           .eq('id', req.params.id)
           .maybeSingle();
 
+        if (clinicFetchErr) {
+          console.error('PassKit setup skipped: DB error fetching clinic', req.params.id, clinicFetchErr.message);
+          return;
+        }
         if (!clinic) {
           console.error('PassKit setup skipped: clinic not found for id', req.params.id);
           return;
