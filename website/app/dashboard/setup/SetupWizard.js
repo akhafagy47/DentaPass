@@ -405,6 +405,12 @@ export default function SetupWizard({ clinic }) {
 
   async function handleNext() {
     if (step < STEPS.length - 2) {
+      // Require logo before leaving the brand step
+      if (step === 0 && !form.logo_url) {
+        setError('Please upload a clinic logo — it is required for the wallet card.');
+        return;
+      }
+      setError('');
       setStep(s => s + 1);
       return;
     }
