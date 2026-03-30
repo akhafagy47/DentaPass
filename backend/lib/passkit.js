@@ -293,10 +293,16 @@ function buildTemplateBody(clinic) {
     revision: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
-    imageIds: clinic.passkit_logo_image_id ? {
-      icon:      clinic.passkit_logo_image_id,
-      thumbnail: clinic.passkit_logo_image_id,
-    } : {},
+    imageIds: (() => {
+      if (!clinic.passkit_logo_image_id) return {};
+      // Stored as JSON {"icon":url,"thumbnail":url,"logo":url} — fall back to legacy plain string
+      try {
+        const ids = JSON.parse(clinic.passkit_logo_image_id);
+        return { icon: ids.icon, thumbnail: ids.thumbnail, logo: ids.logo };
+      } catch {
+        return { icon: clinic.passkit_logo_image_id, thumbnail: clinic.passkit_logo_image_id, logo: clinic.passkit_logo_image_id };
+      }
+    })(),
     data: {
       dataFields: buildDataFields(clinic),
       dataCollectionPageSettings: {
@@ -357,7 +363,13 @@ async function updatePassTemplate({ clinic }) {
  * Call this after the logo is uploaded to Supabase Storage.
  * Store the returned ID in clinics.passkit_logo_image_id.
  */
-export async function uploadClinicLogo({ clinic, imageUrl }) {
+export async function uploadClinicLogo({ clinic }) {
+  // Derive the three Supabase URLs from logo_url — each file was uploaded separately at known paths
+  const logoBase    = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
+  const iconUrl      = logoBase + 'logo-icon.png';
+  const thumbnailUrl = logoBase + 'logo-thumbnail.png';
+  const logoUrl      = logoBase + 'logo.png';
+
   const token = await getToken();
   const res   = await fetch(`${PASSKIT_BASE}/images`, {
     method: 'POST',
@@ -368,8 +380,9 @@ export async function uploadClinicLogo({ clinic, imageUrl }) {
     body: JSON.stringify({
       name:      `${clinic.name} Logo`,
       imageData: {
-        icon:      imageUrl,  // 87×87px minimum — mandatory for Apple Wallet
-        thumbnail: imageUrl,  // 320×320px minimum — shown on membership passes
+        icon:      iconUrl,       // 87×87px — Apple Wallet icon
+        thumbnail: thumbnailUrl,  // 320×320px — Google Wallet pass image
+        logo:      logoUrl,       // 660×660px — Apple Wallet logo strip
       },
     }),
   });
@@ -377,10 +390,10 @@ export async function uploadClinicLogo({ clinic, imageUrl }) {
     const body = await res.text();
     throw new Error(`PassKit image upload error ${res.status}: ${body}`);
   }
-  // Response contains CDN URLs keyed by image type (icon, logo, thumbnail, …)
+  // Response contains CDN URLs keyed by image type — store all three
   const data = await res.json();
   console.log('[PassKit] POST /images response:', JSON.stringify(data));
-  return data;  // return the full object so callers can pick the URLs they need
+  return { icon: data.icon, thumbnail: data.thumbnail, logo: data.logo };
 }
 
 /**

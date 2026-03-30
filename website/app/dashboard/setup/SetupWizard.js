@@ -3,6 +3,8 @@
 import { useState, useRef } from 'react';
 import { updateClinic } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
+import Spinner from '../../../components/Spinner';
+import { cropAll } from '../../../lib/squareCrop';
 
 // ─── Colour helpers (duplicated from SettingsClient to keep this self-contained) ───
 
@@ -202,11 +204,11 @@ function StepBrand({ form, set, fileRef, uploading, onLogoChange }) {
       </div>
 
       <div>
-        <label style={s.label}>Logo <span style={s.hint}>(PNG, JPG, SVG or WebP · max 2 MB — optional)</span></label>
+        <label style={s.label}>Logo <span style={s.hint}>(PNG, JPG or WebP · at least 200×200px · auto-cropped to square)</span></label>
         <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style={{ display: 'none' }} onChange={onLogoChange} />
         <button type="button" onClick={() => fileRef.current?.click()}
           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: '1.5px dashed #e2e8f0', borderRadius: 10, background: '#fafafa', cursor: 'pointer', fontSize: 13, color: '#64748b', width: '100%', boxSizing: 'border-box' }}>
-          {uploading ? <span style={{ color: '#2563eb', fontWeight: 600 }}>Uploading…</span>
+          {uploading ? <span style={{ color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Spinner color="#2563eb" />Uploading…</span>
             : form.logo_url ? <>
                 <img src={form.logo_url} alt="logo" style={{ height: 28, maxWidth: 80, objectFit: 'contain', borderRadius: 4 }} />
                 <span style={{ color: '#2563eb', fontSize: 12 }}>Change logo</span>
@@ -388,31 +390,24 @@ export default function SetupWizard({ clinic }) {
   async function handleLogoUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Validate dimensions before uploading — PassKit requires at least 320×320px
-    const dims = await new Promise((resolve) => {
-      const img = new Image();
-      img.onload  = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = () => resolve(null);
-      img.src = URL.createObjectURL(file);
-    });
-    if (!dims || dims.w < 320 || dims.h < 320) {
-      setError('Logo must be at least 320×320px. Please upload a larger image.');
-      e.target.value = '';
-      return;
-    }
-
     setUploading(true);
+    setError('');
     try {
-      const sb  = getSupabaseBrowser();
-      const ext = file.name.split('.').pop();
-      const path = `${clinic.id}/logo.${ext}`;
-      await sb.storage.from('clinic-logos').upload(path, file, { upsert: true });
-      const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(path);
+      const blobs = await cropAll(file);  // produces icon (87px), thumbnail (320px), logo (660px)
+      const sb    = getSupabaseBrowser();
+      const base  = `${clinic.id}`;
+
+      await Promise.all([
+        sb.storage.from('clinic-logos').upload(`${base}/logo-icon.png`,      blobs.icon,      { upsert: true, contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo-thumbnail.png`, blobs.thumbnail, { upsert: true, contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo.png`,           blobs.logo,      { upsert: true, contentType: 'image/png' }),
+      ]);
+
+      const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(`${base}/logo.png`);
       set('logo_url', publicUrl);
-      setError('');
-    } catch {
-      setError('Logo upload failed. Please try again.');
+    } catch (err) {
+      setError(err.message || 'Logo upload failed. Please try again.');
+      e.target.value = '';
     } finally {
       setUploading(false);
     }
@@ -513,7 +508,8 @@ export default function SetupWizard({ clinic }) {
               </button>
             ) : (
               <button type="button" onClick={handleNext} disabled={saving}
-                style={{ flex: 1, padding: '13px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, letterSpacing: '-0.01em' }}>
+                style={{ flex: 1, padding: '13px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {saving && <Spinner />}
                 {saving ? 'Saving…' : isLast ? 'Finish setup →' : 'Next →'}
               </button>
             )}

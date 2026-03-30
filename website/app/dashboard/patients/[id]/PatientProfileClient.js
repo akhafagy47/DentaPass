@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { awardPoints, updatePatient, notifyPatient } from '../../../../lib/api';
 import { getSupabaseBrowser } from '../../../../lib/supabase-browser';
+import Spinner from '../../../../components/Spinner';
 
 const TIER_COLOR = { bronze: '#CD7F32', silver: '#9CA3AF', gold: '#F59E0B' };
 const REASON_LABEL = {
@@ -129,8 +130,9 @@ export default function PatientProfileClient({
               <button
                 disabled={awarding || !customPts}
                 onClick={awardCustom}
-                style={s.btn}
+                style={{ ...s.btn, display: 'flex', alignItems: 'center', gap: 6 }}
               >
+                {awarding && <Spinner />}
                 Award
               </button>
             </div>
@@ -146,7 +148,8 @@ export default function PatientProfileClient({
                 onChange={(e) => setCheckupDate(e.target.value)}
                 style={s.input}
               />
-              <button disabled={savingDate} onClick={saveCheckupDate} style={s.btn}>
+              <button disabled={savingDate} onClick={saveCheckupDate} style={{ ...s.btn, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {savingDate && <Spinner />}
                 Save
               </button>
             </div>
@@ -159,16 +162,18 @@ export default function PatientProfileClient({
               <button
                 disabled={sendingNotif}
                 onClick={() => sendManualNotification('recall')}
-                style={s.notifBtn}
+                style={{ ...s.notifBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
+                {sendingNotif && <Spinner />}
                 📅 Send recall reminder
               </button>
               {googleReviewUrl && (
                 <button
                   disabled={sendingNotif}
                   onClick={() => sendManualNotification('review')}
-                  style={s.notifBtn}
+                  style={{ ...s.notifBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
+                  {sendingNotif && <Spinner />}
                   ⭐ Send review request
                 </button>
               )}

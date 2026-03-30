@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getSupabaseBrowser } from '../../lib/supabase-browser';
+import Spinner from '../../components/Spinner';
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -65,7 +66,8 @@ function LoginForm() {
 
           {error && <p style={s.errText}>{error}</p>}
 
-          <button type="submit" disabled={loading} style={s.btn}>
+          <button type="submit" disabled={loading} style={{ ...s.btn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {loading && <Spinner />}
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>

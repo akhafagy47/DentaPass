@@ -197,53 +197,53 @@ router.patch('/:id', requireAuth, async (req, res) => {
   }
 
   const supabase = getSupabase();
+
+  // When setup wizard completes, run PassKit setup synchronously before saving setup_completed
+  if (updates.setup_completed === true) {
+    // Don't write setup_completed yet — only save it if PassKit succeeds
+    const { setup_completed: _, ...updatesWithoutSetup } = updates;
+
+    if (Object.keys(updatesWithoutSetup).length) {
+      const { error: partialErr } = await supabase.from('clinics').update(updatesWithoutSetup).eq('id', req.params.id);
+      if (partialErr) return res.status(500).json({ error: partialErr.message });
+    }
+
+    try {
+      const { data: clinic, error: clinicFetchErr } = await supabase
+        .from('clinics')
+        .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, passkit_logo_image_id, timezone')
+        .eq('id', req.params.id)
+        .maybeSingle();
+
+      if (clinicFetchErr) throw new Error(`DB error: ${clinicFetchErr.message}`);
+      if (!clinic) throw new Error('Clinic not found.');
+      if (!clinic.logo_url) throw new Error('A logo is required before completing setup.');
+
+      if (!clinic.passkit_logo_image_id) {
+        console.log('[PassKit] Uploading logo to PassKit:', clinic.logo_url);
+        const imageIds = await uploadClinicLogo({ clinic });
+        console.log('[PassKit] Logo uploaded — ids:', JSON.stringify(imageIds));
+        const imageIdsJson = JSON.stringify(imageIds);
+        await supabase.from('clinics').update({ passkit_logo_image_id: imageIdsJson }).eq('id', req.params.id);
+        clinic.passkit_logo_image_id = imageIdsJson;
+      }
+
+      const { programId, templateDesignId, tierId } = await createClinicTemplate({ clinic });
+      const { error: finalErr } = await supabase.from('clinics')
+        .update({ setup_completed: true, passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId })
+        .eq('id', req.params.id);
+      if (finalErr) throw new Error(`Failed to save PassKit IDs: ${finalErr.message}`);
+      console.log('[PassKit] Program + template + tier created for clinic', clinic.slug);
+    } catch (pkErr) {
+      console.error('PassKit setup failed:', pkErr.message);
+      return res.status(500).json({ error: pkErr.message });
+    }
+
+    return res.json({ ok: true });
+  }
+
   const { error } = await supabase.from('clinics').update(updates).eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
-
-  // When setup wizard completes, create the PassKit template + tier
-  if (updates.setup_completed === true) {
-    (async () => {
-      try {
-        const { data: clinic, error: clinicFetchErr } = await supabase
-          .from('clinics')
-          .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, passkit_logo_image_id, timezone')
-          .eq('id', req.params.id)
-          .maybeSingle();
-
-        if (clinicFetchErr) {
-          console.error('PassKit setup skipped: DB error fetching clinic', req.params.id, clinicFetchErr.message);
-          return;
-        }
-        if (!clinic) {
-          console.error('PassKit setup skipped: clinic not found for id', req.params.id);
-          return;
-        }
-
-        // Upload logo to PassKit — required for template creation
-        if (!clinic.logo_url) {
-          console.error('PassKit setup skipped: clinic has no logo_url');
-          return;
-        }
-        if (!clinic.passkit_logo_image_id) {
-          console.log('[PassKit] Uploading logo to PassKit:', clinic.logo_url);
-          const imageUrls = await uploadClinicLogo({ clinic, imageUrl: clinic.logo_url });
-          console.log('[PassKit] Logo uploaded — urls:', JSON.stringify(imageUrls));
-          // Store the icon CDN URL — used in template imageIds
-          const iconUrl = imageUrls.icon;
-          await supabase.from('clinics').update({ passkit_logo_image_id: iconUrl }).eq('id', req.params.id);
-          clinic.passkit_logo_image_id = iconUrl;
-        }
-
-        const { programId, templateDesignId, tierId } = await createClinicTemplate({ clinic });
-        await supabase.from('clinics')
-          .update({ passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId })
-          .eq('id', req.params.id);
-        console.log('[PassKit] Program + template + tier created for clinic', clinic.slug);
-      } catch (pkErr) {
-        console.error('PassKit setup failed (non-fatal):', pkErr.message);
-      }
-    })();
-  }
 
   // Push updated card design to all patients' wallet passes if any design field changed
   const DESIGN_FIELDS = ['name', 'brand_color', 'logo_url', 'points_label', 'rewards_mode',
@@ -264,9 +264,10 @@ router.patch('/:id', requireAuth, async (req, res) => {
         // If the logo changed, upload it to PassKit to get an image ID first
         if (updates.logo_url && clinic.logo_url) {
           try {
-            const imageId = await uploadClinicLogo({ clinic, imageUrl: clinic.logo_url });
-            await supabase.from('clinics').update({ passkit_logo_image_id: imageId }).eq('id', req.params.id);
-            clinic.passkit_logo_image_id = imageId;
+            const imageIds = await uploadClinicLogo({ clinic });
+            const imageIdsJson = JSON.stringify(imageIds);
+            await supabase.from('clinics').update({ passkit_logo_image_id: imageIdsJson }).eq('id', req.params.id);
+            clinic.passkit_logo_image_id = imageIdsJson;
           } catch (imgErr) {
             console.error('PassKit logo upload failed (non-fatal):', imgErr.message);
           }

@@ -4,6 +4,8 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateClinic, getBillingPortalUrl } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
+import Spinner from '../../../components/Spinner';
+import { cropAll } from '../../../lib/squareCrop';
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
@@ -316,15 +318,23 @@ export default function SettingsClient({ clinic }) {
     if (!file) return;
     setUploading(true);
     try {
-      const sb   = getSupabaseBrowser();
-      const ext  = file.name.split('.').pop();
-      const path = `${clinic.id}/logo.${ext}`;
-      const { error } = await sb.storage.from('clinic-logos').upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(path);
+      const blobs = await cropAll(file);  // produces icon (87px), thumbnail (320px), logo (660px)
+      const sb    = getSupabaseBrowser();
+      const base  = `${clinic.id}`;
+
+      const results = await Promise.all([
+        sb.storage.from('clinic-logos').upload(`${base}/logo-icon.png`,      blobs.icon,      { upsert: true, contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo-thumbnail.png`, blobs.thumbnail, { upsert: true, contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo.png`,           blobs.logo,      { upsert: true, contentType: 'image/png' }),
+      ]);
+      const uploadErr = results.find(r => r.error)?.error;
+      if (uploadErr) throw uploadErr;
+
+      const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(`${base}/logo.png`);
       set('logo_url', publicUrl);
     } catch (err) {
-      setFeedback('Logo upload failed: ' + (err.message || 'unknown error'));
+      setFeedback(err.message || 'Logo upload failed.');
+      e.target.value = '';
       setTimeout(() => setFeedback(''), 4000);
     } finally {
       setUploading(false);
@@ -408,7 +418,7 @@ export default function SettingsClient({ clinic }) {
                   </div>
                 </Field>
 
-                <Field label="Clinic logo" hint="PNG, JPG, SVG or WebP · max 2 MB">
+                <Field label="Clinic logo" hint="PNG, JPG or WebP · at least 200×200px · auto-cropped to square">
                   {/* Hidden file input */}
                   <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
                     style={{ display: 'none' }} onChange={handleLogoUpload} />
@@ -423,7 +433,7 @@ export default function SettingsClient({ clinic }) {
                       width: '100%', boxSizing: 'border-box',
                     }}>
                     {uploading ? (
-                      <span style={{ color: '#006FEE', fontWeight: 600 }}>Uploading…</span>
+                      <span style={{ color: '#006FEE', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Spinner color="#006FEE" />Uploading…</span>
                     ) : form.logo_url ? (
                       <>
                         <img src={form.logo_url} alt="logo" style={{ height: 28, maxWidth: 80, objectFit: 'contain', borderRadius: 4 }} />
@@ -523,7 +533,8 @@ export default function SettingsClient({ clinic }) {
             </div>
           )}
 
-          <button type="submit" disabled={saving} style={s.saveBtn}>
+          <button type="submit" disabled={saving} style={{ ...s.saveBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {saving && <Spinner />}
             {saving ? 'Saving…' : 'Save settings'}
           </button>
         </form>

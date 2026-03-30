@@ -25,6 +25,10 @@ body{font-family:'DM Sans',sans-serif;font-size:17px;background:var(--white);col
 a{text-decoration:none;color:inherit}
 button{font-family:inherit;cursor:pointer}
 
+/* ── SPINNER ── */
+@keyframes dp-spin{to{transform:rotate(360deg)}}
+.dp-spinner{display:inline-block;width:1em;height:1em;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:dp-spin .65s linear infinite;vertical-align:middle;flex-shrink:0}
+
 /* ── REVEAL ── */
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
 .reveal.up{opacity:1;transform:none}
