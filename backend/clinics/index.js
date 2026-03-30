@@ -208,7 +208,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
           .from('clinics')
           .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, passkit_logo_image_id, timezone')
           .eq('id', req.params.id)
-          .single();
+          .maybeSingle();
+
+        if (!clinic) {
+          console.error('PassKit setup skipped: clinic not found for id', req.params.id);
+          return;
+        }
 
         // Upload logo to PassKit first if one exists
         if (clinic.logo_url && !clinic.passkit_logo_image_id) {
