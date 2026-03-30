@@ -5,7 +5,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowser } from '../../../lib/supabase-browser';
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4001';
 
@@ -50,10 +49,10 @@ function DevForm({ router }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
 
-      // Auto sign-in
-      await getSupabaseBrowser().auth.signInWithPassword({ email, password });
       setDone(true);
-      setTimeout(() => router.push('/dashboard'), 1200);
+      setTimeout(() => {
+        window.location.href = `/login?next=/dashboard/setup&email=${encodeURIComponent(email)}`;
+      }, 1200);
     } catch (err) {
       setError(err.message);
       setSubmitting(false);

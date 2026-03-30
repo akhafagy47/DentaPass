@@ -8,7 +8,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/dashboard';
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(searchParams.get('email') || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
