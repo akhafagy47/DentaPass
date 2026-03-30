@@ -253,7 +253,7 @@ function buildLinks(clinic) {
     links.push({
       title: 'Call Us',
       url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
-      type:  'URI_PHONE',
+      type:  'URI_WEB',
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
@@ -391,7 +391,7 @@ export async function uploadClinicLogo({ imageUrl }) {
 export async function createClinicTemplate({ clinic }) {
   // 1. Create program
   const programBody = {
-    name:                     `${clinic.name} Loyalty`,
+    name:                     `${clinic.name}`,
     status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
     pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
     profileImageSettings:     'PROFILE_IMAGE_NONE',
