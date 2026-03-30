@@ -295,7 +295,6 @@ function buildTemplateBody(clinic) {
     colors: buildColors(clinic),
     imageIds: clinic.passkit_logo_image_id ? {
       icon:      clinic.passkit_logo_image_id,
-      logo:      clinic.passkit_logo_image_id,
       thumbnail: clinic.passkit_logo_image_id,
     } : {},
     data: {
@@ -369,8 +368,8 @@ export async function uploadClinicLogo({ clinic, imageUrl }) {
     body: JSON.stringify({
       name:      `${clinic.name} Logo`,
       imageData: {
-        icon: imageUrl,
-        logo: imageUrl,
+        icon:      imageUrl,  // 87×87px — mandatory Apple Wallet lock screen
+        thumbnail: imageUrl,  // ≥270×270px — shown on Apple Wallet membership passes
       },
     }),
   });
