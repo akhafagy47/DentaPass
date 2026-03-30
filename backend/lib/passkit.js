@@ -293,7 +293,11 @@ function buildTemplateBody(clinic) {
     revision: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
-    imageIds: clinic.passkit_logo_image_id ? { logo: clinic.passkit_logo_image_id } : {},
+    imageIds: clinic.passkit_logo_image_id ? {
+      icon:      clinic.passkit_logo_image_id,
+      logo:      clinic.passkit_logo_image_id,
+      thumbnail: clinic.passkit_logo_image_id,
+    } : {},
     data: {
       dataFields: buildDataFields(clinic),
       dataCollectionPageSettings: {
@@ -354,28 +358,27 @@ async function updatePassTemplate({ clinic }) {
  * Call this after the logo is uploaded to Supabase Storage.
  * Store the returned ID in clinics.passkit_logo_image_id.
  */
-export async function uploadClinicLogo({ imageUrl }) {
-  // Fetch the image binary from Supabase Storage
-  const imgRes = await fetch(imageUrl);
-  if (!imgRes.ok) throw new Error('Failed to fetch logo from storage.');
-  const buffer = Buffer.from(await imgRes.arrayBuffer());
-  const mime   = imgRes.headers.get('content-type') || 'image/png';
-
+export async function uploadClinicLogo({ clinic, imageUrl }) {
   const token = await getToken();
-  const res   = await fetch(`${PASSKIT_BASE}/membership/image`, {
+  const res   = await fetch(`${PASSKIT_BASE}/images`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': mime,
+      Authorization:  `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
-    body: buffer,
+    body: JSON.stringify({
+      name:      `${clinic.name} Logo`,
+      imageData: {
+        icon: imageUrl,
+        logo: imageUrl,
+      },
+    }),
   });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`PassKit image upload error ${res.status}: ${body}`);
   }
   const data = await res.json();
-  // PassKit returns { id: '...' } or { imageId: '...' }
   return data.id ?? data.imageId;
 }
 

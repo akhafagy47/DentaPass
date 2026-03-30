@@ -219,15 +219,17 @@ router.patch('/:id', requireAuth, async (req, res) => {
           return;
         }
 
-        // Upload logo to PassKit first if one exists
-        if (clinic.logo_url && !clinic.passkit_logo_image_id) {
-          try {
-            const imageId = await uploadClinicLogo({ imageUrl: clinic.logo_url });
-            await supabase.from('clinics').update({ passkit_logo_image_id: imageId }).eq('id', req.params.id);
-            clinic.passkit_logo_image_id = imageId;
-          } catch (imgErr) {
-            console.error('PassKit logo upload failed (non-fatal):', imgErr.message);
-          }
+        // Upload logo to PassKit — required for template creation
+        if (!clinic.logo_url) {
+          console.error('PassKit setup skipped: clinic has no logo_url');
+          return;
+        }
+        if (!clinic.passkit_logo_image_id) {
+          console.log('[PassKit] Uploading logo to PassKit:', clinic.logo_url);
+          const imageId = await uploadClinicLogo({ clinic, imageUrl: clinic.logo_url });
+          console.log('[PassKit] Logo uploaded — imageId:', imageId);
+          await supabase.from('clinics').update({ passkit_logo_image_id: imageId }).eq('id', req.params.id);
+          clinic.passkit_logo_image_id = imageId;
         }
 
         const { programId, templateDesignId, tierId } = await createClinicTemplate({ clinic });
@@ -260,7 +262,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
         // If the logo changed, upload it to PassKit to get an image ID first
         if (updates.logo_url && clinic.logo_url) {
           try {
-            const imageId = await uploadClinicLogo({ imageUrl: clinic.logo_url });
+            const imageId = await uploadClinicLogo({ clinic, imageUrl: clinic.logo_url });
             await supabase.from('clinics').update({ passkit_logo_image_id: imageId }).eq('id', req.params.id);
             clinic.passkit_logo_image_id = imageId;
           } catch (imgErr) {
