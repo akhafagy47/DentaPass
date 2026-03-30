@@ -388,6 +388,20 @@ export default function SetupWizard({ clinic }) {
   async function handleLogoUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate dimensions before uploading — PassKit requires at least 320×320px
+    const dims = await new Promise((resolve) => {
+      const img = new Image();
+      img.onload  = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve(null);
+      img.src = URL.createObjectURL(file);
+    });
+    if (!dims || dims.w < 320 || dims.h < 320) {
+      setError('Logo must be at least 320×320px. Please upload a larger image.');
+      e.target.value = '';
+      return;
+    }
+
     setUploading(true);
     try {
       const sb  = getSupabaseBrowser();
@@ -396,6 +410,7 @@ export default function SetupWizard({ clinic }) {
       await sb.storage.from('clinic-logos').upload(path, file, { upsert: true });
       const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(path);
       set('logo_url', publicUrl);
+      setError('');
     } catch {
       setError('Logo upload failed. Please try again.');
     } finally {

@@ -368,8 +368,8 @@ export async function uploadClinicLogo({ clinic, imageUrl }) {
     body: JSON.stringify({
       name:      `${clinic.name} Logo`,
       imageData: {
-        icon:      imageUrl,  // 87×87px — mandatory Apple Wallet lock screen
-        thumbnail: imageUrl,  // ≥270×270px — shown on Apple Wallet membership passes
+        icon:      imageUrl,  // 87×87px minimum — mandatory for Apple Wallet
+        thumbnail: imageUrl,  // 320×320px minimum — shown on membership passes
       },
     }),
   });
