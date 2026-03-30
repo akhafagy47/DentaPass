@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { updateClinic } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
 
@@ -364,7 +363,6 @@ const STEPS = [
 ];
 
 export default function SetupWizard({ clinic }) {
-  const router  = useRouter();
   const fileRef = useRef(null);
 
   const [step,      setStep]      = useState(0);
@@ -488,7 +486,7 @@ export default function SetupWizard({ clinic }) {
               </button>
             )}
             {isDone ? (
-              <button type="button" onClick={() => router.push('/dashboard')}
+              <button type="button" onClick={() => { window.location.href = '/dashboard'; }}
                 style={{ flex: 1, padding: '13px', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em' }}>
                 Go to Dashboard →
               </button>
