@@ -9,7 +9,10 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  let response = NextResponse.next({ request: { headers: request.headers } });
+  // Forward x-pathname to request headers so server components can read it via headers()
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+  let response = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -19,12 +22,12 @@ export async function middleware(request) {
         get(name) { return request.cookies.get(name)?.value; },
         set(name, value, options) {
           request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({ request: { headers: request.headers } });
+          response = NextResponse.next({ request: { headers: requestHeaders } });
           response.cookies.set({ name, value, ...options });
         },
         remove(name, options) {
           request.cookies.set({ name, value: '', ...options });
-          response = NextResponse.next({ request: { headers: request.headers } });
+          response = NextResponse.next({ request: { headers: requestHeaders } });
           response.cookies.set({ name, value: '', ...options });
         },
       },
