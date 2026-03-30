@@ -135,12 +135,10 @@ export default function DashboardShell({ children, clinic, userEmail }) {
               <div style={s.avatar}>{userEmail?.[0]?.toUpperCase()}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={s.userEmail}>{userEmail}</div>
-                {clinic && (
-                  {clinic.plan && (
-                    <div style={s.userPlan}>
-                      {clinic.plan.charAt(0).toUpperCase() + clinic.plan.slice(1)} plan
-                    </div>
-                  )}
+                {clinic?.plan && (
+                  <div style={s.userPlan}>
+                    {clinic.plan.charAt(0).toUpperCase() + clinic.plan.slice(1)} plan
+                  </div>
                 )}
               </div>
             </div>
