@@ -380,12 +380,17 @@ export async function uploadClinicLogo({ imageUrl }) {
 }
 
 /**
- * Create a PassKit program for a clinic.
- * Called immediately on clinic onboard — does not require logo or brand setup.
- * Returns { programId } — store on the clinic row.
+ * Create a PassKit program, pass template (design), and tier for a clinic.
+ * Called when the setup wizard completes — by then the clinic has its logo,
+ * brand color, and all required fields. Creates all three in one shot.
+ * Returns { programId, templateDesignId, tierId } — store all three on the clinic row.
+ *
+ * PassKit hierarchy per clinic:
+ *   Program → Template (design) → Tier → Members (patients)
  */
-export async function createClinicProgram({ clinic }) {
-  const body = {
+export async function createClinicTemplate({ clinic }) {
+  // 1. Create program
+  const programBody = {
     name:                     `${clinic.name} Loyalty`,
     status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
     pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
@@ -397,43 +402,31 @@ export async function createClinicProgram({ clinic }) {
       fieldsToMatchUponRecovery: ['person.emailAddress'],
     },
   };
-  console.log('[PassKit] Creating program for clinic:', clinic.name);
-  const program = await pkFetch('/members/program', { method: 'POST', body: JSON.stringify(body) });
-  console.log('[PassKit] Program created — programId:', program.id);
-  return { programId: program.id };
-}
+  console.log('[PassKit] Step 1: creating program for clinic:', clinic.name);
+  const program = await pkFetch('/members/program', { method: 'POST', body: JSON.stringify(programBody) });
+  console.log('[PassKit] Step 1 success — programId:', program.id);
 
-/**
- * Create a pass template (design) + tier for a clinic after setup is complete.
- * Requires clinic.passkit_program_id to already exist (set during onboard).
- * Also requires clinic.passkit_logo_image_id — PassKit needs a minimum icon image.
- * Returns { templateDesignId, tierId } — store both on the clinic row.
- *
- * PassKit hierarchy per clinic:
- *   Program (created on onboard) → Template (design) → Tier → Members (patients)
- */
-export async function createClinicTemplate({ clinic }) {
-  // 1. Create pass template
-  console.log('[PassKit] Step 1: creating pass template for clinic:', clinic.name);
+  // 2. Create pass template
+  console.log('[PassKit] Step 2: creating pass template');
   const templateDesignId = await createPassTemplate({ clinic });
-  console.log('[PassKit] Step 1 success — templateDesignId:', templateDesignId);
+  console.log('[PassKit] Step 2 success — templateDesignId:', templateDesignId);
 
-  // 2. Create tier — needs both programId and passTemplateId
+  // 3. Create tier — needs both programId and passTemplateId
   const tierBody = {
     id:               `${clinic.slug}-member`,
     name:             'Member',
     tierIndex:        1,
-    programId:        clinic.passkit_program_id,
+    programId:        program.id,
     passTemplateId:   templateDesignId,
     expirySettings:   { expiryType: 'EXPIRE_NONE' },
     timezone:         clinic.timezone || 'America/Edmonton',
     allowTierEnrolment: { value: true },
   };
-  console.log('[PassKit] Step 2: creating tier');
+  console.log('[PassKit] Step 3: creating tier');
   const tier = await pkFetch('/members/tier', { method: 'POST', body: JSON.stringify(tierBody) });
-  console.log('[PassKit] Step 2 success — tierId:', tier.id);
+  console.log('[PassKit] Step 3 success — tierId:', tier.id);
 
-  return { templateDesignId, tierId: tier.id };
+  return { programId: program.id, templateDesignId, tierId: tier.id };
 }
 
 /**

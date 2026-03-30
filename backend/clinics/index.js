@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getSupabase } from '../lib/supabase.js';
 import { getStripe, PLANS } from '../lib/stripe.js';
 import { requireAuth } from '../lib/authMiddleware.js';
-import { createClinicProgram, createClinicTemplate, updateClinicTemplate, uploadClinicLogo } from '../lib/passkit.js';
+import { createClinicTemplate, updateClinicTemplate, uploadClinicLogo } from '../lib/passkit.js';
 
 const router = Router();
 
@@ -98,14 +98,6 @@ router.post('/onboard', async (req, res) => {
 
     if (clinicErr) return res.status(500).json({ error: 'Failed to create clinic.' });
 
-    // Create PassKit program only — template + tier are created after setup wizard completes
-    try {
-      const { programId } = await createClinicProgram({ clinic: { name: clinicName, slug } });
-      await supabase.from('clinics').update({ passkit_program_id: programId }).eq('slug', slug);
-    } catch (pkErr) {
-      console.error('PassKit program creation failed (non-fatal):', pkErr.message);
-    }
-
     res.json({ ok: true });
   } catch (err) {
     console.error('Onboard error:', err);
@@ -164,14 +156,6 @@ router.post('/onboard/dev', async (req, res) => {
 
   if (clinicErr) return res.status(500).json({ error: 'Failed to create clinic.' });
 
-  // Create PassKit program only — template + tier are created after setup wizard completes
-  try {
-    const { programId } = await createClinicProgram({ clinic: { name: clinicName, slug } });
-    await supabase.from('clinics').update({ passkit_program_id: programId }).eq('slug', slug);
-  } catch (pkErr) {
-    console.error('PassKit program creation failed (non-fatal):', pkErr.message);
-  }
-
   res.json({ ok: true, email, slug });
 });
 
@@ -222,14 +206,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
       try {
         const { data: clinic } = await supabase
           .from('clinics')
-          .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, passkit_program_id, passkit_logo_image_id, timezone')
+          .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, passkit_logo_image_id, timezone')
           .eq('id', req.params.id)
           .single();
-
-        if (!clinic?.passkit_program_id) {
-          console.error('PassKit template creation skipped: no program ID on clinic', req.params.id);
-          return;
-        }
 
         // Upload logo to PassKit first if one exists
         if (clinic.logo_url && !clinic.passkit_logo_image_id) {
@@ -242,13 +221,13 @@ router.patch('/:id', requireAuth, async (req, res) => {
           }
         }
 
-        const { templateDesignId, tierId } = await createClinicTemplate({ clinic });
+        const { programId, templateDesignId, tierId } = await createClinicTemplate({ clinic });
         await supabase.from('clinics')
-          .update({ passkit_template_design_id: templateDesignId, passkit_template_id: tierId })
+          .update({ passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId })
           .eq('id', req.params.id);
-        console.log('[PassKit] Template + tier created for clinic', clinic.slug);
+        console.log('[PassKit] Program + template + tier created for clinic', clinic.slug);
       } catch (pkErr) {
-        console.error('PassKit template creation failed (non-fatal):', pkErr.message);
+        console.error('PassKit setup failed (non-fatal):', pkErr.message);
       }
     })();
   }
