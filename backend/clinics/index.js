@@ -226,10 +226,12 @@ router.patch('/:id', requireAuth, async (req, res) => {
         }
         if (!clinic.passkit_logo_image_id) {
           console.log('[PassKit] Uploading logo to PassKit:', clinic.logo_url);
-          const imageId = await uploadClinicLogo({ clinic, imageUrl: clinic.logo_url });
-          console.log('[PassKit] Logo uploaded — imageId:', imageId);
-          await supabase.from('clinics').update({ passkit_logo_image_id: imageId }).eq('id', req.params.id);
-          clinic.passkit_logo_image_id = imageId;
+          const imageUrls = await uploadClinicLogo({ clinic, imageUrl: clinic.logo_url });
+          console.log('[PassKit] Logo uploaded — urls:', JSON.stringify(imageUrls));
+          // Store the icon CDN URL — used in template imageIds
+          const iconUrl = imageUrls.icon;
+          await supabase.from('clinics').update({ passkit_logo_image_id: iconUrl }).eq('id', req.params.id);
+          clinic.passkit_logo_image_id = iconUrl;
         }
 
         const { programId, templateDesignId, tierId } = await createClinicTemplate({ clinic });

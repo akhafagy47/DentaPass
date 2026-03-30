@@ -377,8 +377,10 @@ export async function uploadClinicLogo({ clinic, imageUrl }) {
     const body = await res.text();
     throw new Error(`PassKit image upload error ${res.status}: ${body}`);
   }
+  // Response contains CDN URLs keyed by image type (icon, logo, thumbnail, …)
   const data = await res.json();
-  return data.id ?? data.imageId;
+  console.log('[PassKit] POST /images response:', JSON.stringify(data));
+  return data;  // return the full object so callers can pick the URLs they need
 }
 
 /**
