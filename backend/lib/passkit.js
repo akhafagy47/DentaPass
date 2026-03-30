@@ -293,9 +293,7 @@ function buildTemplateBody(clinic) {
     revision: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
-    ...(clinic.passkit_logo_image_id ? {
-      imageIds: { logo: clinic.passkit_logo_image_id },
-    } : {}),
+    imageIds: clinic.passkit_logo_image_id ? { logo: clinic.passkit_logo_image_id } : {},
     data: {
       dataFields: buildDataFields(clinic),
       dataCollectionPageSettings: {
