@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
     // 1. Fetch clinic
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('id, name, passkit_template_id, patient_limit, brand_color, booking_url')
+      .select('id, name, slug, passkit_template_id, passkit_program_id, patient_limit, brand_color, booking_url')
       .eq('slug', clinicSlug)
       .single();
 

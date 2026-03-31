@@ -301,6 +301,8 @@ export default function SettingsClient({ clinic }) {
     points_per_dollar: clinic.points_per_dollar || '',
     address:           clinic.address           || '',
     phone:             clinic.phone             || '',
+    facebook_url:      clinic.facebook_url      || '',
+    instagram_url:     clinic.instagram_url     || '',
   });
   const [saving, setSaving]         = useState(false);
   const [uploading, setUploading]   = useState(false);
@@ -331,7 +333,8 @@ export default function SettingsClient({ clinic }) {
       if (uploadErr) throw uploadErr;
 
       const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(`${base}/logo.png`);
-      set('logo_url', publicUrl);
+      set('logo_url', `${publicUrl}?t=${Date.now()}`);
+      e.target.value = '';  // reset so selecting the same file again triggers onChange
     } catch (err) {
       setFeedback(err.message || 'Logo upload failed.');
       e.target.value = '';
@@ -400,6 +403,12 @@ export default function SettingsClient({ clinic }) {
             </Field>
             <Field label="Phone" hint="Shown as a 'Call Us' button on the wallet pass">
               <input className="st-input" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} style={s.input} placeholder="+1 (780) 555-0100" />
+            </Field>
+            <Field label="Facebook URL" hint="Shown as a 'Follow us on Facebook' button on the wallet pass">
+              <input className="st-input" type="url" value={form.facebook_url} onChange={(e) => set('facebook_url', e.target.value)} style={s.input} placeholder="https://facebook.com/yourclinic" />
+            </Field>
+            <Field label="Instagram URL" hint="Shown as a 'Follow us on Instagram' button on the wallet pass">
+              <input className="st-input" type="url" value={form.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} style={s.input} placeholder="https://instagram.com/yourclinic" />
             </Field>
           </Section>
 

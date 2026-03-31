@@ -45,7 +45,7 @@ export async function cropAll(file) {
   }
 
   const [icon, thumbnail, logo] = await Promise.all([
-    cropToSize(img, 87),
+    cropToSize(img, 114),
     cropToSize(img, 320),
     cropToSize(img, 660),
   ]);

@@ -120,31 +120,72 @@ function buildColors(clinic) {
  *   0 = header, 1 = back, 3 = secondary, 4 = auxiliary, 5 = primary/strip
  */
 function buildDataFields(clinic) {
-  const label    = clinic.points_label || 'Points';
+  const label      = clinic.points_label || 'Points';
   const isDiscount = clinic.rewards_mode === 'discounts' && clinic.points_per_dollar;
-  const infoText = isDiscount
+  const infoText   = isDiscount
     ? `Earn ${label} at every visit. Redeem: ${clinic.points_per_dollar} ${label} = $1 discount.`
     : `Earn ${label} at every visit. Bronze → Silver → Gold.`;
 
   return [
-    // Program name — header area on Google Wallet, hidden on Apple Wallet
+    // ── FRONT FIELDS ────────────────────────────────────────────────────────────
+
+    // Clinic name — header bar (Apple Wallet) / program name (Google Wallet)
     {
       uniqueName: 'members.program.name',
       label: '',
       dataType: 'TEXT',
-      defaultValue: 'DentaPass',
-      usage: ['USAGE_GOOGLE_PAY'],
+      defaultValue: clinic.name,
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
-        textAlignment: 0,
-        positionSettings: { section: 0, priority: 0 },
+        textAlignment: 'NATURAL',
+        positionSettings: { section: 'HEADER_FIELDS', priority: 0 },
         changeMessage: '',
         dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
       },
-      googlePayFieldRenderOptions: { googlePayPosition: 300, textModulePriority: 0 },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_LOYALTY_PROGRAM_NAME', textModulePriority: 0 },
     },
-    // Points balance — primary strip field on Apple Wallet
+
+    // Patient name — large primary field with "MEMBER" label
+    {
+      uniqueName: 'person.displayName',
+      isRequired: true,
+      label: 'MEMBER',
+      dataType: 'TEXT',
+      defaultValue: 'N/A',
+      userCanSetValue: true,
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY', 'USAGE_DATA_COLLECTION_PAGE'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'PRIMARY_FIELDS', priority: 0 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_LOYALTY_ACCOUNT_NAME', textModulePriority: 0 },
+    },
+
+    // Tier badge — secondary row, left side
+    {
+      uniqueName: 'members.tier.name',
+      label: 'Status',
+      dataType: 'TEXT',
+      defaultValue: isDiscount ? `${clinic.points_per_dollar} ${label} = $1` : 'Bronze Member',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'SECONDARY_FIELDS', priority: 0 },
+        changeMessage: 'You reached %@ status!',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_LOYALTY_REWARDS_TIER', textModulePriority: 0 },
+    },
+
+    // Points balance — auxiliary row, left side (large number)
     {
       uniqueName: 'members.member.points',
       label,
@@ -152,85 +193,124 @@ function buildDataFields(clinic) {
       defaultValue: '0',
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
-        textAlignment: 3,
-        positionSettings: { section: 5, priority: 0 },
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'AUXILIARY_FIELDS', priority: 0 },
         changeMessage: `You now have %@ ${label}!`,
         dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
       },
-      googlePayFieldRenderOptions: { googlePayPosition: 301, textModulePriority: 0 },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_LOYALTY_POINTS', textModulePriority: 0 },
     },
-    // Patient display name — secondary field, also shown on data collection page
+
+    // Next checkup date — auxiliary row, right side (front of card)
     {
-      uniqueName: 'person.displayName',
-      isRequired: true,
-      label: 'Name',
-      dataType: 'TEXT',
-      defaultValue: 'N/A',
-      userCanSetValue: true,
-      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY', 'USAGE_DATA_COLLECTION_PAGE'],
-      appleWalletFieldRenderOptions: {
-        textAlignment: 1,
-        positionSettings: { section: 3, priority: 0 },
-        changeMessage: '',
-        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
-        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
-        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
-      },
-      googlePayFieldRenderOptions: { googlePayPosition: 303, textModulePriority: 0 },
-    },
-    // Tier name — secondary field alongside patient name
-    {
-      uniqueName: 'members.tier.name',
-      label: isDiscount ? 'Redemption' : 'Tier',
-      dataType: 'TEXT',
-      defaultValue: isDiscount ? `${clinic.points_per_dollar} ${label} = $1` : 'Base',
+      uniqueName: 'meta.nextCheckupDate',
+      label: 'Next checkup',
+      dataType: 'DATE_YYYYMMDD',
+      defaultValue: '',
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
-        textAlignment: 3,
-        positionSettings: { section: 3, priority: 1 },
+        textAlignment: 'RIGHT',
+        positionSettings: { section: 'AUXILIARY_FIELDS', priority: 1 },
+        changeMessage: 'Your next checkup is %@.',
+        dateStyle: 'DATE_TIME_STYLE_MEDIUM',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 0 },
+    },
+
+    // ── BACK FIELDS (Apple Wallet back + PassKit web/Google Pay detail view) ────
+
+    // Instructions — Apple Wallet only, shown at the top of the back
+    {
+      uniqueName: 'meta.instructions',
+      label: '📋 To access links',
+      dataType: 'TEXT',
+      defaultValue: 'Open the Wallet app → tap ··· (top right) → Pass Details to book appointments, call us, get directions, and share your referral link.',
+      usage: ['USAGE_APPLE_WALLET'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'BACK_FIELDS', priority: 0 },
         changeMessage: '',
         dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
       },
-      googlePayFieldRenderOptions: { googlePayPosition: 305, textModulePriority: 0 },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_FIELD_DO_NOT_USE', textModulePriority: 0 },
     },
-    // Info / back field — shown on card back (Apple) and detail view (Google)
+
+    // Member since — join date
+    {
+      uniqueName: 'meta.memberSince',
+      label: 'Member since',
+      dataType: 'DATE_YYYYMM',
+      defaultValue: '',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'BACK_FIELDS', priority: 1 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_MEDIUM',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 2 },
+    },
+
+    // Next checkup date — repeated on back for easy reference
+    {
+      uniqueName: 'meta.nextCheckupDateBack',
+      label: 'Next checkup',
+      dataType: 'DATE_YYYYMMDD',
+      defaultValue: '',
+      usage: ['USAGE_APPLE_WALLET'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'BACK_FIELDS', priority: 1 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_MEDIUM',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 0 },
+    },
+
+    // Referral link — patient-specific URL set at enrollment
+    {
+      uniqueName: 'meta.referralLink',
+      label: 'Refer a friend',
+      dataType: 'URL',
+      defaultValue: '',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'BACK_FIELDS', priority: 2 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 3 },
+    },
+
+    // Program info / rewards explanation
     {
       uniqueName: 'universal.info',
-      label: 'Information',
+      label: 'About this card',
       dataType: 'TEXT_LONG',
       defaultValue: infoText,
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
-        textAlignment: 0,
-        positionSettings: { section: 1, priority: 1 },
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'BACK_FIELDS', priority: 3 },
         changeMessage: '',
         dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
       },
-      googlePayFieldRenderOptions: { googlePayPosition: 1000, textModulePriority: 1 },
-    },
-    // Next checkup date — Google Wallet detail view only
-    {
-      uniqueName: 'meta.nextCheckupDate',
-      label: 'Next checkup date',
-      dataType: 'DATE_YYYYMMDD',
-      defaultValue: 'N/A',
-      userCanSetValue: true,
-      usage: ['USAGE_GOOGLE_PAY'],
-      appleWalletFieldRenderOptions: {
-        textAlignment: 0,
-        positionSettings: { section: 0, priority: 0 },
-        changeMessage: '',
-        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
-        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
-        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
-      },
-      googlePayFieldRenderOptions: { googlePayPosition: 1000, textModulePriority: 0 },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 1 },
     },
   ];
 }
@@ -241,36 +321,58 @@ function buildDataFields(clinic) {
  */
 function buildLinks(clinic) {
   const links = [];
+  if (clinic.booking_url) {
+    links.push({
+      id:    'booking',
+      title: 'Book an Appointment',
+      url:   clinic.booking_url,
+      type:  'URI_WEB',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+    });
+  }
+  if (clinic.phone) {
+    links.push({
+      id:    'phone',
+      title: 'Call Us',
+      url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
+      type:  'URI_TEL',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+    });
+  }
   if (clinic.address) {
     links.push({
+      id:    'directions',
       title: 'Get Directions',
       url:   `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
       type:  'URI_LOCATION',
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
-  if (clinic.phone) {
+  if (clinic.facebook_url) {
     links.push({
-      title: 'Call Us',
-      url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
+      id:    'facebook',
+      title: 'Follow us on Facebook',
+      url:   clinic.facebook_url,
       type:  'URI_WEB',
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
-  if (clinic.booking_url) {
+  if (clinic.instagram_url) {
     links.push({
-      title: 'Book an Appointment',
-      url:   clinic.booking_url,
+      id:    'instagram',
+      title: 'Follow us on Instagram',
+      url:   clinic.instagram_url,
       type:  'URI_WEB',
-      usage: ['USAGE_GOOGLE_PAY'],
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   if (clinic.google_review_url) {
     links.push({
-      title: 'Leave a Review',
+      id:    'google-review',
+      title: 'Leave a Google Review',
       url:   clinic.google_review_url,
       type:  'URI_WEB',
-      usage: ['USAGE_GOOGLE_PAY'],
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   return links;
@@ -286,6 +388,18 @@ function buildLinks(clinic) {
  * Until the image is uploaded, the card uses no logo.
  */
 function buildTemplateBody(clinic) {
+  // Derive the three Supabase image URLs from logo_url.
+  // `images` (not `imageIds`) is the correct field for URL-based image injection —
+  // PassKit uploads them internally and stores the resulting IDs in imageIds itself.
+  const images = clinic.logo_url ? (() => {
+    const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
+    return {
+      icon:      base + 'logo-icon.png',       // 114×114px
+      // thumbnail: base + 'logo-thumbnail.png',  // 320×320px
+      logo:      base + 'logo.png',            // 660×660px
+    };
+  })() : {};
+
   return {
     name: clinic.name,
     organizationName: clinic.name,
@@ -293,16 +407,7 @@ function buildTemplateBody(clinic) {
     revision: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
-    imageIds: (() => {
-      if (!clinic.passkit_logo_image_id) return {};
-      // Stored as JSON {"icon":url,"thumbnail":url,"logo":url} — fall back to legacy plain string
-      try {
-        const ids = JSON.parse(clinic.passkit_logo_image_id);
-        return { icon: ids.icon, thumbnail: ids.thumbnail, logo: ids.logo };
-      } catch {
-        return { icon: clinic.passkit_logo_image_id, thumbnail: clinic.passkit_logo_image_id, logo: clinic.passkit_logo_image_id };
-      }
-    })(),
+    images,
     data: {
       dataFields: buildDataFields(clinic),
       dataCollectionPageSettings: {
@@ -319,8 +424,8 @@ function buildTemplateBody(clinic) {
       messageEncoding: 'utf8',
     },
     links: buildLinks(clinic),
-    appleWalletSettings: { passType: 5 },  // 5 = GENERIC
-    googlePaySettings:   { passType: 4 },  // 4 = LOYALTY
+    appleWalletSettings: { passType: 'GENERIC' },
+    googlePaySettings:   { passType: 'LOYALTY' },
     expirySettings:      { expiryType: 'EXPIRE_NONE' },
     defaultLanguage: 'EN',
     timezone: clinic.timezone || 'America/Edmonton',
@@ -356,44 +461,6 @@ async function updatePassTemplate({ clinic }) {
       id: clinic.passkit_template_design_id,
     }),
   });
-}
-
-/**
- * Upload a clinic logo image to PassKit and return the PassKit image ID.
- * Call this after the logo is uploaded to Supabase Storage.
- * Store the returned ID in clinics.passkit_logo_image_id.
- */
-export async function uploadClinicLogo({ clinic }) {
-  // Derive the three Supabase URLs from logo_url — each file was uploaded separately at known paths
-  const logoBase    = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
-  const iconUrl      = logoBase + 'logo-icon.png';
-  const thumbnailUrl = logoBase + 'logo-thumbnail.png';
-  const logoUrl      = logoBase + 'logo.png';
-
-  const token = await getToken();
-  const res   = await fetch(`${PASSKIT_BASE}/images`, {
-    method: 'POST',
-    headers: {
-      Authorization:  `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name:      `${clinic.name} Logo`,
-      imageData: {
-        icon:      iconUrl,       // 87×87px — Apple Wallet icon
-        thumbnail: thumbnailUrl,  // 320×320px — Google Wallet pass image
-        logo:      logoUrl,       // 660×660px — Apple Wallet logo strip
-      },
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`PassKit image upload error ${res.status}: ${body}`);
-  }
-  // Response contains CDN URLs keyed by image type — store all three
-  const data = await res.json();
-  console.log('[PassKit] POST /images response:', JSON.stringify(data));
-  return { icon: data.icon, thumbnail: data.thumbnail, logo: data.logo };
 }
 
 /**
@@ -474,9 +541,34 @@ export async function enrollPatient({ patient, clinic }) {
     }),
   });
 
+  const serialNumber = data.id;
+
+  // Set patient-specific fields that can't live in the shared template
+  const appUrl = process.env.WEBSITE_URL || 'https://dentapass.ca';
+  const memberSince = new Date().toISOString().slice(0, 7).replace('-', ''); // YYYYMM
+  const referralLink = patient.referral_code
+    ? `${appUrl}/join/${clinic.slug}?ref=${patient.referral_code}`
+    : '';
+
+  try {
+    await pkFetch('/members/member', {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: serialNumber,
+        metaData: {
+          memberSince,
+          ...(referralLink ? { referralLink } : {}),
+          ...(patient.next_checkup_date ? { nextCheckupDate: patient.next_checkup_date, nextCheckupDateBack: patient.next_checkup_date } : {}),
+        },
+      }),
+    });
+  } catch (err) {
+    console.error('[PassKit] Failed to set patient metaData after enrollment:', err.message);
+  }
+
   return {
-    serialNumber: data.id,
-    walletUrl:    `${WALLET_BASE}/m/${data.id}`,
+    serialNumber,
+    walletUrl: `${WALLET_BASE}/m/${serialNumber}`,
   };
 }
 
@@ -491,8 +583,10 @@ export async function updatePatientPass({ patient }) {
       id:     patient.passkit_serial_number,
       points: patient.points_balance,
       metaData: {
-        tier:             patient.tier,
-        nextCheckupDate:  patient.next_checkup_date || '',
+        tier:                  patient.tier,
+        nextCheckupDate:       patient.next_checkup_date || '',
+        nextCheckupDateBack:   patient.next_checkup_date || '',
+        ...(patient.created_at ? { memberSince: patient.created_at.slice(0, 7).replace('-', '') } : {}),
       },
     }),
   });

@@ -38,7 +38,7 @@ router.post('/award', async (req, res) => {
 
     const { data: patient } = await supabase
       .from('patients')
-      .select('id, clinic_id, points_balance, passkit_serial_number')
+      .select('id, clinic_id, points_balance, passkit_serial_number, created_at')
       .eq('id', patientId)
       .single();
 
@@ -51,7 +51,7 @@ router.post('/award', async (req, res) => {
       .from('patients')
       .update(updates)
       .eq('id', patientId)
-      .select('points_balance, tier, passkit_serial_number, next_checkup_date')
+      .select('points_balance, tier, passkit_serial_number, next_checkup_date, created_at')
       .single();
 
     await supabase.from('point_events').insert({
@@ -125,7 +125,7 @@ router.post('/redeem', async (req, res) => {
       .from('patients')
       .update({ points_balance: newBalance })
       .eq('id', patientId)
-      .select('points_balance, tier, passkit_serial_number, next_checkup_date')
+      .select('points_balance, tier, passkit_serial_number, next_checkup_date, created_at')
       .single();
 
     await supabase.from('redemptions').insert({

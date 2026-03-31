@@ -316,6 +316,16 @@ function StepLinks({ form, set }) {
           Find this in Google Business Profile → Get more reviews → Share review form
         </p>
       </div>
+
+      <div>
+        <label style={s.label}>Facebook URL <span style={s.hint}>optional — shown as "Follow us on Facebook"</span></label>
+        <input style={s.input} type="url" value={form.facebook_url} onChange={e => set('facebook_url', e.target.value)} placeholder="https://facebook.com/yourclinic" />
+      </div>
+
+      <div>
+        <label style={s.label}>Instagram URL <span style={s.hint}>optional — shown as "Follow us on Instagram"</span></label>
+        <input style={s.input} type="url" value={form.instagram_url} onChange={e => set('instagram_url', e.target.value)} placeholder="https://instagram.com/yourclinic" />
+      </div>
     </div>
   );
 }
@@ -383,6 +393,8 @@ export default function SetupWizard({ clinic }) {
     phone:             clinic.phone             || '',
     booking_url:       clinic.booking_url       || '',
     google_review_url: clinic.google_review_url || '',
+    facebook_url:      clinic.facebook_url      || '',
+    instagram_url:     clinic.instagram_url     || '',
   });
 
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
@@ -404,7 +416,8 @@ export default function SetupWizard({ clinic }) {
       ]);
 
       const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(`${base}/logo.png`);
-      set('logo_url', publicUrl);
+      set('logo_url', `${publicUrl}?t=${Date.now()}`);
+      e.target.value = '';  // reset so selecting the same file again triggers onChange
     } catch (err) {
       setError(err.message || 'Logo upload failed. Please try again.');
       e.target.value = '';
