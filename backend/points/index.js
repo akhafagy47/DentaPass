@@ -44,6 +44,12 @@ router.post('/award', async (req, res) => {
 
     if (!patient) return res.status(404).json({ error: 'Patient not found.' });
 
+    const { data: clinic } = await supabase
+      .from('clinics')
+      .select('passkit_template_id, passkit_program_id')
+      .eq('id', patient.clinic_id)
+      .single();
+
     const updates = { points_balance: patient.points_balance + points };
     if (reason === 'completed_visit') updates.last_visit_date = new Date().toISOString();
 
@@ -63,10 +69,11 @@ router.post('/award', async (req, res) => {
     });
 
     // Push wallet update — must complete before responding to meet 3s requirement
-    if (patient.passkit_serial_number) {
+    if (patient.passkit_serial_number && clinic) {
       try {
         await updatePatientPass({
           patient: { ...updated, passkit_serial_number: patient.passkit_serial_number },
+          clinic,
         });
       } catch (pkErr) {
         console.error('PassKit push failed:', pkErr);
@@ -105,7 +112,7 @@ router.post('/redeem', async (req, res) => {
 
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('rewards_mode, points_per_dollar')
+      .select('rewards_mode, points_per_dollar, passkit_template_id, passkit_program_id')
       .eq('id', patient.clinic_id)
       .single();
 
@@ -137,10 +144,11 @@ router.post('/redeem', async (req, res) => {
       redeemed_by:  redeemedBy || 'staff',
     });
 
-    if (patient.passkit_serial_number) {
+    if (patient.passkit_serial_number && clinic) {
       try {
         await updatePatientPass({
           patient: { ...updated, passkit_serial_number: patient.passkit_serial_number },
+          clinic,
         });
       } catch (pkErr) {
         console.error('PassKit push failed:', pkErr);

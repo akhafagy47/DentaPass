@@ -129,7 +129,7 @@ router.post('/', async (req, res) => {
       if (referredByPatient.passkit_serial_number) {
         const { data: updatedReferrer } = await supabase
           .from('patients').select('*').eq('id', referredByPatient.id).single();
-        try { await updatePatientPass({ patient: updatedReferrer }); } catch {}
+        try { await updatePatientPass({ patient: updatedReferrer, clinic }); } catch {}
       }
     }
 

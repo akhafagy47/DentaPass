@@ -14,6 +14,8 @@
  *   Member   (one per patient)
  */
 
+import { createHash } from 'crypto';
+
 const PASSKIT_BASE = process.env.PASSKIT_API_URL || 'https://api.pub2.passkit.io';
 const WALLET_BASE  = 'https://pub2.pskt.io';
 
@@ -86,6 +88,18 @@ async function pkFetch(path, options = {}, retry = true) {
     throw new Error(`PassKit API error ${res.status}: ${body}`);
   }
   return res.json();
+}
+
+// Deterministic base58-encoded ID — PassKit's native "uuidCompressedString" format
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function base58(buf) {
+  let n = BigInt('0x' + buf.toString('hex'));
+  let s = '';
+  while (n > 0n) { s = B58[Number(n % 58n)] + s; n /= 58n; }
+  return s || '1';
+}
+function linkId(name) {
+  return base58(createHash('md5').update(name).digest());
 }
 
 // ── Design helpers ─────────────────────────────────────────────────────────────
@@ -323,7 +337,7 @@ function buildLinks(clinic) {
   const links = [];
   if (clinic.booking_url) {
     links.push({
-      id:    'booking',
+      // id: linkId('booking'),
       title: 'Book an Appointment',
       url:   clinic.booking_url,
       type:  'URI_WEB',
@@ -332,7 +346,7 @@ function buildLinks(clinic) {
   }
   if (clinic.phone) {
     links.push({
-      id:    'phone',
+      // id: linkId('phone'),
       title: 'Call Us',
       url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
       type:  'URI_TEL',
@@ -341,7 +355,7 @@ function buildLinks(clinic) {
   }
   if (clinic.address) {
     links.push({
-      id:    'directions',
+      // id: linkId('directions'),
       title: 'Get Directions',
       url:   `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
       type:  'URI_LOCATION',
@@ -350,7 +364,7 @@ function buildLinks(clinic) {
   }
   if (clinic.facebook_url) {
     links.push({
-      id:    'facebook',
+      // id: linkId('facebook'),
       title: 'Follow us on Facebook',
       url:   clinic.facebook_url,
       type:  'URI_WEB',
@@ -359,7 +373,7 @@ function buildLinks(clinic) {
   }
   if (clinic.instagram_url) {
     links.push({
-      id:    'instagram',
+      // id: linkId('instagram'),
       title: 'Follow us on Instagram',
       url:   clinic.instagram_url,
       type:  'URI_WEB',
@@ -368,7 +382,7 @@ function buildLinks(clinic) {
   }
   if (clinic.google_review_url) {
     links.push({
-      id:    'google-review',
+      // id: linkId('google-review'),
       title: 'Leave a Google Review',
       url:   clinic.google_review_url,
       type:  'URI_WEB',
@@ -527,48 +541,37 @@ export async function updateClinicTemplate({ clinic }) {
  * Returns { serialNumber, walletUrl }.
  */
 export async function enrollPatient({ patient, clinic }) {
-  const data = await pkFetch('/members/member', {
-    method: 'POST',
-    body: JSON.stringify({
-      tierId:    clinic.passkit_template_id,
-      programId: clinic.passkit_program_id,
-      person: {
-        forename:     patient.first_name,
-        surname:      patient.last_name,
-        emailAddress: patient.email || undefined,
-      },
-      points: patient.points_balance ?? 0,
-    }),
-  });
-
-  const serialNumber = data.id;
-
-  // Set patient-specific fields that can't live in the shared template
-  const appUrl = process.env.WEBSITE_URL || 'https://dentapass.ca';
+  const appUrl      = process.env.WEBSITE_URL || 'https://denta-pass.vercel.app';
   const memberSince = new Date().toISOString().slice(0, 7).replace('-', ''); // YYYYMM
   const referralLink = patient.referral_code
     ? `${appUrl}/join/${clinic.slug}?ref=${patient.referral_code}`
     : '';
 
-  try {
-    await pkFetch('/members/member', {
-      method: 'PUT',
-      body: JSON.stringify({
-        id: serialNumber,
-        metaData: {
-          memberSince,
-          ...(referralLink ? { referralLink } : {}),
-          ...(patient.next_checkup_date ? { nextCheckupDate: patient.next_checkup_date, nextCheckupDateBack: patient.next_checkup_date } : {}),
-        },
-      }),
-    });
-  } catch (err) {
-    console.error('[PassKit] Failed to set patient metaData after enrollment:', err.message);
-  }
+  const data = await pkFetch('/members/member', {
+    method: 'POST',
+    body: JSON.stringify({
+      tierId:     clinic.passkit_template_id,
+      programId:  clinic.passkit_program_id,
+      externalId: patient.id,
+      person: {
+        forename:     patient.first_name,
+        surname:      patient.last_name,
+        displayName:  `${patient.first_name} ${patient.last_name}`,
+        emailAddress: patient.email        || undefined,
+        mobileNumber: patient.phone        || undefined,
+      },
+      points: patient.points_balance ?? 0,
+      metaData: {
+        memberSince,
+        ...(referralLink ? { referralLink } : {}),
+        ...(patient.next_checkup_date ? { nextCheckupDate: patient.next_checkup_date, nextCheckupDateBack: patient.next_checkup_date } : {}),
+      },
+    }),
+  });
 
   return {
-    serialNumber,
-    walletUrl: `${WALLET_BASE}/m/${serialNumber}`,
+    serialNumber: data.id,
+    walletUrl:    `${WALLET_BASE}/m/${data.id}`,
   };
 }
 
@@ -576,16 +579,19 @@ export async function enrollPatient({ patient, clinic }) {
  * Update a patient's wallet card after a points/tier change.
  * PassKit automatically pushes the update to the installed wallet pass.
  */
-export async function updatePatientPass({ patient }) {
+export async function updatePatientPass({ patient, clinic }) {
   await pkFetch('/members/member', {
     method: 'PUT',
     body: JSON.stringify({
-      id:     patient.passkit_serial_number,
-      points: patient.points_balance,
+      id:        patient.passkit_serial_number,
+      tierId:    clinic.passkit_template_id,
+      programId: clinic.passkit_program_id,
+      operation: 'OPERATION_PATCH',
+      points:    patient.points_balance,
       metaData: {
-        tier:                  patient.tier,
-        nextCheckupDate:       patient.next_checkup_date || '',
-        nextCheckupDateBack:   patient.next_checkup_date || '',
+        tier:                patient.tier,
+        nextCheckupDate:     patient.next_checkup_date || '',
+        nextCheckupDateBack: patient.next_checkup_date || '',
         ...(patient.created_at ? { memberSince: patient.created_at.slice(0, 7).replace('-', '') } : {}),
       },
     }),
@@ -593,14 +599,49 @@ export async function updatePatientPass({ patient }) {
 }
 
 /**
- * Earn (add) points for a patient.
- * Triggers a wallet push automatically.
+ * Earn (add) points for a patient via the dedicated earn endpoint.
+ * Lighter than a full member PUT — use when only points need updating.
+ * Identify by PassKit serial number OR externalId + programId.
  */
-export async function earnPoints({ serialNumber, points }) {
-  await pkFetch('/members/member/points/earn', {
+export async function earnPoints({ serialNumber, externalId, programId, points }) {
+  const body = serialNumber
+    ? { id: serialNumber, points }
+    : { externalId, programId, points };
+  const res = await pkFetch('/members/member/points/earn', {
     method: 'PUT',
-    body: JSON.stringify({ id: serialNumber, points }),
+    body: JSON.stringify(body),
   });
+  return res.points;
+}
+
+/**
+ * Set points to a specific balance for a patient.
+ * Identify by PassKit serial number OR externalId + programId.
+ */
+export async function setPoints({ serialNumber, externalId, programId, points, resetPoints = false }) {
+  const body = serialNumber
+    ? { id: serialNumber, points, resetPoints }
+    : { externalId, programId, points, resetPoints };
+  const res = await pkFetch('/members/member/points/set', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+  return res.points;
+}
+
+/**
+ * Burn (deduct) points for a patient via the dedicated burn endpoint.
+ * Identify by PassKit serial number OR externalId + programId.
+ */
+export async function burnPoints({ serialNumber, externalId, programId, points }) {
+  const body = serialNumber
+    ? { id: serialNumber, points }
+    : { externalId, programId, points };
+  const res = await pkFetch('/members/member/points/burn', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+  return res.points;
 }
 
 /**
