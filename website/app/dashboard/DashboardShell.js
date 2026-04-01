@@ -70,29 +70,36 @@ export default function DashboardShell({ children, clinic, userEmail }) {
   return (
     <>
       <style>{`
+        @keyframes dpSlideIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes orbFloat { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(40px,-50px) scale(1.06)} 70%{transform:translate(-25px,30px) scale(0.96)} }
+        @keyframes orbFloat2 { 0%,100%{transform:translate(0,0) scale(1)} 35%{transform:translate(-40px,45px) scale(1.04)} 65%{transform:translate(30px,-25px) scale(0.97)} }
         .dp-nav { transition: background 0.15s, color 0.15s; }
         .dp-nav:hover { background: rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.9) !important; }
         .dp-nav.active { background: rgba(59,191,185,0.12) !important; color: #fff !important; }
-        .dp-logout:hover { background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.7) !important; }
-        .dp-content { animation: dpSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
-        @keyframes dpSlideIn {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
+        .dp-logout:hover { background: rgba(255,255,255,0.07) !important; color: rgba(255,255,255,0.7) !important; }
+        .dp-content { animation: dpSlideIn 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+        .dp-orb-1 { animation: orbFloat 20s ease-in-out infinite; }
+        .dp-orb-2 { animation: orbFloat2 26s ease-in-out infinite; }
       `}</style>
+
       <div style={s.root}>
+        {/* Background orbs — live in main area only */}
+        <div className="dp-orb-1" style={s.orb1} />
+        <div className="dp-orb-2" style={s.orb2} />
+
+        {/* Sidebar */}
         <aside style={s.sidebar}>
           <div style={s.sidebarTop}>
-            {/* Brand */}
             <div style={s.brand}>
-              <div style={s.brandMark}><img src="/dentapass-logo.png" alt="DentaPass" style={{ width: 22, height: 22, objectFit: 'contain' }} /></div>
+              <div style={s.brandMark}>
+                <img src="/dentapass-logo.png" alt="DentaPass" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              </div>
               <div>
                 <div style={s.brandName}>DentaPass</div>
                 {clinic && <div style={s.clinicName}>{clinic.name}</div>}
               </div>
             </div>
 
-            {/* Nav */}
             <div style={s.nav}>
               <div style={s.navLabel}>MENU</div>
               {NAV.map(({ href, label, Icon, exact }) => {
@@ -128,7 +135,6 @@ export default function DashboardShell({ children, clinic, userEmail }) {
             </div>
           </div>
 
-          {/* Bottom */}
           <div style={s.sidebarBottom}>
             <div style={s.divider} />
             <div style={s.userRow}>
@@ -158,55 +164,153 @@ export default function DashboardShell({ children, clinic, userEmail }) {
 
 const s = {
   root: {
-    display: 'flex', minHeight: '100vh',
+    display: 'flex',
+    minHeight: '100vh',
     fontFamily: "'DM Sans', sans-serif",
-    background: '#f4f6f9',
+    background: '#0b1a19',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  orb1: {
+    position: 'fixed',
+    top: '-15%',
+    right: '5%',
+    width: 700,
+    height: 700,
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(59,191,185,0.13) 0%, transparent 65%)',
+    pointerEvents: 'none',
+    zIndex: 0,
+  },
+  orb2: {
+    position: 'fixed',
+    bottom: '-20%',
+    left: '15%',
+    width: 600,
+    height: 600,
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(245,240,234,0.05) 0%, transparent 65%)',
+    pointerEvents: 'none',
+    zIndex: 0,
   },
   sidebar: {
-    width: 240, minWidth: 240,
-    background: '#111318',
-    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+    width: 240,
+    minWidth: 240,
+    background: 'rgba(255,255,255,0.03)',
+    borderRight: '1px solid rgba(255,255,255,0.06)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
     padding: '24px 0 20px',
-    position: 'sticky', top: 0, height: '100vh', overflowY: 'auto',
-    borderRight: '1px solid rgba(255,255,255,0.04)',
+    position: 'sticky',
+    top: 0,
+    height: '100vh',
+    overflowY: 'auto',
+    zIndex: 10,
   },
   sidebarTop: { display: 'flex', flexDirection: 'column', gap: 28 },
   brand: { display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px' },
   brandMark: {
-    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    flexShrink: 0,
     background: 'rgba(59,191,185,0.15)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+    border: '1px solid rgba(59,191,185,0.2)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   brandName: { fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.2 },
-  clinicName: { fontSize: 11, color: 'rgba(255,255,255,0.35)', lineHeight: 1.3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 150 },
+  clinicName: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.3)',
+    lineHeight: 1.3,
+    marginTop: 2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: 150,
+  },
   nav: { display: 'flex', flexDirection: 'column', gap: 1, padding: '0 10px' },
-  navLabel: { fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.2)', padding: '0 10px', marginBottom: 6 },
+  navLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    color: 'rgba(255,255,255,0.18)',
+    padding: '0 10px',
+    marginBottom: 6,
+  },
   navItem: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '9px 10px', borderRadius: 8,
-    textDecoration: 'none', color: 'rgba(255,255,255,0.72)',
-    fontSize: 14, fontWeight: 500, position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    padding: '9px 10px',
+    borderRadius: 8,
+    textDecoration: 'none',
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    fontWeight: 500,
+    position: 'relative',
   },
   navActive: { color: '#fff', fontWeight: 600 },
-  navIcon: { display: 'flex', alignItems: 'center', flexShrink: 0, color: 'rgba(255,255,255,0.5)' },
-  activePip: { marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#3bbfb9', flexShrink: 0 },
+  navIcon: { display: 'flex', alignItems: 'center', flexShrink: 0, color: 'rgba(255,255,255,0.4)' },
+  activePip: {
+    marginLeft: 'auto',
+    width: 6,
+    height: 6,
+    borderRadius: '50%',
+    background: '#3bbfb9',
+    flexShrink: 0,
+    boxShadow: '0 0 8px rgba(59,191,185,0.6)',
+  },
   externalBadge: { marginLeft: 'auto', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
   sidebarBottom: { padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 10 },
   divider: { height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 2 },
   userRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '2px 0' },
   avatar: {
-    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+    width: 32,
+    height: 32,
+    borderRadius: '50%',
+    flexShrink: 0,
     background: 'linear-gradient(135deg, #3bbfb9 0%, #2aa8a2 100%)',
-    color: '#081312', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontWeight: 700, fontSize: 13,
+    color: '#081312',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 700,
+    fontSize: 13,
   },
-  userEmail: { fontSize: 12, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  userPlan: { fontSize: 11, color: 'rgba(255,255,255,0.25)', marginTop: 1 },
+  userEmail: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.5)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  userPlan: { fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 1 },
   logoutBtn: {
-    background: 'none', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 8, padding: '8px 12px', fontSize: 13,
-    color: 'rgba(255,255,255,0.35)', cursor: 'pointer', width: '100%',
-    textAlign: 'center', transition: 'background 0.15s, color 0.15s',
+    background: 'none',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 8,
+    padding: '8px 12px',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.3)',
+    cursor: 'pointer',
+    width: '100%',
+    textAlign: 'center',
+    transition: 'background 0.15s, color 0.15s',
+    fontFamily: "'DM Sans', sans-serif",
   },
-  main: { flex: 1, padding: '40px 44px', overflowY: 'auto', minWidth: 0 },
+  main: {
+    flex: 1,
+    padding: '40px 44px',
+    overflowY: 'auto',
+    minWidth: 0,
+    position: 'relative',
+    zIndex: 1,
+    background: '#0b1a19',
+  },
 };
