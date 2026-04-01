@@ -40,7 +40,8 @@ export default function PeriodSelector({ current }) {
 const s = {
   wrap: {
     display: 'inline-flex',
-    background: '#f1f5f9',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.08)',
     borderRadius: 10,
     padding: 3,
     gap: 2,
@@ -52,14 +53,14 @@ const s = {
     background: 'transparent',
     fontSize: 13,
     fontWeight: 500,
-    color: '#64748b',
+    color: 'rgba(255,255,255,0.35)',
     cursor: 'pointer',
     transition: 'background 0.15s, color 0.15s',
   },
   active: {
-    background: '#fff',
-    color: '#006FEE',
+    background: 'rgba(59,191,185,0.15)',
+    color: '#3bbfb9',
     fontWeight: 700,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
   },
 };

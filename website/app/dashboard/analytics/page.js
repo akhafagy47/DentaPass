@@ -106,9 +106,9 @@ function AreaChart({ data, color = '#006FEE', height = 120 }) {
           <line
             x1={pad.left} y1={yScale(v)}
             x2={pad.left + innerW} y2={yScale(v)}
-            stroke="#f1f5f9" strokeWidth="1"
+            stroke="rgba(255,255,255,0.07)" strokeWidth="1"
           />
-          <text x={pad.left - 6} y={yScale(v) + 4} textAnchor="end" fontSize="9" fill="#94a3b8">
+          <text x={pad.left - 6} y={yScale(v) + 4} textAnchor="end" fontSize="9" fill="rgba(255,255,255,0.3)">
             {v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
           </text>
         </g>
@@ -137,7 +137,7 @@ function AreaChart({ data, color = '#006FEE', height = 120 }) {
 
       {/* X labels */}
       {xLabels.map(({ i, label }) => (
-        <text key={i} x={xScale(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="#94a3b8">
+        <text key={i} x={xScale(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.3)">
           {label}
         </text>
       ))}
@@ -150,8 +150,8 @@ function DonutChart({ segments, size = 140 }) {
   if (!total) {
     return (
       <svg viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size }}>
-        <circle cx={size / 2} cy={size / 2} r={size * 0.38} fill="none" stroke="#f1f5f9" strokeWidth={size * 0.18} />
-        <text x={size / 2} y={size / 2 + 5} textAnchor="middle" fontSize="11" fill="#94a3b8">—</text>
+        <circle cx={size / 2} cy={size / 2} r={size * 0.38} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={size * 0.18} />
+        <text x={size / 2} y={size / 2 + 5} textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.3)">—</text>
       </svg>
     );
   }
@@ -171,7 +171,7 @@ function DonutChart({ segments, size = 140 }) {
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size }}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={stroke} />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={stroke} />
       {arcs.map((arc) => (
         <circle
           key={arc.label}
@@ -185,10 +185,10 @@ function DonutChart({ segments, size = 140 }) {
           style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
         />
       ))}
-      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="800" fill="#111">
+      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="18" fontWeight="800" fill="#fff">
         {total.toLocaleString()}
       </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fontSize="9" fill="#94a3b8">total</text>
+      <text x={cx} y={cy + 12} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.3)">total</text>
     </svg>
   );
 }
@@ -200,16 +200,16 @@ function HBarChart({ bars, maxValue }) {
       {bars.map((bar) => (
         <div key={bar.label}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: '#374151', fontWeight: 500 }}>{bar.label}</span>
-            <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{bar.label}</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
               {bar.value.toLocaleString()}
             </span>
           </div>
-          <div style={{ height: 6, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 99, overflow: 'hidden' }}>
             <div style={{
               height: '100%',
               width: `${(bar.value / max) * 100}%`,
-              background: bar.color || '#006FEE',
+              background: bar.color || '#3bbfb9',
               borderRadius: 99,
               transition: 'width 0.6s cubic-bezier(0.16,1,0.3,1)',
             }} />
@@ -222,24 +222,25 @@ function HBarChart({ bars, maxValue }) {
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub, delta, color = '#006FEE', bg = '#eff6ff', delay = '0s' }) {
+function StatCard({ label, value, sub, delta, color = '#3bbfb9', delay = '0s' }) {
   const isPositive = delta > 0;
   const isNeutral = delta === 0 || delta === null || delta === undefined;
   return (
     <div className="an-card" style={{ ...s.statCard, animationDelay: delay }}>
-      <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: 600, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
         {label}
       </div>
       <div style={{ fontSize: 34, fontWeight: 800, color: color, letterSpacing: '-0.03em', lineHeight: 1 }}>
         {value}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
-        {sub && <span style={{ fontSize: 12, color: '#94a3b8' }}>{sub}</span>}
+        {sub && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{sub}</span>}
         {!isNeutral && (
           <span style={{
             fontSize: 11, fontWeight: 700,
-            color: isPositive ? '#16a34a' : '#dc2626',
-            background: isPositive ? '#f0fdf4' : '#fef2f2',
+            color: isPositive ? '#34d399' : '#f87171',
+            background: isPositive ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+            border: `1px solid ${isPositive ? 'rgba(52,211,153,0.25)' : 'rgba(248,113,113,0.25)'}`,
             padding: '2px 7px', borderRadius: 20,
           }}>
             {isPositive ? '↑' : '↓'} {Math.abs(delta)}%
@@ -359,7 +360,7 @@ export default async function AnalyticsPage({ searchParams }) {
     .sort((a, b) => b[1] - a[1])
     .map(([label, value], i) => ({
       label, value,
-      color: ['#006FEE', '#7c3aed', '#059669', '#d97706'][i] || '#94a3b8',
+      color: ['#3bbfb9', '#a78bfa', '#34d399', '#fbbf24'][i] || 'rgba(255,255,255,0.3)',
     }));
 
   // ── Points trend ──
@@ -469,7 +470,7 @@ export default async function AnalyticsPage({ searchParams }) {
             label="Total patients"
             value={totalPatients?.toLocaleString() ?? '0'}
             sub="all time"
-            color="#006FEE"
+            color="#3bbfb9"
             delay="0.04s"
           />
           <StatCard
@@ -477,7 +478,7 @@ export default async function AnalyticsPage({ searchParams }) {
             value={newPatients?.toLocaleString() ?? '0'}
             sub={periodLabel}
             delta={enrollDelta}
-            color="#7c3aed"
+            color="#a78bfa"
             delay="0.08s"
           />
           <StatCard
@@ -485,21 +486,21 @@ export default async function AnalyticsPage({ searchParams }) {
             value={totalPoints.toLocaleString()}
             sub={periodLabel}
             delta={pointsDelta}
-            color="#059669"
+            color="#34d399"
             delay="0.12s"
           />
           <StatCard
             label="Notifications sent"
             value={totalNotifs.toLocaleString()}
             sub={periodLabel}
-            color="#d97706"
+            color="#fbbf24"
             delay="0.16s"
           />
           <StatCard
             label="Review click rate"
             value={`${reviewCTR}%`}
             sub={`${reviewClicks} of ${notifCounts.review} tapped`}
-            color="#e11d48"
+            color="#f87171"
             delay="0.2s"
           />
         </div>
@@ -507,10 +508,10 @@ export default async function AnalyticsPage({ searchParams }) {
         {/* Enrollment trend + Points trend */}
         <div className="an-two-col">
           <Card title="Enrollment trend" subtitle={`New patients · ${periodLabel}`} className="" style={{ animationDelay: '0.2s' }}>
-            <AreaChart data={enrollTrend} color="#006FEE" height={130} />
+            <AreaChart data={enrollTrend} color="#3bbfb9" height={130} />
           </Card>
           <Card title="Points awarded" subtitle={`Total points · ${periodLabel}`} style={{ animationDelay: '0.24s' }}>
-            <AreaChart data={pointsTrend} color="#059669" height={130} />
+            <AreaChart data={pointsTrend} color="#34d399" height={130} />
           </Card>
         </div>
 
@@ -523,9 +524,9 @@ export default async function AnalyticsPage({ searchParams }) {
                 {tierSegments.map((seg) => (
                   <div key={seg.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: seg.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: '#374151', flex: 1 }}>{seg.label}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{seg.value}</span>
-                    <span style={{ fontSize: 11, color: '#94a3b8', width: 32, textAlign: 'right' }}>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', flex: 1 }}>{seg.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{seg.value}</span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', width: 32, textAlign: 'right' }}>
                       {pct(seg.value, tierRows?.length)}%
                     </span>
                   </div>
@@ -549,12 +550,12 @@ export default async function AnalyticsPage({ searchParams }) {
             {/* CTR meter */}
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-                <span style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>Click-through rate</span>
-                <span style={{ fontSize: 22, fontWeight: 800, color: '#e11d48', letterSpacing: '-0.03em' }}>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>Click-through rate</span>
+                <span style={{ fontSize: 22, fontWeight: 800, color: '#f87171', letterSpacing: '-0.03em' }}>
                   {reviewCTR}%
                 </span>
               </div>
-              <div style={{ height: 8, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{ height: 8, background: 'rgba(255,255,255,0.07)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{
                   height: '100%', borderRadius: 99,
                   width: `${reviewCTR}%`,
@@ -567,35 +568,36 @@ export default async function AnalyticsPage({ searchParams }) {
                 }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>0%</span>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>
-                  {reviewCTR >= 30 ? '🟢 Strong' : reviewCTR >= 15 ? '🟡 Average' : reviewCTR > 0 ? '🔴 Low' : 'No data yet'}
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>0%</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+                  {reviewCTR >= 30 ? 'Strong' : reviewCTR >= 15 ? 'Average' : reviewCTR > 0 ? 'Low' : 'No data yet'}
                 </span>
-                <span style={{ fontSize: 11, color: '#94a3b8' }}>Industry avg ~20%</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>Industry avg ~20%</span>
               </div>
             </div>
 
             {/* Stats row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
               {[
-                { label: 'Sent',    value: notifCounts.review, color: '#7c3aed' },
-                { label: 'Clicked', value: reviewClicks,        color: '#e11d48' },
-                { label: 'Avg response', value: avgHoursToClick !== null ? `${avgHoursToClick}h` : '—', color: '#059669' },
+                { label: 'Sent',    value: notifCounts.review, color: '#a78bfa' },
+                { label: 'Clicked', value: reviewClicks,        color: '#f87171' },
+                { label: 'Avg response', value: avgHoursToClick !== null ? `${avgHoursToClick}h` : '—', color: '#34d399' },
               ].map((item) => (
                 <div key={item.label} style={{
-                  background: '#f8fafc', borderRadius: 10, padding: '10px 12px', textAlign: 'center',
+                  background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '10px 12px', textAlign: 'center',
+                  border: '1px solid rgba(255,255,255,0.07)',
                 }}>
                   <div style={{ fontSize: 20, fontWeight: 800, color: item.color, letterSpacing: '-0.02em' }}>
                     {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
                   </div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{item.label}</div>
                 </div>
               ))}
             </div>
 
             {/* Click trend */}
             <div>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>Clicks over time</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>Clicks over time</div>
               <AreaChart data={clickTrend} color="#e11d48" height={90} />
             </div>
           </Card>
@@ -609,20 +611,21 @@ export default async function AnalyticsPage({ searchParams }) {
                   <div key={r.name} style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     padding: '10px 0',
-                    borderBottom: i < topReferrers.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    borderBottom: i < topReferrers.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
                   }}>
                     <div style={{
                       width: 26, height: 26, borderRadius: '50%',
-                      background: '#eff6ff', color: '#006FEE',
+                      background: 'rgba(59,191,185,0.12)', color: '#3bbfb9',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 11, fontWeight: 700, flexShrink: 0,
                     }}>
                       {i + 1}
                     </div>
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#374151' }}>{r.name}</span>
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>{r.name}</span>
                     <span style={{
-                      fontSize: 12, fontWeight: 700, color: '#059669',
-                      background: '#f0fdf4', padding: '2px 8px', borderRadius: 20,
+                      fontSize: 12, fontWeight: 700, color: '#34d399',
+                      background: 'rgba(52,211,153,0.12)', padding: '2px 8px', borderRadius: 20,
+                      border: '1px solid rgba(52,211,153,0.2)',
                     }}>
                       {r.count} {r.count === 1 ? 'referral' : 'referrals'}
                     </span>
@@ -640,19 +643,29 @@ export default async function AnalyticsPage({ searchParams }) {
 const s = {
   page: { display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 1040 },
   header: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 },
-  h1: { fontSize: 28, fontWeight: 800, color: '#0d0f14', margin: '0 0 4px', letterSpacing: '-0.02em' },
-  sub: { fontSize: 14, color: '#64748b', margin: 0 },
+  h1: {
+    fontFamily: "'Instrument Serif', serif",
+    fontSize: 32, fontWeight: 400, color: '#fff',
+    margin: '0 0 4px', letterSpacing: '-0.02em',
+  },
+  sub: { fontSize: 14, color: 'rgba(255,255,255,0.35)', margin: 0 },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 },
   statCard: {
-    background: '#fff', borderRadius: 16, padding: '20px 22px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    border: '1px solid rgba(0,0,0,0.04)',
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 16, padding: '20px 22px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
   },
   card: {
-    background: '#fff', borderRadius: 16, padding: '22px 24px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    border: '1px solid rgba(0,0,0,0.04)',
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 16, padding: '22px 24px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
   },
-  cardTitle: { fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 2 },
-  cardSub: { fontSize: 12, color: '#94a3b8' },
+  cardTitle: { fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginBottom: 2 },
+  cardSub: { fontSize: 12, color: 'rgba(255,255,255,0.3)' },
 };

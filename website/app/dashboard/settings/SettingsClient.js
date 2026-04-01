@@ -270,8 +270,8 @@ function WalletCardPreview(props) {
         style={{
           marginTop: 8, flexShrink: 0,
           display: 'flex', alignItems: 'center', gap: 5,
-          background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: 20,
-          padding: '6px 12px', fontSize: 11, color: '#64748b',
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20,
+          padding: '6px 12px', fontSize: 11, color: 'rgba(255,255,255,0.4)',
           cursor: 'pointer', fontFamily: '-apple-system,sans-serif',
           whiteSpace: 'nowrap',
         }}
@@ -379,8 +379,8 @@ export default function SettingsClient({ clinic }) {
   return (
     <>
       <style>{`
-        .st-input:focus { border-color: #006FEE !important; box-shadow: 0 0 0 3px rgba(0,111,238,0.08); }
-        .st-upload:hover { border-color: #006FEE !important; background: #f0f7ff !important; }
+        .st-input:focus { border-color: rgba(59,191,185,0.5) !important; box-shadow: 0 0 0 3px rgba(59,191,185,0.1); outline: none; }
+        .st-upload:hover { border-color: rgba(59,191,185,0.4) !important; background: rgba(59,191,185,0.05) !important; }
       `}</style>
       <div style={s.page}>
         <h1 style={s.h1}>Settings</h1>
@@ -436,21 +436,21 @@ export default function SettingsClient({ clinic }) {
                   <button type="button" className="st-upload" onClick={() => fileRef.current?.click()}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '10px 14px', border: '1.5px dashed #e2e8f0',
-                      borderRadius: 10, background: '#fafafa', cursor: 'pointer',
-                      fontSize: 13, color: '#64748b', transition: 'border-color 0.15s, background 0.15s',
+                      padding: '10px 14px', border: '1.5px dashed rgba(255,255,255,0.12)',
+                      borderRadius: 10, background: 'rgba(255,255,255,0.03)', cursor: 'pointer',
+                      fontSize: 13, color: 'rgba(255,255,255,0.4)', transition: 'border-color 0.15s, background 0.15s',
                       width: '100%', boxSizing: 'border-box',
                     }}>
                     {uploading ? (
-                      <span style={{ color: '#006FEE', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Spinner color="#006FEE" />Uploading…</span>
+                      <span style={{ color: '#3bbfb9', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Spinner color="#3bbfb9" />Uploading…</span>
                     ) : form.logo_url ? (
                       <>
                         <img src={form.logo_url} alt="logo" style={{ height: 28, maxWidth: 80, objectFit: 'contain', borderRadius: 4 }} />
-                        <span style={{ color: '#006FEE', fontSize: 12 }}>Change logo</span>
+                        <span style={{ color: '#3bbfb9', fontSize: 12 }}>Change logo</span>
                       </>
                     ) : (
                       <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                         Upload logo
@@ -474,7 +474,7 @@ export default function SettingsClient({ clinic }) {
 
               {/* Live card preview */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', letterSpacing: '0.06em' }}>LIVE PREVIEW</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.06em' }}>LIVE PREVIEW</div>
                 <WalletCardPreview
                   clinicName={form.name}
                   brandColor={form.brand_color}
@@ -503,14 +503,15 @@ export default function SettingsClient({ clinic }) {
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
                       borderRadius: 12, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
-                      border: active ? '2px solid #006FEE' : '1.5px solid #e2e8f0',
-                      background: active ? '#eff6ff' : '#fff',
+                      border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                      background: active ? 'rgba(59,191,185,0.08)' : 'rgba(255,255,255,0.03)',
                     }}>
                     <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-                      border: active ? '5px solid #006FEE' : '2px solid #cbd5e1', background: '#fff' }} />
+                      border: active ? '5px solid #3bbfb9' : '2px solid rgba(255,255,255,0.2)',
+                      background: 'transparent' }} />
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#006FEE' : '#111' }}>{opt.label}</div>
-                      <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{opt.desc}</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#3bbfb9' : 'rgba(255,255,255,0.7)' }}>{opt.label}</div>
+                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{opt.desc}</div>
                     </div>
                   </button>
                 );
@@ -523,7 +524,7 @@ export default function SettingsClient({ clinic }) {
                   <input className="st-input" type="number" min="1" step="1" value={form.points_per_dollar}
                     onChange={(e) => set('points_per_dollar', e.target.value)}
                     style={{ ...s.input, maxWidth: 90 }} placeholder="5" />
-                  <span style={{ fontSize: 13, color: '#64748b' }}>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
                     points = $1.00
                     {form.points_per_dollar && ` · 100 pts = $${(100 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
                   </span>
@@ -534,8 +535,9 @@ export default function SettingsClient({ clinic }) {
 
           {feedback && (
             <div style={{
-              background: feedback.includes('saved') ? '#dcfce7' : '#fee2e2',
-              color: feedback.includes('saved') ? '#16a34a' : '#dc2626',
+              background: feedback.includes('saved') ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
+              color: feedback.includes('saved') ? '#34d399' : '#f87171',
+              border: `1px solid ${feedback.includes('saved') ? 'rgba(52,211,153,0.25)' : 'rgba(248,113,113,0.25)'}`,
               borderRadius: 10, padding: '10px 16px', fontSize: 14, fontWeight: 600,
             }}>
               {feedback}
@@ -578,10 +580,17 @@ export default function SettingsClient({ clinic }) {
 
 function Section({ title, subtitle, children }) {
   return (
-    <div style={{ background: '#fff', borderRadius: 16, padding: '22px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{
+      background: 'rgba(255,255,255,0.04)',
+      borderRadius: 16, padding: '22px 24px',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+      display: 'flex', flexDirection: 'column', gap: 16,
+    }}>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{subtitle}</div>}
+        <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{title}</div>
+        {subtitle && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{subtitle}</div>}
       </div>
       {children}
     </div>
@@ -591,24 +600,49 @@ function Section({ title, subtitle, children }) {
 function Field({ label, hint, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{label}</label>
+      <label style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{label}</label>
       {children}
-      {hint && <span style={{ fontSize: 11, color: '#94a3b8' }}>{hint}</span>}
+      {hint && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{hint}</span>}
     </div>
   );
 }
 
 const s = {
   page:    { display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 920 },
-  h1:      { fontSize: 28, fontWeight: 800, color: '#0d0f14', margin: '0 0 4px', letterSpacing: '-0.02em' },
+  h1:      {
+    fontFamily: "'Instrument Serif', serif",
+    fontSize: 32, fontWeight: 400, color: '#fff',
+    margin: '0 0 4px', letterSpacing: '-0.02em',
+  },
   form:    { display: 'flex', flexDirection: 'column', gap: 20 },
-  input:   { padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s', fontFamily: 'inherit' },
-  saveBtn: { background: '#006FEE', color: '#fff', border: 'none', borderRadius: 12, padding: '13px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' },
-  linkRow:   { display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 12, borderBottom: '1px solid #f1f5f9' },
-  linkLabel: { fontSize: 12, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' },
-  link:      { fontSize: 14, color: '#006FEE', wordBreak: 'break-all' },
-  planCard:  { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', borderRadius: 10, padding: 16 },
-  planName:  { fontWeight: 700, fontSize: 16, color: '#111' },
-  planMeta:  { fontSize: 13, color: '#64748b', marginTop: 2 },
-  manageBtn: { background: '#006FEE', color: '#fff', borderRadius: 10, padding: '10px 16px', fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' },
+  input:   {
+    padding: '10px 14px',
+    border: '1.5px solid rgba(255,255,255,0.1)',
+    borderRadius: 10, fontSize: 14, outline: 'none',
+    width: '100%', boxSizing: 'border-box',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+    fontFamily: 'inherit',
+    background: 'rgba(255,255,255,0.05)',
+    color: '#fff',
+  },
+  saveBtn: {
+    background: '#3bbfb9', color: '#081312', border: 'none',
+    borderRadius: 12, padding: '13px 28px', fontSize: 15, fontWeight: 700,
+    cursor: 'pointer', alignSelf: 'flex-start',
+  },
+  linkRow:   { display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  linkLabel: { fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' },
+  link:      { fontSize: 14, color: '#3bbfb9', wordBreak: 'break-all' },
+  planCard:  {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 16,
+    border: '1px solid rgba(255,255,255,0.07)',
+  },
+  planName:  { fontWeight: 700, fontSize: 16, color: '#fff' },
+  planMeta:  { fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  manageBtn: {
+    background: 'rgba(59,191,185,0.12)', color: '#3bbfb9',
+    borderRadius: 10, padding: '10px 16px', fontSize: 14, fontWeight: 600,
+    border: '1px solid rgba(59,191,185,0.25)', cursor: 'pointer',
+  },
 };
