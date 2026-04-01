@@ -173,12 +173,12 @@ export default function ScanClient({ clinicSlug }) {
           <button onClick={() => { setMode('scan'); setPatient(null); setShowCustom(false); }} style={s.backBtn}>
             ← Back
           </button>
-          <div style={{ ...s.circle, background: '#eff6ff', color: '#006FEE', fontSize: 24 }}>
+          <div style={{ ...s.circle, background: '#eff6ff', color: '#3bbfb9', fontSize: 24 }}>
             {patient.first_name[0]}{patient.last_name[0]}
           </div>
           <h2 style={s.h2}>{patient.first_name} {patient.last_name}</h2>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
-            <span style={{ ...s.badge, background: '#eff6ff', color: '#006FEE' }}>
+            <span style={{ ...s.badge, background: '#eff6ff', color: '#3bbfb9' }}>
               {patient.points_balance} pts
             </span>
             <span style={{ ...s.badge, color: tierColor[patient.tier] || '#333', background: '#fef9f0' }}>
@@ -312,7 +312,7 @@ const s = {
   scanBox: {
     width: 220,
     height: 220,
-    border: '3px solid #006FEE',
+    border: '3px solid #3bbfb9',
     borderRadius: 16,
     boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
   },
@@ -336,7 +336,7 @@ const s = {
     textAlign: 'center',
   },
   retryBtn: {
-    background: '#006FEE',
+    background: '#3bbfb9',
     color: '#fff',
     border: 'none',
     borderRadius: 10,
@@ -402,8 +402,8 @@ const s = {
     width: '100%',
   },
   ptsBadge: {
-    background: '#eff6ff',
-    color: '#006FEE',
+    background: 'rgba(59,191,185,0.1)',
+    color: '#2aa8a2',
     fontWeight: 700,
     fontSize: 13,
     padding: '3px 10px',
@@ -418,8 +418,8 @@ const s = {
     outline: 'none',
   },
   customSubmit: {
-    background: '#006FEE',
-    color: '#fff',
+    background: '#3bbfb9',
+    color: '#081312',
     border: 'none',
     borderRadius: 10,
     padding: '12px 18px',

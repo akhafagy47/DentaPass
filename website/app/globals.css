@@ -5,22 +5,26 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
 :root{
-  --ink:#0d0f14;
-  --ink2:#2a2d35;
+  --ink:#0b1a19;
+  --ink2:#1a2e2e;
   --muted:#6b7280;
   --white:#ffffff;
-  --off:#f8f7f4;
-  --teal:#0ea5a0;
-  --teal-dk:#0c8f8a;
-  --teal-lt:#e0f5f4;
-  --teal-mid:#b2e8e6;
+  --off:#f5f0ea;
+  --teal:#3bbfb9;
+  --teal-dk:#2aa8a2;
+  --teal-lt:#e8f7f6;
+  --teal-mid:#b8e9e7;
   --gold:#c9a84c;
   --gold-lt:#fdf6e3;
   --border:#e5e2db;
+  --cream:#f5f0ea;
   --r:16px;
   --r-lg:24px;
   --r-xl:32px;
 }
+@keyframes dp-float-slow{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes dp-shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes dp-glow-pulse{0%,100%{box-shadow:0 0 0 0 rgba(59,191,185,0.3)}50%{box-shadow:0 0 0 12px rgba(59,191,185,0)}}
 body{font-family:'DM Sans',sans-serif;font-size:17px;background:var(--white);color:var(--ink);line-height:1.7;overflow-x:hidden}
 a{text-decoration:none;color:inherit}
 button{font-family:inherit;cursor:pointer}

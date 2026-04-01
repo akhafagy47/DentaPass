@@ -71,8 +71,8 @@ export default function DashboardShell({ children, clinic, userEmail }) {
     <>
       <style>{`
         .dp-nav { transition: background 0.15s, color 0.15s; }
-        .dp-nav:hover { background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.9) !important; }
-        .dp-nav.active { background: rgba(0,111,238,0.18) !important; color: #fff !important; }
+        .dp-nav:hover { background: rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.9) !important; }
+        .dp-nav.active { background: rgba(59,191,185,0.12) !important; color: #fff !important; }
         .dp-logout:hover { background: rgba(255,255,255,0.06) !important; color: rgba(255,255,255,0.7) !important; }
         .dp-content { animation: dpSlideIn 0.35s cubic-bezier(0.16,1,0.3,1) both; }
         @keyframes dpSlideIn {
@@ -104,7 +104,7 @@ export default function DashboardShell({ children, clinic, userEmail }) {
                     className={`dp-nav${active ? ' active' : ''}`}
                     style={{ ...s.navItem, ...(active ? s.navActive : {}) }}
                   >
-                    <span style={{ ...s.navIcon, ...(active ? { color: '#60a5fa' } : {}) }}>
+                    <span style={{ ...s.navIcon, ...(active ? { color: '#3bbfb9' } : {}) }}>
                       <Icon />
                     </span>
                     {label}
@@ -174,7 +174,7 @@ const s = {
   brand: { display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px' },
   brandMark: {
     width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-    background: 'rgba(0,111,238,0.2)',
+    background: 'rgba(59,191,185,0.15)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
   },
   brandName: { fontWeight: 700, fontSize: 15, color: '#fff', lineHeight: 1.2 },
@@ -189,15 +189,15 @@ const s = {
   },
   navActive: { color: '#fff', fontWeight: 600 },
   navIcon: { display: 'flex', alignItems: 'center', flexShrink: 0, color: 'rgba(255,255,255,0.5)' },
-  activePip: { marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#006FEE', flexShrink: 0 },
+  activePip: { marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#3bbfb9', flexShrink: 0 },
   externalBadge: { marginLeft: 'auto', fontSize: 11, color: 'rgba(255,255,255,0.2)' },
   sidebarBottom: { padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 10 },
   divider: { height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 2 },
   userRow: { display: 'flex', alignItems: 'center', gap: 10, padding: '2px 0' },
   avatar: {
     width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-    background: 'linear-gradient(135deg, #006FEE 0%, #0ea5e9 100%)',
-    color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'linear-gradient(135deg, #3bbfb9 0%, #2aa8a2 100%)',
+    color: '#081312', display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontWeight: 700, fontSize: 13,
   },
   userEmail: { fontSize: 12, color: 'rgba(255,255,255,0.6)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
