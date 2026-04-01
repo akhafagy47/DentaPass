@@ -74,14 +74,7 @@ export default async function DashboardHome() {
     .eq('owner_email', user.email)
     .maybeSingle();
 
-  if (!clinic) {
-    return (
-      <div style={s.page}>
-        <h1 style={s.h1}>Welcome to DentaPass</h1>
-        <p style={s.sub}>Your clinic account is being set up. Please contact support.</p>
-      </div>
-    );
-  }
+  if (!clinic) redirect('/dashboard/setup');
 
   const thirtyDaysFromNow = new Date();
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
