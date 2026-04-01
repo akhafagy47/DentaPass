@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSupabase } from '../lib/supabase.js';
+import { getSupabase, verifyToken } from '../lib/supabase.js';
 import { updatePatientPass } from '../lib/passkit.js';
 
 const router = Router();
@@ -16,6 +16,9 @@ const PRESET_POINTS = {
  */
 router.post('/award', async (req, res) => {
   try {
+    const user = await verifyToken(req.headers.authorization);
+    if (!user) return res.status(401).json({ error: 'Unauthorized.' });
+
     const { patientId, reason, customPoints, awardedBy } = req.body;
 
     if (!patientId || !reason) {
@@ -46,9 +49,13 @@ router.post('/award', async (req, res) => {
 
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('passkit_template_id, passkit_program_id')
+      .select('passkit_template_id, passkit_program_id, owner_email')
       .eq('id', patient.clinic_id)
       .single();
+
+    if (!clinic || clinic.owner_email !== user.email) {
+      return res.status(403).json({ error: 'Forbidden.' });
+    }
 
     const updates = { points_balance: patient.points_balance + points };
     if (reason === 'completed_visit') updates.last_visit_date = new Date().toISOString();
