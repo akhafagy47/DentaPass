@@ -117,7 +117,7 @@ export default function JoinPage() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <div style={styles.logo}>🦷</div>
+        <div style={styles.logo}><img src="/dentapass-logo.png" alt="DentaPass" style={{ height: 40, width: 'auto' }} /></div>
         <h1 style={styles.h1}>Join the loyalty program</h1>
         {clinicName && <p style={styles.clinicName}>{clinicName}</p>}
         <p style={styles.subtitle}>

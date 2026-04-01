@@ -34,7 +34,7 @@ function LoginForm() {
   return (
     <div style={s.page}>
       <div style={s.card}>
-        <div style={s.logo}>🦷</div>
+        <div style={s.logo}><img src="/dentapass-logo.png" alt="DentaPass" style={{ height: 40, width: 'auto' }} /></div>
         <h1 style={s.h1}>DentaPass</h1>
         <p style={s.sub}>Sign in to your clinic dashboard</p>
 

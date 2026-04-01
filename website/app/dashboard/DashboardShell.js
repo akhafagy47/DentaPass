@@ -85,7 +85,7 @@ export default function DashboardShell({ children, clinic, userEmail }) {
           <div style={s.sidebarTop}>
             {/* Brand */}
             <div style={s.brand}>
-              <div style={s.brandMark}>🦷</div>
+              <div style={s.brandMark}><img src="/dentapass-logo.png" alt="DentaPass" style={{ width: 22, height: 22, objectFit: 'contain' }} /></div>
               <div>
                 <div style={s.brandName}>DentaPass</div>
                 {clinic && <div style={s.clinicName}>{clinic.name}</div>}

@@ -244,7 +244,7 @@ export default function ScanClient({ clinicSlug }) {
   return (
     <div style={s.scanPage}>
       <div style={s.header}>
-        <span style={s.logo}>🦷</span>
+        <img src="/dentapass-logo.png" alt="DentaPass" style={{ height: 22, width: 'auto' }} />
         <span style={s.headerText}>DentaPass Scanner</span>
       </div>
 
