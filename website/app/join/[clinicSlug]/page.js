@@ -27,7 +27,9 @@ export default function JoinPage() {
     const e = {};
     if (!form.firstName.trim()) e.firstName = 'Required';
     if (!form.lastName.trim())  e.lastName  = 'Required';
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email';
+    if (!form.email.trim())     e.email     = 'Required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email';
+    if (!form.phone.trim())     e.phone     = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -41,8 +43,8 @@ export default function JoinPage() {
       const data = await enrollPatient({
         firstName:    form.firstName.trim(),
         lastName:     form.lastName.trim(),
-        email:        form.email.trim()  || undefined,
-        phone:        form.phone.trim()  || undefined,
+        email:        form.email.trim(),
+        phone:        form.phone.trim(),
         clinicSlug,
         referralCode: ref || undefined,
       });
@@ -225,7 +227,7 @@ export default function JoinPage() {
             </div>
 
             <div style={s.field}>
-              <label style={s.label}>Email</label>
+              <label style={s.label}>Email <span style={{ color: '#3bbfb9' }}>*</span></label>
               <input
                 type="email"
                 className="join-input"
@@ -236,20 +238,20 @@ export default function JoinPage() {
                 autoComplete="email"
               />
               {errors.email && <span style={s.errText}>{errors.email}</span>}
-              <span style={s.hint}>Recommended — used for recall reminders</span>
             </div>
 
             <div style={s.field}>
-              <label style={s.label}>Phone</label>
+              <label style={s.label}>Phone <span style={{ color: '#3bbfb9' }}>*</span></label>
               <input
                 type="tel"
                 className="join-input"
-                style={s.input}
+                style={{ ...s.input, ...(errors.phone ? s.inputErr : {}) }}
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="+1 780 555 0100"
                 autoComplete="tel"
               />
+              {errors.phone && <span style={s.errText}>{errors.phone}</span>}
             </div>
 
             <button type="submit" disabled={submitting} className="join-submit" style={{ ...s.submitBtn, opacity: submitting ? 0.7 : 1 }}>
