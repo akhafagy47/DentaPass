@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateClinic, getBillingPortalUrl } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
@@ -10,7 +10,7 @@ import { cropAll } from '../../../lib/squareCrop';
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
 function hexToRgb(hex) {
-  const n = parseInt((hex || '#006FEE').replace('#', ''), 16);
+  const n = parseInt((hex || '#3bbfb9').replace('#', ''), 16);
   return { r: n >> 16, g: (n >> 8) & 0xff, b: n & 0xff };
 }
 function luminance(hex) {
@@ -24,21 +24,18 @@ function darkenHex(hex, ratio = 0.72) {
   return `rgb(${Math.round(r * ratio)},${Math.round(g * ratio)},${Math.round(b * ratio)})`;
 }
 
-// ─── Barcode (deterministic) ──────────────────────────────────────────────────
+// ─── Barcode ─────────────────────────────────────────────────────────────────
 
 const BAR_WIDTHS = [2,1,3,1,2,1,1,2,1,3,2,1,1,2,3,1,2,1,1,2,1,1,3,1,2,2,1,1,2,1,3,1,2,1,1,2,1,2,1,1,3,2,1,2];
 
 function Barcode({ width = 200, height = 48 }) {
   const totalW = BAR_WIDTHS.reduce((s, w, i) => s + w * 2.2 + (i % 2 === 0 ? 1.1 : 0), 0);
-  const scaleX = width / totalW;
   let x = 0;
   return (
     <svg width={width} height={height} viewBox={`0 0 ${totalW} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
       {BAR_WIDTHS.map((w, i) => {
         const bw = w * 2.2;
-        const bar = i % 2 === 0
-          ? <rect key={i} x={x} y={0} width={bw} height={height} fill="#1a1a1a" />
-          : null;
+        const bar = i % 2 === 0 ? <rect key={i} x={x} y={0} width={bw} height={height} fill="#1a1a1a" /> : null;
         x += bw + (i % 2 === 0 ? 1.1 : 0);
         return bar;
       })}
@@ -65,20 +62,18 @@ function PF({ label, value, align = 'left', accent }) {
 // ─── Card front ───────────────────────────────────────────────────────────────
 
 function CardFront({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPerDollar, logoUrl }) {
-  const color    = brandColor || '#006FEE';
-  const fg       = onColor(color);
-  const fgMuted  = onColorMuted(color);
-  const stripBg  = darkenHex(color, 0.78);
-  const label    = pointsLabel || 'Points';
-  const FONT     = '-apple-system,"SF Pro Text","Helvetica Neue",sans-serif';
-  const tierVal  = rewardsMode === 'discounts'
+  const color   = brandColor || '#3bbfb9';
+  const fg      = onColor(color);
+  const fgMuted = onColorMuted(color);
+  const stripBg = darkenHex(color, 0.78);
+  const label   = pointsLabel || 'Points';
+  const FONT    = '-apple-system,"SF Pro Text","Helvetica Neue",sans-serif';
+  const tierVal = rewardsMode === 'discounts'
     ? (pointsPerDollar ? `${pointsPerDollar} pts = $1` : '5 pts = $1')
     : 'Gold Member';
 
   return (
     <div style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', fontFamily: FONT }}>
-
-      {/* Header bar — 38px, exact PassKit header zone */}
       <div style={{ height: 38, background: color, padding: '0 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ maxWidth: 170, overflow: 'hidden' }}>
           {logoUrl
@@ -88,14 +83,11 @@ function CardFront({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPer
               </span>
           }
         </div>
-        {/* Header field — points summary top-right */}
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
           <div style={{ fontSize: 7.5, fontWeight: 500, color: fgMuted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</div>
           <div style={{ fontSize: 17, fontWeight: 700, color: fg, lineHeight: 1, letterSpacing: '-0.02em' }}>500</div>
         </div>
       </div>
-
-      {/* Strip image area — 105px, gradient simulating PassKit strip */}
       <div style={{ height: 105, background: `linear-gradient(155deg, ${color} 0%, ${stripBg} 100%)`, position: 'relative', padding: '0 16px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,0.018) 3px,rgba(255,255,255,0.018) 6px)' }} />
         <div style={{ position: 'relative' }}>
@@ -108,22 +100,16 @@ function CardFront({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPer
           )}
         </div>
       </div>
-
-      {/* Secondary fields */}
       <div style={{ padding: '10px 14px 8px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '0.5px solid rgba(0,0,0,0.07)' }}>
         <PF label="Member" value="Jane Smith" />
         <PF label={rewardsMode === 'discounts' ? 'Redemption' : 'Tier'} value={tierVal} align="center" accent={color} />
         <PF label="Expires" value="03/2028" align="right" />
       </div>
-
-      {/* Auxiliary fields */}
       <div style={{ padding: '8px 14px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', borderBottom: '0.5px solid rgba(0,0,0,0.07)' }}>
         <PF label="Next checkup" value="Jun 2026" />
         <PF label="Member since" value="Mar 2026" align="center" />
         <PF label="Referral code" value="AB3XK9" align="right" accent={color} />
       </div>
-
-      {/* Barcode zone */}
       <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: '#fafafa' }}>
         <Barcode width={200} height={44} />
         <div style={{ fontFamily: FONT, fontSize: 8.5, color: '#8e8e93', letterSpacing: '0.12em', fontWeight: 500 }}>DP-2026-AB3XK9</div>
@@ -135,80 +121,45 @@ function CardFront({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPer
 // ─── Card back ────────────────────────────────────────────────────────────────
 
 function CardBack({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPerDollar, bookingUrl, address, phone }) {
-  const color   = brandColor || '#006FEE';
-  const label   = pointsLabel || 'Points';
-  const FONT    = '-apple-system,"SF Pro Text","Helvetica Neue",sans-serif';
-
+  const color  = brandColor || '#3bbfb9';
+  const label  = pointsLabel || 'Points';
+  const FONT   = '-apple-system,"SF Pro Text","Helvetica Neue",sans-serif';
   const earnRows = [
-    { action: 'Visit the clinic',     pts: '+100' },
-    { action: 'Leave a Google review',pts: '+100' },
-    { action: 'Refer a friend',       pts: '+250' },
+    { action: 'Visit the clinic',      pts: '+100' },
+    { action: 'Leave a Google review', pts: '+100' },
+    { action: 'Refer a friend',        pts: '+250' },
   ];
-
   const redeemText = rewardsMode === 'discounts' && pointsPerDollar
     ? `${pointsPerDollar} ${label} = $1 discount. Ask the receptionist to redeem at checkout.`
     : 'Unlock Bronze, Silver, and Gold tiers as you accumulate points and enjoy exclusive perks.';
 
   return (
     <div style={{ background: '#f2f2f7', borderRadius: 16, overflow: 'hidden', fontFamily: FONT, minHeight: 370 }}>
-
-      {/* Back header */}
       <div style={{ background: color, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: onColor(color), letterSpacing: '0.04em' }}>
           {clinicName || 'Your Clinic'} — Card Info
         </span>
       </div>
-
       <div style={{ padding: '0 0 14px' }}>
-
-        {/* Back fields — each is a rounded white row */}
         {[
-          {
-            label: 'Program',
-            value: `DentaPass Loyalty — ${clinicName || 'Your Clinic'}`,
-          },
-          {
-            label: 'How to earn ' + label,
-            value: null,
-            custom: (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
-                {earnRows.map((r) => (
-                  <div key={r.action} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, color: '#3c3c43' }}>{r.action}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: color }}>{r.pts} {label}</span>
-                  </div>
-                ))}
-              </div>
-            ),
-          },
-          {
-            label: rewardsMode === 'discounts' ? 'Redeem discount' : 'Tier rewards',
-            value: redeemText,
-          },
-          address && {
-            label: 'Get directions',
-            value: address,
-          },
-          phone && {
-            label: 'Call us',
-            value: phone,
-          },
-          bookingUrl && {
-            label: 'Book an appointment',
-            value: bookingUrl,
-            isLink: true,
-          },
-          {
-            label: 'Terms & conditions',
-            value: 'Points have no cash value except where redeemable. DentaPass reserves the right to modify or terminate the program at any time.',
-          },
+          { label: 'Program', value: `DentaPass Loyalty — ${clinicName || 'Your Clinic'}` },
+          { label: 'How to earn ' + label, value: null, custom: (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+              {earnRows.map((r) => (
+                <div key={r.action} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 12, color: '#3c3c43' }}>{r.action}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: color }}>{r.pts} {label}</span>
+                </div>
+              ))}
+            </div>
+          )},
+          { label: rewardsMode === 'discounts' ? 'Redeem discount' : 'Tier rewards', value: redeemText },
+          address && { label: 'Get directions', value: address },
+          phone   && { label: 'Call us', value: phone },
+          bookingUrl && { label: 'Book an appointment', value: bookingUrl, isLink: true },
+          { label: 'Terms & conditions', value: 'Points have no cash value except where redeemable. DentaPass reserves the right to modify or terminate the program at any time.' },
         ].filter(Boolean).map((field, i) => (
-          <div key={i} style={{
-            margin: '8px 10px 0',
-            background: '#fff',
-            borderRadius: 10,
-            padding: '10px 12px',
-          }}>
+          <div key={i} style={{ margin: '8px 10px 0', background: '#fff', borderRadius: 10, padding: '10px 12px' }}>
             <div style={{ fontSize: 8, fontWeight: 500, letterSpacing: '0.07em', color: '#8e8e93', textTransform: 'uppercase', marginBottom: 4 }}>
               {field.label}
             </div>
@@ -228,32 +179,18 @@ function CardBack({ clinicName, brandColor, pointsLabel, rewardsMode, pointsPerD
 
 function WalletCardPreview(props) {
   const [flipped, setFlipped] = useState(false);
-
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
       <style>{`
-        .card-scene { width: 320px; perspective: 900px; }
-        .card-inner-flip {
-          position: relative; width: 100%;
-          transform-style: preserve-3d;
-          transition: transform 0.55s cubic-bezier(0.4,0.2,0.2,1);
-        }
+        .card-scene { width: 300px; perspective: 900px; }
+        .card-inner-flip { position: relative; width: 100%; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.4,0.2,0.2,1); }
         .card-inner-flip.is-flipped { transform: rotateY(180deg); }
-        .card-face {
-          width: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden;
-          border-radius: 16px;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.08);
-        }
-        .card-face-back {
-          position: absolute; top: 0; left: 0;
-          transform: rotateY(180deg);
-        }
+        .card-face { width: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.15); }
+        .card-face-back { position: absolute; top: 0; left: 0; transform: rotateY(180deg); }
       `}</style>
-
-      {/* Card */}
       <div style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', bottom: -8, left: 10, right: 10, height: 18, background: 'rgba(0,0,0,0.07)', borderRadius: '0 0 16px 16px' }} />
-        <div style={{ position: 'absolute', bottom: -4, left: 5, right: 5,  height: 12, background: 'rgba(0,0,0,0.04)', borderRadius: '0 0 15px 15px' }} />
+        <div style={{ position: 'absolute', bottom: -8, left: 10, right: 10, height: 18, background: 'rgba(0,0,0,0.12)', borderRadius: '0 0 16px 16px' }} />
+        <div style={{ position: 'absolute', bottom: -4, left: 5, right: 5, height: 12, background: 'rgba(0,0,0,0.07)', borderRadius: '0 0 15px 15px' }} />
         <div className="card-scene">
           <div className={`card-inner-flip${flipped ? ' is-flipped' : ''}`}>
             <div className="card-face"><CardFront {...props} /></div>
@@ -261,21 +198,12 @@ function WalletCardPreview(props) {
           </div>
         </div>
       </div>
-
-      {/* Flip button — beside the card so card height never covers it */}
-      <button
-        type="button"
-        onClick={() => setFlipped((f) => !f)}
-        title={flipped ? 'Show front' : 'Show back'}
-        style={{
-          marginTop: 8, flexShrink: 0,
-          display: 'flex', alignItems: 'center', gap: 5,
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20,
-          padding: '6px 12px', fontSize: 11, color: 'rgba(255,255,255,0.4)',
-          cursor: 'pointer', fontFamily: '-apple-system,sans-serif',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <button type="button" onClick={() => setFlipped((f) => !f)} style={{
+        marginTop: 8, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5,
+        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20,
+        padding: '6px 12px', fontSize: 11, color: 'rgba(255,255,255,0.4)',
+        cursor: 'pointer', fontFamily: '-apple-system,sans-serif', whiteSpace: 'nowrap',
+      }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
@@ -285,16 +213,40 @@ function WalletCardPreview(props) {
   );
 }
 
-// ─── Main Settings Client ────────────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function Field({ label, hint, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <label style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.01em' }}>{label}</label>
+      {children}
+      {hint && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{hint}</span>}
+    </div>
+  );
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id: 'clinic',   label: 'Clinic details' },
+  { id: 'wallet',   label: 'Wallet card' },
+  { id: 'rewards',  label: 'Rewards' },
+  { id: 'links',    label: 'Links' },
+  { id: 'billing',  label: 'Billing' },
+];
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsClient({ clinic }) {
-  const router    = useRouter();
-  const fileRef   = useRef(null);
-  const [form, setForm] = useState({
+  const router  = useRouter();
+  const fileRef = useRef(null);
+  const [tab, setTab] = useState('clinic');
+
+  const initialForm = useMemo(() => ({
     name:              clinic.name              || '',
     google_review_url: clinic.google_review_url || '',
     booking_url:       clinic.booking_url       || '',
-    brand_color:       clinic.brand_color       || '#006FEE',
+    brand_color:       clinic.brand_color       || '#3bbfb9',
     logo_url:          clinic.logo_url          || '',
     points_label:      clinic.points_label      || 'Points',
     rewards_mode:      clinic.rewards_mode      || 'tiers',
@@ -303,10 +255,16 @@ export default function SettingsClient({ clinic }) {
     phone:             clinic.phone             || '',
     facebook_url:      clinic.facebook_url      || '',
     instagram_url:     clinic.instagram_url     || '',
-  });
-  const [saving, setSaving]         = useState(false);
-  const [uploading, setUploading]   = useState(false);
-  const [feedback, setFeedback]     = useState('');
+  }), []);
+
+  const [form, setForm]         = useState(initialForm);
+  const [saving, setSaving]     = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  const isDirty = useMemo(() =>
+    Object.keys(initialForm).some((k) => String(form[k]) !== String(initialForm[k]))
+  , [form]);
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
 
@@ -320,10 +278,9 @@ export default function SettingsClient({ clinic }) {
     if (!file) return;
     setUploading(true);
     try {
-      const blobs = await cropAll(file);  // produces icon (87px), thumbnail (320px), logo (660px)
+      const blobs = await cropAll(file);
       const sb    = getSupabaseBrowser();
       const base  = `${clinic.id}`;
-
       const results = await Promise.all([
         sb.storage.from('clinic-logos').upload(`${base}/logo-icon.png`,      blobs.icon,      { upsert: true, contentType: 'image/png' }),
         sb.storage.from('clinic-logos').upload(`${base}/logo-thumbnail.png`, blobs.thumbnail, { upsert: true, contentType: 'image/png' }),
@@ -331,10 +288,9 @@ export default function SettingsClient({ clinic }) {
       ]);
       const uploadErr = results.find(r => r.error)?.error;
       if (uploadErr) throw uploadErr;
-
       const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(`${base}/logo.png`);
       set('logo_url', `${publicUrl}?t=${Date.now()}`);
-      e.target.value = '';  // reset so selecting the same file again triggers onChange
+      e.target.value = '';
     } catch (err) {
       setFeedback(err.message || 'Logo upload failed.');
       e.target.value = '';
@@ -346,6 +302,7 @@ export default function SettingsClient({ clinic }) {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (!isDirty) return;
     setSaving(true);
     try {
       const token   = await getToken();
@@ -354,7 +311,7 @@ export default function SettingsClient({ clinic }) {
         ? null
         : parseFloat(payload.points_per_dollar);
       await updateClinic(clinic.id, payload, token);
-      setFeedback('Settings saved!');
+      setFeedback('Saved!');
       setTimeout(() => setFeedback(''), 3000);
       router.refresh();
     } catch {
@@ -366,83 +323,117 @@ export default function SettingsClient({ clinic }) {
 
   async function handleBillingPortal() {
     try {
-      const token  = await getToken();
+      const token = await getToken();
       const { url } = await getBillingPortalUrl(token);
       window.location.href = url;
     } catch {}
   }
 
-  const appUrl    = process.env.NEXT_PUBLIC_APP_URL || 'https://denta-pass.vercel.app';
+  const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'https://denta-pass.vercel.app';
   const enrollLink = `${appUrl}/join/${clinic.slug}`;
   const scanLink   = `${appUrl}/scan/${clinic.slug}`;
+
+  const FORM_TABS = ['clinic', 'wallet', 'rewards'];
+  const showStickyBar = FORM_TABS.includes(tab);
 
   return (
     <>
       <style>{`
+        .st-input { transition: border-color 0.15s, box-shadow 0.15s; }
         .st-input:focus { border-color: rgba(59,191,185,0.5) !important; box-shadow: 0 0 0 3px rgba(59,191,185,0.1); outline: none; }
         .st-upload:hover { border-color: rgba(59,191,185,0.4) !important; background: rgba(59,191,185,0.05) !important; }
+        .st-tab { transition: color 0.15s, border-color 0.15s; }
+        .st-tab:hover { color: rgba(255,255,255,0.7) !important; }
+        @keyframes stBarIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .st-bar { animation: stBarIn 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes stFeedIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .st-feedback { animation: stFeedIn 0.2s ease both; }
       `}</style>
-      <div style={s.page}>
-        <h1 style={s.h1}>Settings</h1>
 
+      <div style={s.page}>
+        {/* Page title */}
+        <div style={s.titleRow}>
+          <h1 style={s.h1}>Settings</h1>
+          {isDirty && (
+            <span className="st-feedback" style={s.unsavedDot}>Unsaved changes</span>
+          )}
+        </div>
+
+        {/* Tab bar */}
+        <div style={s.tabBar}>
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className="st-tab"
+              onClick={() => setTab(t.id)}
+              style={{
+                ...s.tab,
+                ...(tab === t.id ? s.tabActive : {}),
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
         <form onSubmit={handleSave} style={s.form}>
 
-          {/* ── Clinic details ── */}
-          <Section title="Clinic details">
-            <Field label="Clinic name">
-              <input className="st-input" value={form.name} onChange={(e) => set('name', e.target.value)} style={s.input} required />
-            </Field>
-            <Field label="Google review URL">
-              <input className="st-input" type="url" value={form.google_review_url} onChange={(e) => set('google_review_url', e.target.value)} style={s.input} placeholder="https://g.page/r/…/review" />
-            </Field>
-            <Field label="Booking URL">
-              <input className="st-input" type="url" value={form.booking_url} onChange={(e) => set('booking_url', e.target.value)} style={s.input} placeholder="https://yourclinic.com/book" />
-            </Field>
-            <Field label="Address" hint="Shown as a 'Get Directions' button on the wallet pass">
-              <input className="st-input" value={form.address} onChange={(e) => set('address', e.target.value)} style={s.input} placeholder="123 Main St, Edmonton, AB T5J 2Z2" />
-            </Field>
-            <Field label="Phone" hint="Shown as a 'Call Us' button on the wallet pass">
-              <input className="st-input" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} style={s.input} placeholder="+1 (780) 555-0100" />
-            </Field>
-            <Field label="Facebook URL" hint="Shown as a 'Follow us on Facebook' button on the wallet pass">
-              <input className="st-input" type="url" value={form.facebook_url} onChange={(e) => set('facebook_url', e.target.value)} style={s.input} placeholder="https://facebook.com/yourclinic" />
-            </Field>
-            <Field label="Instagram URL" hint="Shown as a 'Follow us on Instagram' button on the wallet pass">
-              <input className="st-input" type="url" value={form.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} style={s.input} placeholder="https://instagram.com/yourclinic" />
-            </Field>
-          </Section>
+          {/* ── CLINIC ── */}
+          {tab === 'clinic' && (
+            <div style={s.panel}>
+              <Field label="Clinic name">
+                <input className="st-input" value={form.name} onChange={(e) => set('name', e.target.value)} style={s.input} required />
+              </Field>
+              <Field label="Google review URL">
+                <input className="st-input" type="url" value={form.google_review_url} onChange={(e) => set('google_review_url', e.target.value)} style={s.input} placeholder="https://g.page/r/…/review" />
+              </Field>
+              <Field label="Booking URL">
+                <input className="st-input" type="url" value={form.booking_url} onChange={(e) => set('booking_url', e.target.value)} style={s.input} placeholder="https://yourclinic.com/book" />
+              </Field>
+              <Field label="Address" hint="Shown as a 'Get Directions' button on the wallet pass">
+                <input className="st-input" value={form.address} onChange={(e) => set('address', e.target.value)} style={s.input} placeholder="123 Main St, Edmonton, AB" />
+              </Field>
+              <Field label="Phone" hint="Shown as a 'Call Us' button on the wallet pass">
+                <input className="st-input" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} style={s.input} placeholder="+1 (780) 555-0100" />
+              </Field>
+              <Field label="Facebook URL" hint="Shown as a 'Follow us on Facebook' button on the wallet pass">
+                <input className="st-input" type="url" value={form.facebook_url} onChange={(e) => set('facebook_url', e.target.value)} style={s.input} placeholder="https://facebook.com/yourclinic" />
+              </Field>
+              <Field label="Instagram URL" hint="Shown as a 'Follow us on Instagram' button on the wallet pass">
+                <input className="st-input" type="url" value={form.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} style={s.input} placeholder="https://instagram.com/yourclinic" />
+              </Field>
+            </div>
+          )}
 
-          {/* ── Wallet card ── */}
-          <Section title="Wallet card" subtitle="Customize what your patients see in Apple & Google Wallet">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 28, alignItems: 'start' }}>
-
+          {/* ── WALLET ── */}
+          {tab === 'wallet' && (
+            <div style={s.walletGrid}>
               {/* Controls */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={s.panel}>
                 <Field label="Brand color">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <input type="color" value={form.brand_color} onChange={(e) => set('brand_color', e.target.value)}
-                      style={{ width: 44, height: 38, border: 'none', cursor: 'pointer', borderRadius: 8, padding: 2 }} />
+                      style={{ width: 44, height: 38, border: 'none', cursor: 'pointer', borderRadius: 8, padding: 2, background: 'none' }} />
                     <input className="st-input" value={form.brand_color} onChange={(e) => set('brand_color', e.target.value)}
-                      style={{ ...s.input, maxWidth: 110 }} placeholder="#006FEE" />
+                      style={{ ...s.input, maxWidth: 110 }} placeholder="#3bbfb9" />
                   </div>
                 </Field>
 
                 <Field label="Clinic logo" hint="PNG, JPG or WebP · at least 200×200px · auto-cropped to square">
-                  {/* Hidden file input */}
-                  <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
-                    style={{ display: 'none' }} onChange={handleLogoUpload} />
-
-                  {/* Upload button */}
-                  <button type="button" className="st-upload" onClick={() => fileRef.current?.click()}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '10px 14px', border: '1.5px dashed rgba(255,255,255,0.12)',
-                      borderRadius: 10, background: 'rgba(255,255,255,0.03)', cursor: 'pointer',
-                      fontSize: 13, color: 'rgba(255,255,255,0.4)', transition: 'border-color 0.15s, background 0.15s',
-                      width: '100%', boxSizing: 'border-box',
-                    }}>
+                  <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style={{ display: 'none' }} onChange={handleLogoUpload} />
+                  <button type="button" className="st-upload" onClick={() => fileRef.current?.click()} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', border: '1.5px dashed rgba(255,255,255,0.12)',
+                    borderRadius: 10, background: 'rgba(255,255,255,0.03)', cursor: 'pointer',
+                    fontSize: 13, color: 'rgba(255,255,255,0.4)', transition: 'border-color 0.15s, background 0.15s',
+                    width: '100%', boxSizing: 'border-box',
+                  }}>
                     {uploading ? (
-                      <span style={{ color: '#3bbfb9', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Spinner color="#3bbfb9" />Uploading…</span>
+                      <span style={{ color: '#3bbfb9', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Spinner color="#3bbfb9" />Uploading…
+                      </span>
                     ) : form.logo_url ? (
                       <>
                         <img src={form.logo_url} alt="logo" style={{ height: 28, maxWidth: 80, objectFit: 'contain', borderRadius: 4 }} />
@@ -457,24 +448,23 @@ export default function SettingsClient({ clinic }) {
                       </>
                     )}
                   </button>
-
                   {form.logo_url && (
                     <button type="button" onClick={() => set('logo_url', '')}
-                      style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 11, cursor: 'pointer', padding: '2px 0', textAlign: 'left' }}>
+                      style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 11, cursor: 'pointer', padding: '2px 0', textAlign: 'left' }}>
                       Remove logo
                     </button>
                   )}
                 </Field>
 
-                <Field label="Points label" hint="What to call your points on the card">
+                <Field label="Points label" hint="What to call your points on the wallet card">
                   <input className="st-input" value={form.points_label} onChange={(e) => set('points_label', e.target.value)}
                     style={s.input} placeholder="Points" maxLength={20} />
                 </Field>
               </div>
 
-              {/* Live card preview */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.06em' }}>LIVE PREVIEW</div>
+              {/* Live preview */}
+              <div style={s.previewCol}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.08em', marginBottom: 10 }}>LIVE PREVIEW</div>
                 <WalletCardPreview
                   clinicName={form.name}
                   brandColor={form.brand_color}
@@ -488,161 +478,256 @@ export default function SettingsClient({ clinic }) {
                 />
               </div>
             </div>
-          </Section>
+          )}
 
-          {/* ── Rewards program ── */}
-          <Section title="Rewards program" subtitle="Choose how patients benefit from their points">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[
-                { value: 'tiers',     label: 'Tier system',         desc: 'Patients unlock Bronze → Silver → Gold status as they accumulate points.' },
-                { value: 'discounts', label: 'Discount redemption', desc: 'Patients redeem points for dollar discounts at the front desk.' },
-              ].map((opt) => {
-                const active = form.rewards_mode === opt.value;
-                return (
-                  <button key={opt.value} type="button" onClick={() => set('rewards_mode', opt.value)}
-                    style={{
+          {/* ── REWARDS ── */}
+          {tab === 'rewards' && (
+            <div style={s.panel}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[
+                  { value: 'tiers',     label: 'Tier system',         desc: 'Patients unlock Bronze → Silver → Gold status as they accumulate points.' },
+                  { value: 'discounts', label: 'Discount redemption', desc: 'Patients redeem points for dollar discounts at the front desk.' },
+                ].map((opt) => {
+                  const active = form.rewards_mode === opt.value;
+                  return (
+                    <button key={opt.value} type="button" onClick={() => set('rewards_mode', opt.value)} style={{
                       display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
                       borderRadius: 12, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
                       border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid rgba(255,255,255,0.08)',
                       background: active ? 'rgba(59,191,185,0.08)' : 'rgba(255,255,255,0.03)',
                     }}>
-                    <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-                      border: active ? '5px solid #3bbfb9' : '2px solid rgba(255,255,255,0.2)',
-                      background: 'transparent' }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#3bbfb9' : 'rgba(255,255,255,0.7)' }}>{opt.label}</div>
-                      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{opt.desc}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                        border: active ? '5px solid #3bbfb9' : '2px solid rgba(255,255,255,0.2)', background: 'transparent' }} />
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#3bbfb9' : 'rgba(255,255,255,0.7)' }}>{opt.label}</div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{opt.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
 
-            {form.rewards_mode === 'discounts' && (
-              <Field label="Conversion rate" hint="How many points equal $1 in discount">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <input className="st-input" type="number" min="1" step="1" value={form.points_per_dollar}
-                    onChange={(e) => set('points_per_dollar', e.target.value)}
-                    style={{ ...s.input, maxWidth: 90 }} placeholder="5" />
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
-                    points = $1.00
-                    {form.points_per_dollar && ` · 100 pts = $${(100 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
-                  </span>
-                </div>
-              </Field>
-            )}
-          </Section>
-
-          {feedback && (
-            <div style={{
-              background: feedback.includes('saved') ? 'rgba(52,211,153,0.12)' : 'rgba(248,113,113,0.12)',
-              color: feedback.includes('saved') ? '#34d399' : '#f87171',
-              border: `1px solid ${feedback.includes('saved') ? 'rgba(52,211,153,0.25)' : 'rgba(248,113,113,0.25)'}`,
-              borderRadius: 10, padding: '10px 16px', fontSize: 14, fontWeight: 600,
-            }}>
-              {feedback}
+              {form.rewards_mode === 'discounts' && (
+                <Field label="Conversion rate" hint="How many points equal $1 in discount">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input className="st-input" type="number" min="1" step="1" value={form.points_per_dollar}
+                      onChange={(e) => set('points_per_dollar', e.target.value)}
+                      style={{ ...s.input, maxWidth: 90 }} placeholder="5" />
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
+                      points = $1.00
+                      {form.points_per_dollar && ` · 100 pts = $${(100 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
+                    </span>
+                  </div>
+                </Field>
+              )}
             </div>
           )}
 
-          <button type="submit" disabled={saving} style={{ ...s.saveBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {saving && <Spinner />}
-            {saving ? 'Saving…' : 'Save settings'}
-          </button>
+          {/* ── LINKS (no save) ── */}
+          {tab === 'links' && (
+            <div style={s.panel}>
+              {[
+                { label: 'Patient enrollment page', desc: 'Share this link (or QR code) so patients can join your loyalty program.', url: enrollLink },
+                { label: 'QR scanner — staff only',  desc: 'Open on a tablet at the front desk to scan patients\' wallet cards.', url: scanLink },
+              ].map((l) => (
+                <div key={l.label} style={s.linkCard}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 2 }}>{l.label}</div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>{l.desc}</div>
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#3bbfb9', wordBreak: 'break-all' }}>
+                      {l.url}
+                    </a>
+                  </div>
+                  <a href={l.url} target="_blank" rel="noopener noreferrer" style={s.openBtn}>
+                    Open ↗
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── BILLING (no save) ── */}
+          {tab === 'billing' && (
+            <div style={s.panel}>
+              <div style={s.planRow}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                    {clinic.plan.charAt(0).toUpperCase() + clinic.plan.slice(1)} plan
+                  </div>
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+                    {clinic.patient_limit ? `Up to ${clinic.patient_limit.toLocaleString()} patients` : 'Unlimited patients'}
+                  </div>
+                </div>
+                <button type="button" onClick={handleBillingPortal} style={s.manageBtn}>
+                  Manage billing →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Sticky save bar ── */}
+          {showStickyBar && (
+            <div className="st-bar" style={{
+              ...s.stickyBar,
+              ...(isDirty ? {} : s.stickyBarInactive),
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {feedback && (
+                  <span className="st-feedback" style={{
+                    fontSize: 13, fontWeight: 600,
+                    color: feedback.includes('Saved') ? '#34d399' : '#f87171',
+                  }}>
+                    {feedback}
+                  </span>
+                )}
+                {!feedback && isDirty && (
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>You have unsaved changes</span>
+                )}
+                {!feedback && !isDirty && (
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>No changes</span>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={!isDirty || saving}
+                style={{
+                  ...s.saveBtn,
+                  opacity: isDirty ? 1 : 0.35,
+                  cursor: isDirty ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {saving && <Spinner />}
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
+          )}
         </form>
-
-        {/* ── Links ── */}
-        <Section title="Your links">
-          {[
-            { label: 'Enrollment QR page', url: enrollLink },
-            { label: 'QR Scanner (staff)',  url: scanLink  },
-          ].map((l) => (
-            <div key={l.label} style={s.linkRow}>
-              <span style={s.linkLabel}>{l.label}</span>
-              <a href={l.url} target="_blank" rel="noopener noreferrer" style={s.link}>{l.url}</a>
-            </div>
-          ))}
-        </Section>
-
-        {/* ── Billing ── */}
-        <Section title="Plan & billing">
-          <div style={s.planCard}>
-            <div>
-              <div style={s.planName}>{clinic.plan.charAt(0).toUpperCase() + clinic.plan.slice(1)} plan</div>
-              <div style={s.planMeta}>{clinic.patient_limit ? `Up to ${clinic.patient_limit} patients` : 'Unlimited patients'}</div>
-            </div>
-            <button onClick={handleBillingPortal} style={s.manageBtn}>Manage billing →</button>
-          </div>
-        </Section>
       </div>
     </>
   );
 }
 
-function Section({ title, subtitle, children }) {
-  return (
-    <div style={{
-      background: 'rgba(255,255,255,0.04)',
-      borderRadius: 16, padding: '22px 24px',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-      border: '1px solid rgba(255,255,255,0.07)',
-      backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-      display: 'flex', flexDirection: 'column', gap: 16,
-    }}>
-      <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{subtitle}</div>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Field({ label, hint, children }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>{label}</label>
-      {children}
-      {hint && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{hint}</span>}
-    </div>
-  );
-}
-
 const s = {
-  page:    { display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 920 },
-  h1:      {
+  page: { display: 'flex', flexDirection: 'column', gap: 0, maxWidth: 900, paddingBottom: 100 },
+  titleRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 },
+  h1: {
     fontFamily: "'Instrument Serif', serif",
     fontSize: 32, fontWeight: 400, color: '#fff',
-    margin: '0 0 4px', letterSpacing: '-0.02em',
+    margin: 0, letterSpacing: '-0.02em',
   },
-  form:    { display: 'flex', flexDirection: 'column', gap: 20 },
-  input:   {
+  unsavedDot: {
+    fontSize: 12, fontWeight: 600,
+    color: '#fbbf24',
+    background: 'rgba(251,191,36,0.1)',
+    border: '1px solid rgba(251,191,36,0.25)',
+    borderRadius: 20, padding: '4px 10px',
+  },
+  tabBar: {
+    display: 'flex',
+    gap: 0,
+    borderBottom: '1px solid rgba(255,255,255,0.07)',
+    marginBottom: 28,
+  },
+  tab: {
+    padding: '10px 18px',
+    background: 'none', border: 'none',
+    borderBottom: '2px solid transparent',
+    fontSize: 14, fontWeight: 500,
+    color: 'rgba(255,255,255,0.35)',
+    cursor: 'pointer',
+    marginBottom: -1,
+    transition: 'color 0.15s, border-color 0.15s',
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  tabActive: {
+    color: '#fff',
+    borderBottomColor: '#3bbfb9',
+    fontWeight: 600,
+  },
+  form: { display: 'flex', flexDirection: 'column', gap: 0 },
+  panel: {
+    display: 'flex', flexDirection: 'column', gap: 20,
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 16,
+    padding: '28px 28px',
+    border: '1px solid rgba(255,255,255,0.07)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+  },
+  walletGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: 32,
+    alignItems: 'start',
+  },
+  previewCol: {
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+    paddingTop: 28,
+  },
+  input: {
     padding: '10px 14px',
     border: '1.5px solid rgba(255,255,255,0.1)',
-    borderRadius: 10, fontSize: 14, outline: 'none',
+    borderRadius: 10, fontSize: 14,
+    outline: 'none',
     width: '100%', boxSizing: 'border-box',
-    transition: 'border-color 0.15s, box-shadow 0.15s',
-    fontFamily: 'inherit',
     background: 'rgba(255,255,255,0.05)',
     color: '#fff',
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  linkCard: {
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
+    padding: '18px 20px',
+    background: 'rgba(255,255,255,0.03)',
+    borderRadius: 12,
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
+  openBtn: {
+    flexShrink: 0,
+    background: 'rgba(59,191,185,0.1)',
+    color: '#3bbfb9',
+    border: '1px solid rgba(59,191,185,0.2)',
+    borderRadius: 8,
+    padding: '8px 14px',
+    fontSize: 13, fontWeight: 600,
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
+  },
+  planRow: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '4px 0',
+  },
+  manageBtn: {
+    background: 'rgba(59,191,185,0.1)', color: '#3bbfb9',
+    borderRadius: 10, padding: '11px 18px', fontSize: 14, fontWeight: 600,
+    border: '1px solid rgba(59,191,185,0.25)', cursor: 'pointer',
+  },
+  stickyBar: {
+    position: 'fixed',
+    bottom: 24,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: 24,
+    background: 'rgba(15,30,29,0.9)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(59,191,185,0.2)',
+    borderRadius: 16,
+    padding: '14px 20px',
+    boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(59,191,185,0.08)',
+    minWidth: 360,
+    zIndex: 100,
+  },
+  stickyBarInactive: {
+    border: '1px solid rgba(255,255,255,0.07)',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
   },
   saveBtn: {
-    background: '#3bbfb9', color: '#081312', border: 'none',
-    borderRadius: 12, padding: '13px 28px', fontSize: 15, fontWeight: 700,
-    cursor: 'pointer', alignSelf: 'flex-start',
-  },
-  linkRow:   { display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)' },
-  linkLabel: { fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' },
-  link:      { fontSize: 14, color: '#3bbfb9', wordBreak: 'break-all' },
-  planCard:  {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 16,
-    border: '1px solid rgba(255,255,255,0.07)',
-  },
-  planName:  { fontWeight: 700, fontSize: 16, color: '#fff' },
-  planMeta:  { fontSize: 13, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
-  manageBtn: {
-    background: 'rgba(59,191,185,0.12)', color: '#3bbfb9',
-    borderRadius: 10, padding: '10px 16px', fontSize: 14, fontWeight: 600,
-    border: '1px solid rgba(59,191,185,0.25)', cursor: 'pointer',
+    background: '#3bbfb9', color: '#081312',
+    border: 'none', borderRadius: 10,
+    padding: '10px 22px',
+    fontSize: 14, fontWeight: 700,
+    display: 'flex', alignItems: 'center', gap: 8,
+    transition: 'opacity 0.2s',
+    fontFamily: "'DM Sans', sans-serif",
   },
 };
