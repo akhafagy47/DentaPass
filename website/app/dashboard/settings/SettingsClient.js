@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateClinic, getBillingPortalUrl } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
@@ -213,6 +213,151 @@ function WalletCardPreview(props) {
   );
 }
 
+// ─── Account tab ─────────────────────────────────────────────────────────────
+
+function AccountTab() {
+  const sb = getSupabaseBrowser();
+
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwStatus, setPwStatus] = useState('');  // '' | 'loading' | 'done' | 'error'
+  const [pwErr, setPwErr] = useState('');
+
+  async function handlePasswordChange(e) {
+    e.preventDefault();
+    const { current, next, confirm } = pwForm;
+    if (next !== confirm) { setPwErr('Passwords do not match.'); return; }
+    if (next.length < 8)  { setPwErr('Password must be at least 8 characters.'); return; }
+    setPwStatus('loading');
+    setPwErr('');
+
+    // Re-authenticate with current password first
+    const { data: { user } } = await sb.auth.getUser();
+    const { error: signInErr } = await sb.auth.signInWithPassword({
+      email: user.email,
+      password: current,
+    });
+    if (signInErr) {
+      setPwErr('Current password is incorrect.');
+      setPwStatus('error');
+      return;
+    }
+
+    const { error: updateErr } = await sb.auth.updateUser({ password: next });
+    if (updateErr) {
+      setPwErr(updateErr.message);
+      setPwStatus('error');
+    } else {
+      setPwStatus('done');
+      setPwForm({ current: '', next: '', confirm: '' });
+    }
+  }
+
+  const INPUT = {
+    padding: '10px 14px',
+    border: '1.5px solid rgba(255,255,255,0.1)',
+    borderRadius: 10, fontSize: 14,
+    background: 'rgba(255,255,255,0.05)',
+    color: '#fff',
+    fontFamily: "'DM Sans', sans-serif",
+    outline: 'none',
+    width: '100%', boxSizing: 'border-box',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <style>{`.acc-input:focus{border-color:rgba(59,191,185,0.5)!important;box-shadow:0 0 0 3px rgba(59,191,185,0.1);outline:none}`}</style>
+
+      {/* ── Change password ── */}
+      <form onSubmit={handlePasswordChange} style={PANEL}>
+        <div style={SECTION_TITLE}>Change password</div>
+        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 16, marginTop: -8 }}>
+          Enter your current password to verify it's you, then choose a new one.
+        </div>
+
+        <Field label="Current password">
+          <input
+            className="acc-input"
+            type="password" required
+            value={pwForm.current}
+            onChange={(e) => { setPwForm((f) => ({ ...f, current: e.target.value })); setPwStatus(''); setPwErr(''); }}
+            placeholder="••••••••"
+            style={INPUT}
+            autoComplete="current-password"
+          />
+        </Field>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Field label="New password">
+            <input
+              className="acc-input"
+              type="password" required
+              value={pwForm.next}
+              onChange={(e) => { setPwForm((f) => ({ ...f, next: e.target.value })); setPwStatus(''); setPwErr(''); }}
+              placeholder="Min. 8 characters"
+              style={INPUT}
+              autoComplete="new-password"
+            />
+          </Field>
+          <Field label="Confirm new password">
+            <input
+              className="acc-input"
+              type="password" required
+              value={pwForm.confirm}
+              onChange={(e) => { setPwForm((f) => ({ ...f, confirm: e.target.value })); setPwStatus(''); setPwErr(''); }}
+              placeholder="Repeat password"
+              style={INPUT}
+              autoComplete="new-password"
+            />
+          </Field>
+        </div>
+
+        {pwErr && <div style={ERR_BANNER}>{pwErr}</div>}
+        {pwStatus === 'done' && <div style={OK_BANNER}>Password updated successfully.</div>}
+
+        <button type="submit" disabled={pwStatus === 'loading'} style={{
+          ...SUBMIT_BTN,
+          opacity: pwStatus === 'loading' ? 0.5 : 1,
+          cursor: pwStatus === 'loading' ? 'not-allowed' : 'pointer',
+        }}>
+          {pwStatus === 'loading' ? 'Updating…' : 'Update password'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+const PANEL = {
+  display: 'flex', flexDirection: 'column', gap: 16,
+  background: 'rgba(255,255,255,0.04)',
+  borderRadius: 16, padding: '24px 28px',
+  border: '1px solid rgba(255,255,255,0.07)',
+  backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+};
+const SECTION_TITLE = {
+  fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 4,
+};
+const SUBMIT_BTN = {
+  alignSelf: 'flex-start',
+  background: '#3bbfb9', color: '#081312',
+  border: 'none', borderRadius: 8,
+  padding: '9px 20px', fontSize: 13, fontWeight: 700,
+  fontFamily: "'DM Sans', sans-serif",
+  transition: 'opacity 0.2s',
+};
+const OK_BANNER = {
+  fontSize: 13, fontWeight: 600, color: '#34d399',
+  background: 'rgba(52,211,153,0.1)',
+  border: '1px solid rgba(52,211,153,0.2)',
+  borderRadius: 8, padding: '9px 14px',
+};
+const ERR_BANNER = {
+  fontSize: 13, fontWeight: 600, color: '#f87171',
+  background: 'rgba(248,113,113,0.1)',
+  border: '1px solid rgba(248,113,113,0.2)',
+  borderRadius: 8, padding: '9px 14px',
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Field({ label, hint, children }) {
@@ -233,6 +378,7 @@ const TABS = [
   { id: 'rewards',  label: 'Rewards' },
   { id: 'links',    label: 'Links' },
   { id: 'billing',  label: 'Billing' },
+  { id: 'account',  label: 'Account' },
 ];
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -582,6 +728,11 @@ export default function SettingsClient({ clinic }) {
                 </button>
               </div>
             </div>
+          )}
+
+          {/* ── ACCOUNT (no clinic save) ── */}
+          {tab === 'account' && (
+            <AccountTab />
           )}
 
         </form>
