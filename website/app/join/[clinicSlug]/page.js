@@ -70,9 +70,6 @@ export default function JoinPage() {
     }
   }
 
-  const isIOS = typeof navigator !== 'undefined' &&
-    /iPad|iPhone|iPod/.test(navigator.userAgent);
-
   if (step === 'success') {
     return (
       <div style={styles.page}>
@@ -86,24 +83,6 @@ export default function JoinPage() {
 
           {walletUrl && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24 }}>
-              {isIOS ? (
-                <a href={walletUrl} style={styles.walletBtn}>
-                  <img
-                    src="https://developer.apple.com/wallet/add-to-apple-wallet-guidelines/assets/add-to-apple-wallet-badge.svg"
-                    alt="Add to Apple Wallet"
-                    style={{ height: 44 }}
-                  />
-                </a>
-              ) : (
-                <a href={walletUrl} style={styles.walletBtn}>
-                  <img
-                    src="https://developers.google.com/static/wallet/images/en_add_to_google_wallet_add-wallet-badge.png"
-                    alt="Add to Google Wallet"
-                    style={{ height: 44 }}
-                  />
-                </a>
-              )}
-
               <a href={walletUrl} style={styles.universalBtn}>
                 Add to Wallet
               </a>
