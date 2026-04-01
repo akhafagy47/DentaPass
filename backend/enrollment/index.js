@@ -136,7 +136,7 @@ router.post('/', async (req, res) => {
     res.json({ ok: true, walletUrl });
   } catch (err) {
     console.error('Enrollment error:', err);
-    res.status(500).json({ error: 'Internal server error.' });
+    res.status(500).json({ error: err.message || 'Internal server error.' });
   }
 });
 
