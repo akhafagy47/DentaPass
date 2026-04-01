@@ -158,7 +158,7 @@ export default function JoinPage() {
 
           <div style={s.leftBody}>
             <h1 style={s.leftH1}>
-              {clinicName ? `${clinicName}'s` : 'Your clinic's'}<br />
+              {clinicName ? `${clinicName}'s` : "Your clinic's"}<br />
               loyalty program
             </h1>
             <p style={s.leftSub}>
