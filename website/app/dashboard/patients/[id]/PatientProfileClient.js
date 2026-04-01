@@ -6,28 +6,40 @@ import { awardPoints, updatePatient, notifyPatient } from '../../../../lib/api';
 import { getSupabaseBrowser } from '../../../../lib/supabase-browser';
 import Spinner from '../../../../components/Spinner';
 
-const TIER_COLOR = { bronze: '#CD7F32', silver: '#9CA3AF', gold: '#F59E0B' };
+const TIER_COLOR = { bronze: '#f59e0b', silver: '#94a3b8', gold: '#eab308' };
+const TIER_BG    = { bronze: 'rgba(245,158,11,0.12)', silver: 'rgba(148,163,184,0.12)', gold: 'rgba(234,179,8,0.12)' };
+const TIER_BORDER = { bronze: 'rgba(245,158,11,0.25)', silver: 'rgba(148,163,184,0.25)', gold: 'rgba(234,179,8,0.25)' };
+
 const REASON_LABEL = {
-  completed_visit: '🦷 Completed visit',
-  left_review: '⭐ Left a review',
-  referred_friend: '🤝 Referred a friend',
-  recall_bonus: '📅 Recall bonus',
-  custom: '✏️ Custom',
-  system: '⚙️ System',
+  completed_visit: 'Completed visit',
+  left_review:     'Left a review',
+  referred_friend: 'Referred a friend',
+  recall_bonus:    'Recall bonus',
+  custom:          'Custom award',
+  system:          'System',
+};
+
+const REASON_COLOR = {
+  completed_visit: '#3bbfb9',
+  left_review:     '#fbbf24',
+  referred_friend: '#a78bfa',
+  recall_bonus:    '#34d399',
+  custom:          '#94a3b8',
+  system:          '#64748b',
 };
 
 export default function PatientProfileClient({
   patient, pointEvents, notifications, referrals, clinicId, googleReviewUrl,
 }) {
   const router = useRouter();
-  const [awarding, setAwarding] = useState(false);
-  const [customPts, setCustomPts] = useState('');
-  const [pts, setPts] = useState(patient.points_balance);
-  const [tier, setTier] = useState(patient.tier);
-  const [feedback, setFeedback] = useState('');
+  const [awarding, setAwarding]       = useState(false);
+  const [customPts, setCustomPts]     = useState('');
+  const [pts, setPts]                 = useState(patient.points_balance);
+  const [tier, setTier]               = useState(patient.tier);
+  const [feedback, setFeedback]       = useState('');
   const [sendingNotif, setSendingNotif] = useState(false);
   const [checkupDate, setCheckupDate] = useState(patient.next_checkup_date || '');
-  const [savingDate, setSavingDate] = useState(false);
+  const [savingDate, setSavingDate]   = useState(false);
 
   async function getToken() {
     const { data: { session } } = await getSupabaseBrowser().auth.getSession();
@@ -57,6 +69,8 @@ export default function PatientProfileClient({
     try {
       const token = await getToken();
       await updatePatient(patient.id, { next_checkup_date: checkupDate || null }, token);
+      setFeedback('Checkup date saved!');
+      setTimeout(() => setFeedback(''), 3000);
       router.refresh();
     } catch {} finally { setSavingDate(false); }
   }
@@ -76,232 +90,332 @@ export default function PatientProfileClient({
   const referralLink = `${appUrl}/join/referral/${patient.referral_code}`;
 
   return (
-    <div style={s.page}>
-      <button onClick={() => router.back()} style={s.backBtn}>← Back to patients</button>
+    <>
+      <style>{`
+        .pp-input:focus { border-color: rgba(59,191,185,0.5) !important; box-shadow: 0 0 0 3px rgba(59,191,185,0.1); outline: none; }
+        .pp-notif:hover:not(:disabled) { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.15) !important; }
+        .pp-award:hover:not(:disabled) { filter: brightness(1.08); }
+        @keyframes pp-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .pp-card { animation: pp-in 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+      `}</style>
 
-      {/* Header */}
-      <div style={s.profileHeader}>
-        <div style={s.avatar}>
-          {patient.first_name[0]}{patient.last_name[0]}
-        </div>
-        <div>
-          <h1 style={s.name}>{patient.first_name} {patient.last_name}</h1>
-          <div style={s.meta}>
-            {patient.email && <span>{patient.email}</span>}
-            {patient.phone && <span>{patient.phone}</span>}
-            <span>Joined {new Date(patient.created_at).toLocaleDateString('en-CA')}</span>
-          </div>
-        </div>
-        <div style={s.statsRow}>
-          <div style={s.stat}>
-            <span style={{ ...s.statVal, color: '#006FEE' }}>{pts}</span>
-            <span style={s.statLabel}>Points</span>
-          </div>
-          <div style={s.stat}>
-            <span style={{ ...s.statVal, color: TIER_COLOR[tier] }}>
-              {tier.charAt(0).toUpperCase() + tier.slice(1)}
-            </span>
-            <span style={s.statLabel}>Tier</span>
-          </div>
-          <div style={s.stat}>
-            <span style={s.statVal}>{referrals.length}</span>
-            <span style={s.statLabel}>Referrals</span>
-          </div>
-        </div>
-      </div>
+      <div style={s.page}>
+        <button onClick={() => router.back()} style={s.backBtn}>← Back to patients</button>
 
-      {feedback && <div style={s.feedbackBanner}>{feedback}</div>}
-
-      <div style={s.cols}>
-        {/* Left column */}
-        <div style={s.colLeft}>
-          {/* Award points */}
-          <div style={s.card}>
-            <h2 style={s.cardTitle}>Award points</h2>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="number"
-                min="1"
-                value={customPts}
-                onChange={(e) => setCustomPts(e.target.value)}
-                placeholder="Amount"
-                style={s.input}
-              />
-              <button
-                disabled={awarding || !customPts}
-                onClick={awardCustom}
-                style={{ ...s.btn, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                {awarding && <Spinner />}
-                Award
-              </button>
+        {/* ── Profile header ── */}
+        <div style={s.profileHeader}>
+          <div style={s.avatar}>
+            {patient.first_name[0]}{patient.last_name[0]}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={s.name}>{patient.first_name} {patient.last_name}</h1>
+            <div style={s.meta}>
+              {patient.email && <span>{patient.email}</span>}
+              {patient.phone && <span>{patient.phone}</span>}
+              <span>Joined {new Date(patient.created_at).toLocaleDateString('en-CA')}</span>
             </div>
           </div>
-
-          {/* Next checkup */}
-          <div style={s.card}>
-            <h2 style={s.cardTitle}>Next checkup date</h2>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="date"
-                value={checkupDate}
-                onChange={(e) => setCheckupDate(e.target.value)}
-                style={s.input}
-              />
-              <button disabled={savingDate} onClick={saveCheckupDate} style={{ ...s.btn, display: 'flex', alignItems: 'center', gap: 6 }}>
-                {savingDate && <Spinner />}
-                Save
-              </button>
+          <div style={s.statsRow}>
+            <div style={s.stat}>
+              <span style={{ ...s.statVal, color: '#3bbfb9' }}>{pts.toLocaleString()}</span>
+              <span style={s.statLabel}>Points</span>
+            </div>
+            <div style={s.statDivider} />
+            <div style={s.stat}>
+              <span style={{ ...s.statVal, color: TIER_COLOR[tier] }}>
+                {tier.charAt(0).toUpperCase() + tier.slice(1)}
+              </span>
+              <span style={s.statLabel}>Tier</span>
+            </div>
+            <div style={s.statDivider} />
+            <div style={s.stat}>
+              <span style={{ ...s.statVal, color: 'rgba(255,255,255,0.8)' }}>{referrals.length}</span>
+              <span style={s.statLabel}>Referrals</span>
             </div>
           </div>
+        </div>
 
-          {/* Notifications */}
-          <div style={s.card}>
-            <h2 style={s.cardTitle}>Send notification</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <button
-                disabled={sendingNotif}
-                onClick={() => sendManualNotification('recall')}
-                style={{ ...s.notifBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-              >
-                {sendingNotif && <Spinner />}
-                📅 Send recall reminder
-              </button>
-              {googleReviewUrl && (
+        {/* ── Feedback ── */}
+        {feedback && (
+          <div style={s.feedbackBanner}>{feedback}</div>
+        )}
+
+        {/* ── Two-column layout ── */}
+        <div style={s.cols}>
+
+          {/* Left */}
+          <div style={s.col}>
+
+            {/* Award points */}
+            <div className="pp-card" style={s.card}>
+              <h2 style={s.cardTitle}>Award points</h2>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="number" min="1"
+                  className="pp-input"
+                  value={customPts}
+                  onChange={(e) => setCustomPts(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && awardCustom()}
+                  placeholder="Amount"
+                  style={s.input}
+                />
                 <button
-                  disabled={sendingNotif}
-                  onClick={() => sendManualNotification('review')}
-                  style={{ ...s.notifBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                  className="pp-award"
+                  disabled={awarding || !customPts}
+                  onClick={awardCustom}
+                  style={{ ...s.btn, opacity: customPts ? 1 : 0.45 }}
                 >
-                  {sendingNotif && <Spinner />}
-                  ⭐ Send review request
+                  {awarding ? <Spinner color="#081312" /> : 'Award'}
                 </button>
+              </div>
+            </div>
+
+            {/* Next checkup */}
+            <div className="pp-card" style={{ ...s.card, animationDelay: '0.05s' }}>
+              <h2 style={s.cardTitle}>Next checkup date</h2>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="date"
+                  className="pp-input"
+                  value={checkupDate}
+                  onChange={(e) => setCheckupDate(e.target.value)}
+                  style={{ ...s.input, colorScheme: 'dark' }}
+                />
+                <button
+                  className="pp-award"
+                  disabled={savingDate}
+                  onClick={saveCheckupDate}
+                  style={s.btn}
+                >
+                  {savingDate ? <Spinner color="#081312" /> : 'Save'}
+                </button>
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div className="pp-card" style={{ ...s.card, animationDelay: '0.1s' }}>
+              <h2 style={s.cardTitle}>Send notification</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button
+                  className="pp-notif"
+                  disabled={sendingNotif}
+                  onClick={() => sendManualNotification('recall')}
+                  style={s.notifBtn}
+                >
+                  <span style={s.notifIcon}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </span>
+                  Send recall reminder
+                  {sendingNotif && <Spinner />}
+                </button>
+                {googleReviewUrl && (
+                  <button
+                    className="pp-notif"
+                    disabled={sendingNotif}
+                    onClick={() => sendManualNotification('review')}
+                    style={s.notifBtn}
+                  >
+                    <span style={s.notifIcon}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
+                    </span>
+                    Send review request
+                    {sendingNotif && <Spinner />}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Referral link */}
+            <div className="pp-card" style={{ ...s.card, animationDelay: '0.15s' }}>
+              <h2 style={s.cardTitle}>Referral link</h2>
+              <div style={s.referralBox}>
+                <span style={s.referralCode}>{referralLink}</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(referralLink);
+                    setFeedback('Copied!');
+                    setTimeout(() => setFeedback(''), 2000);
+                  }}
+                  style={s.copyBtn}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right */}
+          <div style={s.col}>
+
+            {/* Point history */}
+            <div className="pp-card" style={{ ...s.card, animationDelay: '0.06s' }}>
+              <h2 style={s.cardTitle}>Point history</h2>
+              {pointEvents.length === 0 ? (
+                <p style={s.empty}>No point events yet.</p>
+              ) : (
+                <div style={s.eventList}>
+                  {pointEvents.map((e, i) => (
+                    <div key={e.id} style={{ ...s.eventRow, borderBottom: i < pointEvents.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                      <span style={{
+                        ...s.reasonTag,
+                        color: REASON_COLOR[e.reason] || '#94a3b8',
+                        background: `${REASON_COLOR[e.reason] || '#94a3b8'}18`,
+                        border: `1px solid ${REASON_COLOR[e.reason] || '#94a3b8'}28`,
+                      }}>
+                        {REASON_LABEL[e.reason] || e.reason}
+                      </span>
+                      <span style={{ ...s.eventPts, color: e.points > 0 ? '#34d399' : '#f87171' }}>
+                        {e.points > 0 ? '+' : ''}{e.points}
+                      </span>
+                      <span style={s.eventDate}>{new Date(e.created_at).toLocaleDateString('en-CA')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Notification log */}
+            <div className="pp-card" style={{ ...s.card, animationDelay: '0.12s' }}>
+              <h2 style={s.cardTitle}>Notification log</h2>
+              {notifications.length === 0 ? (
+                <p style={s.empty}>No notifications sent yet.</p>
+              ) : (
+                <div style={s.eventList}>
+                  {notifications.map((n, i) => (
+                    <div key={n.id} style={{ ...s.eventRow, borderBottom: i < notifications.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                      <span style={{
+                        ...s.reasonTag,
+                        color: n.type === 'review' ? '#fbbf24' : '#3bbfb9',
+                        background: n.type === 'review' ? 'rgba(251,191,36,0.1)' : 'rgba(59,191,185,0.1)',
+                        border: n.type === 'review' ? '1px solid rgba(251,191,36,0.2)' : '1px solid rgba(59,191,185,0.2)',
+                      }}>
+                        {n.type === 'review' ? 'Review request' : 'Recall reminder'}
+                      </span>
+                      <span style={{ ...s.eventDate, marginLeft: 'auto' }}>
+                        {new Date(n.sent_at).toLocaleDateString('en-CA')}
+                        {n.opened_at && <span style={{ color: '#34d399', marginLeft: 6 }}>· opened</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
-
-          {/* Referral link */}
-          <div style={s.card}>
-            <h2 style={s.cardTitle}>Referral link</h2>
-            <div style={s.referralLink}>
-              <span style={s.referralCode}>{referralLink}</span>
-              <button
-                onClick={() => { navigator.clipboard.writeText(referralLink); setFeedback('Copied!'); setTimeout(() => setFeedback(''), 2000); }}
-                style={s.copyBtn}
-              >
-                Copy
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right column */}
-        <div style={s.colRight}>
-          {/* Point history */}
-          <div style={s.card}>
-            <h2 style={s.cardTitle}>Point history</h2>
-            {pointEvents.length === 0 ? (
-              <p style={s.empty}>No point events yet.</p>
-            ) : (
-              <div style={s.eventList}>
-                {pointEvents.map((e) => (
-                  <div key={e.id} style={s.eventRow}>
-                    <span style={s.eventReason}>{REASON_LABEL[e.reason] || e.reason}</span>
-                    <span style={{ ...s.eventPts, color: e.points > 0 ? '#16a34a' : '#dc2626' }}>
-                      {e.points > 0 ? '+' : ''}{e.points}
-                    </span>
-                    <span style={s.eventDate}>{new Date(e.created_at).toLocaleDateString('en-CA')}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Notification log */}
-          <div style={s.card}>
-            <h2 style={s.cardTitle}>Notification log</h2>
-            {notifications.length === 0 ? (
-              <p style={s.empty}>No notifications sent yet.</p>
-            ) : (
-              <div style={s.eventList}>
-                {notifications.map((n) => (
-                  <div key={n.id} style={s.eventRow}>
-                    <span style={s.eventReason}>{n.type}</span>
-                    <span style={{ ...s.eventDate, flex: 1, textAlign: 'right' }}>
-                      {new Date(n.sent_at).toLocaleDateString('en-CA')}
-                      {n.opened_at && ' · opened'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
 const s = {
-  page: { display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 1000 },
-  backBtn: { background: 'none', border: 'none', color: '#64748b', fontSize: 14, cursor: 'pointer', padding: '4px 0', alignSelf: 'flex-start' },
+  page: { display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1000 },
+  backBtn: {
+    background: 'none', border: 'none',
+    color: 'rgba(255,255,255,0.3)', fontSize: 13,
+    cursor: 'pointer', padding: '4px 0',
+    alignSelf: 'flex-start',
+    transition: 'color 0.15s',
+    fontFamily: "'DM Sans', sans-serif",
+  },
   profileHeader: {
-    background: '#fff', borderRadius: 16, padding: '24px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 16, padding: '22px 24px',
+    border: '1px solid rgba(255,255,255,0.07)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+    display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
   },
   avatar: {
-    width: 60, height: 60, borderRadius: '50%', background: '#eff6ff', color: '#006FEE',
+    width: 56, height: 56, borderRadius: '50%',
+    background: 'rgba(59,191,185,0.15)', color: '#3bbfb9',
+    border: '1.5px solid rgba(59,191,185,0.25)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontWeight: 700, fontSize: 22, flexShrink: 0,
+    fontWeight: 700, fontSize: 20, flexShrink: 0, letterSpacing: '0.02em',
   },
-  name: { fontSize: 22, fontWeight: 700, color: '#111', margin: 0 },
-  meta: { display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 13, color: '#64748b', marginTop: 4 },
-  statsRow: { display: 'flex', gap: 24, marginLeft: 'auto', flexWrap: 'wrap' },
+  name: { fontSize: 20, fontWeight: 700, color: '#fff', margin: '0 0 4px', letterSpacing: '-0.01em' },
+  meta: { display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 13, color: 'rgba(255,255,255,0.35)' },
+  statsRow: { display: 'flex', alignItems: 'center', gap: 20, marginLeft: 'auto', flexWrap: 'wrap' },
   stat: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
-  statVal: { fontSize: 24, fontWeight: 800, color: '#111' },
-  statLabel: { fontSize: 12, color: '#94a3b8', textTransform: 'uppercase' },
+  statVal: { fontSize: 22, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' },
+  statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 },
+  statDivider: { width: 1, height: 32, background: 'rgba(255,255,255,0.08)' },
   feedbackBanner: {
-    background: '#dcfce7', color: '#16a34a', borderRadius: 10,
-    padding: '10px 16px', fontSize: 14, fontWeight: 600,
+    background: 'rgba(52,211,153,0.1)',
+    color: '#34d399',
+    border: '1px solid rgba(52,211,153,0.2)',
+    borderRadius: 10, padding: '10px 16px', fontSize: 14, fontWeight: 600,
   },
-  cols: { display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 20 },
-  colLeft: { display: 'flex', flexDirection: 'column', gap: 16 },
-  colRight: { display: 'flex', flexDirection: 'column', gap: 16 },
+  cols: { display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 16 },
+  col: { display: 'flex', flexDirection: 'column', gap: 14 },
   card: {
-    background: '#fff', borderRadius: 16, padding: '20px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 14, padding: '18px 20px',
+    border: '1px solid rgba(255,255,255,0.07)',
+    backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
   },
-  cardTitle: { fontSize: 14, fontWeight: 700, color: '#374151', margin: '0 0 12px' },
+  cardTitle: {
+    fontSize: 12, fontWeight: 700,
+    color: 'rgba(255,255,255,0.35)',
+    margin: '0 0 14px',
+    textTransform: 'uppercase', letterSpacing: '0.07em',
+  },
   input: {
-    flex: 1, padding: '10px 14px', border: '1.5px solid #e2e8f0',
-    borderRadius: 10, fontSize: 14, outline: 'none',
+    flex: 1, padding: '10px 13px',
+    border: '1.5px solid rgba(255,255,255,0.1)',
+    borderRadius: 10, fontSize: 14,
+    background: 'rgba(255,255,255,0.05)',
+    color: '#fff',
+    fontFamily: "'DM Sans', sans-serif",
+    transition: 'border-color 0.15s, box-shadow 0.15s',
   },
   btn: {
-    background: '#006FEE', color: '#fff', border: 'none', borderRadius: 10,
-    padding: '10px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-    whiteSpace: 'nowrap',
+    background: '#3bbfb9', color: '#081312',
+    border: 'none', borderRadius: 10,
+    padding: '10px 16px', fontSize: 14, fontWeight: 700,
+    cursor: 'pointer', whiteSpace: 'nowrap',
+    display: 'flex', alignItems: 'center', gap: 6,
+    transition: 'filter 0.15s, opacity 0.15s',
+    fontFamily: "'DM Sans', sans-serif",
   },
   notifBtn: {
-    background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10,
-    padding: '10px 14px', fontSize: 14, cursor: 'pointer', textAlign: 'left',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.09)',
+    borderRadius: 10, padding: '11px 14px',
+    fontSize: 14, cursor: 'pointer',
+    color: 'rgba(255,255,255,0.65)',
+    display: 'flex', alignItems: 'center', gap: 10,
+    transition: 'background 0.15s, border-color 0.15s',
+    fontFamily: "'DM Sans', sans-serif",
   },
-  referralLink: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    background: '#f8fafc', borderRadius: 8, padding: '8px 12px',
+  notifIcon: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+    background: 'rgba(59,191,185,0.1)', color: '#3bbfb9',
+    border: '1px solid rgba(59,191,185,0.2)',
   },
-  referralCode: { fontSize: 12, color: '#64748b', flex: 1, wordBreak: 'break-all' },
+  referralBox: {
+    display: 'flex', alignItems: 'center', gap: 10,
+    background: 'rgba(255,255,255,0.03)',
+    borderRadius: 8, padding: '10px 12px',
+    border: '1px solid rgba(255,255,255,0.06)',
+  },
+  referralCode: { fontSize: 12, color: 'rgba(255,255,255,0.3)', flex: 1, wordBreak: 'break-all' },
   copyBtn: {
-    background: '#eff6ff', color: '#006FEE', border: 'none', borderRadius: 6,
-    padding: '4px 10px', fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+    background: 'rgba(59,191,185,0.12)', color: '#3bbfb9',
+    border: '1px solid rgba(59,191,185,0.2)', borderRadius: 6,
+    padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+    fontFamily: "'DM Sans', sans-serif",
   },
-  eventList: { display: 'flex', flexDirection: 'column', gap: 8 },
-  eventRow: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    borderBottom: '1px solid #f1f5f9', paddingBottom: 8, fontSize: 13,
+  eventList: { display: 'flex', flexDirection: 'column', gap: 0 },
+  eventRow: { display: 'flex', alignItems: 'center', gap: 10, paddingTop: 10, paddingBottom: 10, fontSize: 13 },
+  reasonTag: {
+    fontSize: 12, fontWeight: 600, padding: '3px 9px', borderRadius: 20,
+    flex: 1,
   },
-  eventReason: { flex: 1, color: '#374151' },
-  eventPts: { fontWeight: 700, minWidth: 40 },
-  eventDate: { color: '#94a3b8', fontSize: 12 },
-  empty: { fontSize: 13, color: '#94a3b8' },
+  eventPts: { fontWeight: 700, fontSize: 14, minWidth: 36, textAlign: 'right' },
+  eventDate: { color: 'rgba(255,255,255,0.25)', fontSize: 12, whiteSpace: 'nowrap' },
+  empty: { fontSize: 13, color: 'rgba(255,255,255,0.25)', margin: 0 },
 };
