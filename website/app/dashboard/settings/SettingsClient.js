@@ -334,7 +334,6 @@ export default function SettingsClient({ clinic }) {
   const scanLink   = `${appUrl}/scan/${clinic.slug}`;
 
   const FORM_TABS = ['clinic', 'wallet', 'rewards'];
-  const showStickyBar = FORM_TABS.includes(tab);
 
   return (
     <>
@@ -344,66 +343,86 @@ export default function SettingsClient({ clinic }) {
         .st-upload:hover { border-color: rgba(59,191,185,0.4) !important; background: rgba(59,191,185,0.05) !important; }
         .st-tab { transition: color 0.15s, border-color 0.15s; }
         .st-tab:hover { color: rgba(255,255,255,0.7) !important; }
-        @keyframes stBarIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-        .st-bar { animation: stBarIn 0.25s cubic-bezier(0.16,1,0.3,1) both; }
-        @keyframes stFeedIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
-        .st-feedback { animation: stFeedIn 0.2s ease both; }
       `}</style>
 
       <div style={s.page}>
         {/* Page title */}
         <div style={s.titleRow}>
           <h1 style={s.h1}>Settings</h1>
-          {isDirty && (
-            <span className="st-feedback" style={s.unsavedDot}>Unsaved changes</span>
+        </div>
+
+        {/* Tab bar + save button */}
+        <div style={s.tabBar}>
+          <div style={s.tabList}>
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className="st-tab"
+                onClick={() => setTab(t.id)}
+                style={{
+                  ...s.tab,
+                  ...(tab === t.id ? s.tabActive : {}),
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {FORM_TABS.includes(tab) && (
+            <button
+              form="settings-form"
+              type="submit"
+              disabled={!isDirty || saving}
+              style={{
+                ...s.saveBtn,
+                opacity: isDirty ? 1 : 0.3,
+                cursor: isDirty ? 'pointer' : 'not-allowed',
+              }}
+            >
+              {saving ? <><Spinner color="#081312" /> Saving…</> : feedback === 'Saved!' ? 'Saved ✓' : 'Save changes'}
+            </button>
           )}
         </div>
 
-        {/* Tab bar */}
-        <div style={s.tabBar}>
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className="st-tab"
-              onClick={() => setTab(t.id)}
-              style={{
-                ...s.tab,
-                ...(tab === t.id ? s.tabActive : {}),
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
         {/* Tab content */}
-        <form onSubmit={handleSave} style={s.form}>
+        <form id="settings-form" onSubmit={handleSave} style={s.form}>
 
           {/* ── CLINIC ── */}
           {tab === 'clinic' && (
             <div style={s.panel}>
-              <Field label="Clinic name">
-                <input className="st-input" value={form.name} onChange={(e) => set('name', e.target.value)} style={s.input} required />
-              </Field>
-              <Field label="Google review URL">
-                <input className="st-input" type="url" value={form.google_review_url} onChange={(e) => set('google_review_url', e.target.value)} style={s.input} placeholder="https://g.page/r/…/review" />
-              </Field>
-              <Field label="Booking URL">
-                <input className="st-input" type="url" value={form.booking_url} onChange={(e) => set('booking_url', e.target.value)} style={s.input} placeholder="https://yourclinic.com/book" />
-              </Field>
+              {/* Row 1: Clinic name + Phone */}
+              <div style={s.formRow}>
+                <Field label="Clinic name">
+                  <input className="st-input" value={form.name} onChange={(e) => set('name', e.target.value)} style={s.input} required />
+                </Field>
+                <Field label="Phone" hint="Shown as a 'Call Us' button on the wallet pass">
+                  <input className="st-input" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} style={s.input} placeholder="+1 (780) 555-0100" />
+                </Field>
+              </div>
+              {/* Row 2: Address full-width */}
               <Field label="Address" hint="Shown as a 'Get Directions' button on the wallet pass">
-                <input className="st-input" value={form.address} onChange={(e) => set('address', e.target.value)} style={s.input} placeholder="123 Main St, Edmonton, AB" />
+                <input className="st-input" value={form.address} onChange={(e) => set('address', e.target.value)} style={s.input} placeholder="123 Main St, Edmonton, AB T5J 2Z2" />
               </Field>
-              <Field label="Phone" hint="Shown as a 'Call Us' button on the wallet pass">
-                <input className="st-input" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} style={s.input} placeholder="+1 (780) 555-0100" />
-              </Field>
-              <Field label="Facebook URL" hint="Shown as a 'Follow us on Facebook' button on the wallet pass">
-                <input className="st-input" type="url" value={form.facebook_url} onChange={(e) => set('facebook_url', e.target.value)} style={s.input} placeholder="https://facebook.com/yourclinic" />
-              </Field>
-              <Field label="Instagram URL" hint="Shown as a 'Follow us on Instagram' button on the wallet pass">
-                <input className="st-input" type="url" value={form.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} style={s.input} placeholder="https://instagram.com/yourclinic" />
-              </Field>
+              {/* Row 3: Google review + Booking side by side */}
+              <div style={s.formRow}>
+                <Field label="Google review URL">
+                  <input className="st-input" type="url" value={form.google_review_url} onChange={(e) => set('google_review_url', e.target.value)} style={s.input} placeholder="https://g.page/r/…/review" />
+                </Field>
+                <Field label="Booking URL">
+                  <input className="st-input" type="url" value={form.booking_url} onChange={(e) => set('booking_url', e.target.value)} style={s.input} placeholder="https://yourclinic.com/book" />
+                </Field>
+              </div>
+              {/* Row 4: Facebook + Instagram side by side */}
+              <div style={s.formRow}>
+                <Field label="Facebook URL" hint="'Follow us on Facebook' on wallet pass">
+                  <input className="st-input" type="url" value={form.facebook_url} onChange={(e) => set('facebook_url', e.target.value)} style={s.input} placeholder="https://facebook.com/yourclinic" />
+                </Field>
+                <Field label="Instagram URL" hint="'Follow us on Instagram' on wallet pass">
+                  <input className="st-input" type="url" value={form.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} style={s.input} placeholder="https://instagram.com/yourclinic" />
+                </Field>
+              </div>
             </div>
           )}
 
@@ -565,42 +584,6 @@ export default function SettingsClient({ clinic }) {
             </div>
           )}
 
-          {/* ── Sticky save bar ── */}
-          {showStickyBar && (
-            <div className="st-bar" style={{
-              ...s.stickyBar,
-              ...(isDirty ? {} : s.stickyBarInactive),
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {feedback && (
-                  <span className="st-feedback" style={{
-                    fontSize: 13, fontWeight: 600,
-                    color: feedback.includes('Saved') ? '#34d399' : '#f87171',
-                  }}>
-                    {feedback}
-                  </span>
-                )}
-                {!feedback && isDirty && (
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>You have unsaved changes</span>
-                )}
-                {!feedback && !isDirty && (
-                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)' }}>No changes</span>
-                )}
-              </div>
-              <button
-                type="submit"
-                disabled={!isDirty || saving}
-                style={{
-                  ...s.saveBtn,
-                  opacity: isDirty ? 1 : 0.35,
-                  cursor: isDirty ? 'pointer' : 'not-allowed',
-                }}
-              >
-                {saving && <Spinner />}
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
-            </div>
-          )}
         </form>
       </div>
     </>
@@ -608,25 +591,23 @@ export default function SettingsClient({ clinic }) {
 }
 
 const s = {
-  page: { display: 'flex', flexDirection: 'column', gap: 0, maxWidth: 900, paddingBottom: 100 },
-  titleRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 },
+  page: { display: 'flex', flexDirection: 'column', gap: 0, maxWidth: 900 },
+  titleRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 },
   h1: {
     fontFamily: "'Instrument Serif', serif",
     fontSize: 32, fontWeight: 400, color: '#fff',
     margin: 0, letterSpacing: '-0.02em',
   },
-  unsavedDot: {
-    fontSize: 12, fontWeight: 600,
-    color: '#fbbf24',
-    background: 'rgba(251,191,36,0.1)',
-    border: '1px solid rgba(251,191,36,0.25)',
-    borderRadius: 20, padding: '4px 10px',
-  },
   tabBar: {
     display: 'flex',
-    gap: 0,
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderBottom: '1px solid rgba(255,255,255,0.07)',
     marginBottom: 28,
+  },
+  tabList: {
+    display: 'flex',
+    gap: 0,
   },
   tab: {
     padding: '10px 18px',
@@ -645,6 +626,7 @@ const s = {
     fontWeight: 600,
   },
   form: { display: 'flex', flexDirection: 'column', gap: 0 },
+  formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
   panel: {
     display: 'flex', flexDirection: 'column', gap: 20,
     background: 'rgba(255,255,255,0.04)',
@@ -700,34 +682,15 @@ const s = {
     borderRadius: 10, padding: '11px 18px', fontSize: 14, fontWeight: 600,
     border: '1px solid rgba(59,191,185,0.25)', cursor: 'pointer',
   },
-  stickyBar: {
-    position: 'fixed',
-    bottom: 24,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: 24,
-    background: 'rgba(15,30,29,0.9)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(59,191,185,0.2)',
-    borderRadius: 16,
-    padding: '14px 20px',
-    boxShadow: '0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(59,191,185,0.08)',
-    minWidth: 360,
-    zIndex: 100,
-  },
-  stickyBarInactive: {
-    border: '1px solid rgba(255,255,255,0.07)',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-  },
   saveBtn: {
     background: '#3bbfb9', color: '#081312',
-    border: 'none', borderRadius: 10,
-    padding: '10px 22px',
-    fontSize: 14, fontWeight: 700,
-    display: 'flex', alignItems: 'center', gap: 8,
+    border: 'none', borderRadius: 8,
+    padding: '8px 18px',
+    fontSize: 13, fontWeight: 700,
+    display: 'flex', alignItems: 'center', gap: 6,
     transition: 'opacity 0.2s',
     fontFamily: "'DM Sans', sans-serif",
+    marginBottom: 1,
+    whiteSpace: 'nowrap',
   },
 };
