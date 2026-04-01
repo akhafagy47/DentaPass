@@ -111,10 +111,10 @@ export default async function DashboardHome() {
     : null;
 
   const stats = [
-    { label: 'Total patients', value: totalPatients ?? 0, Icon: IconUsers, color: '#006FEE', bg: '#eff6ff', delay: '0.05s' },
-    { label: 'Due for checkup', sublabel: 'next 30 days', value: dueForCheckup ?? 0, Icon: IconCalendar, color: '#d97706', bg: '#fffbeb', delay: '0.1s' },
-    { label: 'Reviews requested', sublabel: 'this month', value: reviewsThisMonth ?? 0, Icon: IconStar, color: '#7c3aed', bg: '#faf5ff', delay: '0.15s' },
-    { label: 'Points awarded', sublabel: 'this month', value: pointsThisMonth.toLocaleString(), Icon: IconAward, color: '#059669', bg: '#f0fdf4', delay: '0.2s' },
+    { label: 'Total patients', value: totalPatients ?? 0, Icon: IconUsers, accent: '#3bbfb9', delay: '0.05s' },
+    { label: 'Due for checkup', sublabel: 'next 30 days', value: dueForCheckup ?? 0, Icon: IconCalendar, accent: '#f59e0b', delay: '0.1s' },
+    { label: 'Reviews requested', sublabel: 'this month', value: reviewsThisMonth ?? 0, Icon: IconStar, accent: '#a78bfa', delay: '0.15s' },
+    { label: 'Points awarded', sublabel: 'this month', value: pointsThisMonth.toLocaleString(), Icon: IconAward, accent: '#34d399', delay: '0.2s' },
   ];
 
   return (
@@ -127,17 +127,25 @@ export default async function DashboardHome() {
         @keyframes progressFill {
           from { width: 0%; }
         }
+        @keyframes shimmerGlow {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
         .stat-card {
           animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
-          transition: transform 0.2s, box-shadow 0.2s;
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
         }
         .stat-card:hover {
           transform: translateY(-3px);
-          box-shadow: 0 12px 32px rgba(0,0,0,0.1) !important;
+          border-color: rgba(59,191,185,0.2) !important;
+          box-shadow: 0 16px 40px rgba(0,0,0,0.3) !important;
         }
-        .action-btn { transition: transform 0.15s, box-shadow 0.15s, filter 0.15s; }
-        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); filter: brightness(0.97); }
+        .action-btn { transition: transform 0.15s, box-shadow 0.15s, background 0.15s, border-color 0.15s; }
+        .action-btn:hover { transform: translateY(-2px); }
         .progress-fill { animation: progressFill 0.8s cubic-bezier(0.16,1,0.3,1) 0.3s both; }
+        .dp-glass-card {
+          animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) 0.25s both;
+        }
       `}</style>
 
       <div style={s.page}>
@@ -161,11 +169,11 @@ export default async function DashboardHome() {
               style={{ ...s.statCard, animationDelay: stat.delay }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                <div style={{ ...s.iconWrap, background: stat.bg, color: stat.color }}>
+                <div style={{ ...s.iconWrap, color: stat.accent, background: `${stat.accent}18`, border: `1px solid ${stat.accent}30` }}>
                   <stat.Icon />
                 </div>
               </div>
-              <div style={{ ...s.statValue, color: stat.color }}>{stat.value}</div>
+              <div style={{ ...s.statValue, color: stat.accent }}>{stat.value}</div>
               <div style={s.statLabel}>{stat.label}</div>
               {stat.sublabel && <div style={s.statSub}>{stat.sublabel}</div>}
             </div>
@@ -174,7 +182,7 @@ export default async function DashboardHome() {
 
         {/* Capacity */}
         {usagePercent !== null && (
-          <div style={s.card}>
+          <div className="dp-glass-card" style={s.card}>
             <div style={s.capacityHeader}>
               <div>
                 <div style={s.cardTitle}>Patient capacity</div>
@@ -182,8 +190,9 @@ export default async function DashboardHome() {
               </div>
               <div style={{
                 ...s.percentBadge,
-                background: usagePercent > 90 ? '#fee2e2' : usagePercent > 70 ? '#fef9c3' : '#f0fdf4',
-                color: usagePercent > 90 ? '#dc2626' : usagePercent > 70 ? '#ca8a04' : '#16a34a',
+                background: usagePercent > 90 ? 'rgba(239,68,68,0.15)' : usagePercent > 70 ? 'rgba(245,158,11,0.15)' : 'rgba(59,191,185,0.15)',
+                color: usagePercent > 90 ? '#f87171' : usagePercent > 70 ? '#fbbf24' : '#3bbfb9',
+                border: `1px solid ${usagePercent > 90 ? 'rgba(239,68,68,0.3)' : usagePercent > 70 ? 'rgba(245,158,11,0.3)' : 'rgba(59,191,185,0.3)'}`,
               }}>
                 {usagePercent}%
               </div>
@@ -198,7 +207,7 @@ export default async function DashboardHome() {
                     ? 'linear-gradient(90deg, #ef4444, #dc2626)'
                     : usagePercent > 70
                     ? 'linear-gradient(90deg, #f59e0b, #d97706)'
-                    : 'linear-gradient(90deg, #006FEE, #0ea5e9)',
+                    : 'linear-gradient(90deg, #3bbfb9, #2aa8a2)',
                 }}
               />
             </div>
@@ -209,12 +218,10 @@ export default async function DashboardHome() {
         )}
 
         {/* Quick actions */}
-        <div style={s.section}>
-          <div style={s.sectionHeader}>
-            <div style={s.cardTitle}>Quick actions</div>
-          </div>
+        <div className="dp-glass-card" style={{ ...s.card, animationDelay: '0.35s' }}>
+          <div style={s.cardTitle}>Quick actions</div>
           <div style={s.actionRow}>
-            <a href={`/scan/${clinic.slug}`} target="_blank" rel="noopener noreferrer" className="action-btn" style={{ ...s.actionBtn, ...s.actionBlue }}>
+            <a href={`/scan/${clinic.slug}`} target="_blank" rel="noopener noreferrer" className="action-btn" style={{ ...s.actionBtn, ...s.actionTeal }}>
               <IconScan /> Open QR Scanner
             </a>
             <a href={`/join/${clinic.slug}`} target="_blank" rel="noopener noreferrer" className="action-btn" style={{ ...s.actionBtn, ...s.actionGreen }}>
@@ -240,50 +247,74 @@ function greeting() {
 const s = {
   page: { display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 960 },
   header: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 4 },
-  h1: { fontSize: 28, fontWeight: 800, color: '#0d0f14', margin: '0 0 4px', letterSpacing: '-0.02em' },
-  sub: { fontSize: 14, color: '#64748b', margin: 0 },
+  h1: {
+    fontFamily: "'Instrument Serif', serif",
+    fontSize: 32, fontWeight: 400, color: '#fff',
+    margin: '0 0 4px', letterSpacing: '-0.02em',
+  },
+  sub: { fontSize: 14, color: 'rgba(255,255,255,0.35)', margin: 0 },
   planBadge: {
-    background: '#fff', color: '#006FEE',
-    border: '1.5px solid #bfdbfe', borderRadius: 20,
+    background: 'rgba(59,191,185,0.1)',
+    color: '#3bbfb9',
+    border: '1px solid rgba(59,191,185,0.25)',
+    borderRadius: 20,
     padding: '6px 14px', fontSize: 12, fontWeight: 700,
     letterSpacing: '0.02em',
   },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 },
   statCard: {
-    background: '#fff', borderRadius: 16, padding: '22px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    border: '1px solid rgba(0,0,0,0.04)',
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 16,
+    padding: '22px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
   },
   iconWrap: {
     width: 42, height: 42, borderRadius: 12,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   statValue: { fontSize: 36, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.03em', marginBottom: 4 },
-  statLabel: { fontSize: 13, fontWeight: 600, color: '#374151' },
-  statSub: { fontSize: 12, color: '#94a3b8', marginTop: 1 },
+  statLabel: { fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.6)' },
+  statSub: { fontSize: 12, color: 'rgba(255,255,255,0.25)', marginTop: 1 },
   card: {
-    background: '#fff', borderRadius: 16, padding: '22px 24px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-    border: '1px solid rgba(0,0,0,0.04)',
-    display: 'flex', flexDirection: 'column', gap: 12,
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: 16,
+    padding: '22px 24px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+    border: '1px solid rgba(255,255,255,0.07)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    display: 'flex', flexDirection: 'column', gap: 14,
   },
   capacityHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontSize: 14, fontWeight: 700, color: '#111' },
-  capacitySub: { fontSize: 13, color: '#64748b', marginTop: 2 },
-  percentBadge: { fontSize: 13, fontWeight: 700, padding: '4px 10px', borderRadius: 20 },
-  progressTrack: { height: 6, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' },
+  cardTitle: { fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.01em' },
+  capacitySub: { fontSize: 13, color: 'rgba(255,255,255,0.3)', marginTop: 2 },
+  percentBadge: { fontSize: 13, fontWeight: 700, padding: '4px 12px', borderRadius: 20 },
+  progressTrack: { height: 6, background: 'rgba(255,255,255,0.07)', borderRadius: 999, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 999 },
-  capacityWarn: { fontSize: 13, color: '#dc2626', margin: 0 },
-  section: { display: 'flex', flexDirection: 'column', gap: 14 },
-  sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  capacityWarn: { fontSize: 13, color: '#f87171', margin: 0 },
   actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap' },
   actionBtn: {
     display: 'inline-flex', alignItems: 'center', gap: 8,
     padding: '11px 18px', borderRadius: 12,
     fontSize: 14, fontWeight: 600, textDecoration: 'none', cursor: 'pointer',
-    border: '1.5px solid transparent',
+    border: '1px solid transparent',
   },
-  actionBlue: { background: '#eff6ff', color: '#006FEE', borderColor: '#bfdbfe' },
-  actionGreen: { background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' },
-  actionPurple: { background: '#faf5ff', color: '#7c3aed', borderColor: '#e9d5ff' },
+  actionTeal: {
+    background: 'rgba(59,191,185,0.1)',
+    color: '#3bbfb9',
+    borderColor: 'rgba(59,191,185,0.25)',
+  },
+  actionGreen: {
+    background: 'rgba(52,211,153,0.1)',
+    color: '#34d399',
+    borderColor: 'rgba(52,211,153,0.25)',
+  },
+  actionPurple: {
+    background: 'rgba(167,139,250,0.1)',
+    color: '#a78bfa',
+    borderColor: 'rgba(167,139,250,0.25)',
+  },
 };
