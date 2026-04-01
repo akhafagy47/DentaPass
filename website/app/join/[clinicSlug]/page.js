@@ -59,7 +59,11 @@ export default function JoinPage() {
       setWalletUrl(data.walletUrl);
       setStep('success');
     } catch (err) {
-      setErrorMsg(err.data?.error || 'Something went wrong. Please try again.');
+      const detail = [
+        err.data?.error || err.message || 'Unknown error',
+        err.status ? `(status ${err.status})` : '',
+      ].filter(Boolean).join(' ');
+      setErrorMsg(detail);
       setStep('error');
     } finally {
       setSubmitting(false);
