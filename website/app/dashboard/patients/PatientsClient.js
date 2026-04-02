@@ -29,7 +29,7 @@ export default function PatientsClient({ patients }) {
         .pt-row:hover { background: rgba(59,191,185,0.05) !important; }
         .pt-row:hover .pt-name { color: #3bbfb9 !important; }
         .tier-btn { transition: background 0.15s, border-color 0.15s, color 0.15s; }
-        .tier-btn:hover { border-color: rgba(255,255,255,0.2) !important; }
+        .tier-btn:hover { border-color: rgba(59,191,185,0.25) !important; }
         .search-wrap input:focus { border-color: rgba(59,191,185,0.5) !important; box-shadow: 0 0 0 3px rgba(59,191,185,0.1); }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(10px); }
@@ -153,30 +153,30 @@ const s = {
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   h1: {
     fontFamily: "'Instrument Serif', serif",
-    fontSize: 32, fontWeight: 400, color: '#fff',
+    fontSize: 32, fontWeight: 400, color: 'var(--dp-t1)',
     margin: '0 0 4px', letterSpacing: '-0.02em',
   },
-  sub: { fontSize: 14, color: 'rgba(255,255,255,0.35)', margin: 0 },
+  sub: { fontSize: 14, color: 'var(--dp-t3)', margin: 0 },
   controls: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   searchWrap: { position: 'relative', flex: '1', maxWidth: 340 },
   searchIcon: { position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' },
   searchInput: {
     width: '100%', padding: '10px 14px 10px 38px',
-    border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 10,
+    border: '1.5px solid var(--dp-inbdr)', borderRadius: 10,
     fontSize: 14, outline: 'none', boxSizing: 'border-box',
-    background: 'rgba(255,255,255,0.05)',
+    background: 'var(--dp-inp)',
     transition: 'border-color 0.15s, box-shadow 0.15s',
-    color: '#fff',
+    color: 'var(--dp-t1)',
     fontFamily: 'inherit',
   },
   filters: { display: 'flex', gap: 6 },
   filterBtn: {
     display: 'inline-flex', alignItems: 'center', gap: 6,
     padding: '7px 14px', borderRadius: 20,
-    border: '1px solid rgba(255,255,255,0.1)',
-    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid var(--dp-inbdr)',
+    background: 'var(--dp-card)',
     fontSize: 13, fontWeight: 500, cursor: 'pointer',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'var(--dp-t3)',
   },
   filterActive: {
     background: 'rgba(59,191,185,0.12)',
@@ -184,24 +184,24 @@ const s = {
     color: '#3bbfb9', fontWeight: 700,
   },
   empty: {
-    background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: '56px 24px',
-    textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)',
+    background: 'var(--dp-card)', borderRadius: 16, padding: '56px 24px',
+    textAlign: 'center', border: '1px solid var(--dp-bdr)',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
   },
   tableWrap: {
-    background: 'rgba(255,255,255,0.04)', borderRadius: 16, overflow: 'hidden',
-    border: '1px solid rgba(255,255,255,0.07)', overflowX: 'auto',
+    background: 'var(--dp-card)', borderRadius: 16, overflow: 'hidden',
+    border: '1px solid var(--dp-bdr)', overflowX: 'auto',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
   },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
-  thead: { background: 'rgba(255,255,255,0.03)' },
+  thead: { background: 'var(--dp-bdr)' },
   th: {
     padding: '11px 16px', textAlign: 'left', fontWeight: 600,
-    fontSize: 11, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.05em',
-    borderBottom: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap',
+    fontSize: 11, color: 'var(--dp-t4)', textTransform: 'uppercase', letterSpacing: '0.05em',
+    borderBottom: '1px solid var(--dp-div)', whiteSpace: 'nowrap',
   },
-  tr: { borderBottom: '1px solid rgba(255,255,255,0.04)' },
-  td: { padding: '13px 16px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap', fontSize: 14 },
+  tr: { borderBottom: '1px solid var(--dp-div)' },
+  td: { padding: '13px 16px', color: 'var(--dp-t2)', whiteSpace: 'nowrap', fontSize: 14 },
   nameCell: { display: 'flex', alignItems: 'center', gap: 10 },
   avatar: {
     width: 34, height: 34, borderRadius: '50%',
@@ -210,8 +210,8 @@ const s = {
     fontWeight: 700, fontSize: 12, flexShrink: 0, letterSpacing: '0.02em',
     border: '1px solid rgba(59,191,185,0.2)',
   },
-  name: { fontWeight: 600, color: 'rgba(255,255,255,0.85)', fontSize: 14, transition: 'color 0.12s' },
-  email: { fontSize: 12, color: 'rgba(255,255,255,0.3)', marginTop: 1 },
+  name: { fontWeight: 600, color: 'var(--dp-t1)', fontSize: 14, transition: 'color 0.12s' },
+  email: { fontSize: 12, color: 'var(--dp-t4)', marginTop: 1 },
   tierBadge: {
     display: 'inline-flex', alignItems: 'center', gap: 5,
     padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,

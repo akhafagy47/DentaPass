@@ -168,7 +168,7 @@ router.post('/onboard/dev', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   const { data: clinic } = await getSupabase()
     .from('clinics')
-    .select('name, brand_color, logo_url, booking_url')
+    .select('name, brand_color, logo_url, booking_url, theme')
     .eq('slug', req.params.slug)
     .single();
 
@@ -187,7 +187,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
   const allowed = ['name', 'google_review_url', 'booking_url', 'brand_color', 'logo_url',
                    'rewards_mode', 'points_per_dollar', 'points_label', 'setup_completed',
-                   'address', 'phone', 'facebook_url', 'instagram_url'];
+                   'address', 'phone', 'facebook_url', 'instagram_url', 'theme'];
   const updates = Object.fromEntries(
     Object.entries(req.body).filter(([k]) => allowed.includes(k))
   );

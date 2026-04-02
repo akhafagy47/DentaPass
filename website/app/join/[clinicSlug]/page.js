@@ -14,14 +14,20 @@ export default function JoinPage() {
   const [walletUrl, setWalletUrl] = useState(null);
   const [errorMsg, setErrorMsg]   = useState('');
   const [clinicName, setClinicName] = useState('');
+  const [theme, setTheme]         = useState('dark');
   const [form, setForm]           = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [errors, setErrors]       = useState({});
 
   useEffect(() => {
     getClinic(clinicSlug)
-      .then((d) => { if (d.name) setClinicName(d.name); })
+      .then((d) => {
+        if (d.name) setClinicName(d.name);
+        if (d.theme) setTheme(d.theme);
+      })
       .catch(() => {});
   }, [clinicSlug]);
+
+  const isLight = theme === 'light';
 
   function validate() {
     const e = {};
@@ -135,7 +141,7 @@ export default function JoinPage() {
 
   // ── Form ─────────────────────────────────────────────────────────────────────
   return (
-    <div style={s.page}>
+    <div style={{ ...s.page, background: isLight ? '#edf7f5' : '#f5f0ea' }}>
       <style>{`
         @keyframes panelIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
         @keyframes leftIn  { from{opacity:0;transform:translateX(-16px)} to{opacity:1;transform:translateX(0)} }
@@ -147,23 +153,30 @@ export default function JoinPage() {
         .join-submit { transition: transform 0.2s, box-shadow 0.2s, opacity 0.15s; }
       `}</style>
 
-      <div style={s.bgGlow} />
+      <div style={{ ...s.bgGlow, background: isLight
+        ? 'radial-gradient(ellipse 70% 50% at 20% 40%, rgba(59,191,185,0.12) 0%, transparent 55%)'
+        : 'radial-gradient(ellipse 70% 50% at 20% 40%, rgba(59,191,185,0.1) 0%, transparent 55%)' }} />
       <div style={s.bgOrb} />
 
-      <div style={s.shell}>
+      <div style={{ ...s.shell, background: isLight ? '#f0f9f8' : '#fff' }}>
 
         {/* ── Left panel ── */}
-        <div className="join-left" style={s.left}>
+        <div className="join-left" style={{
+          ...s.left,
+          background: isLight
+            ? 'linear-gradient(160deg, #e2f5f3 0%, #d0eeeb 100%)'
+            : 'linear-gradient(160deg, #0b1a19 0%, #122a28 100%)',
+        }}>
           <div style={s.logoWrap}>
-            <img src="/dentapass-logo.png" alt="DentaPass" style={{ height: 36, width: 'auto' }} />
+            <img src="/dentapass-logo.png" alt="DentaPass" style={{ height: 36, width: 'auto', filter: isLight ? 'none' : 'none' }} />
           </div>
 
           <div style={s.leftBody}>
-            <h1 style={s.leftH1}>
+            <h1 style={{ ...s.leftH1, color: isLight ? '#0b1a19' : '#fff' }}>
               {clinicName ? `${clinicName}'s` : "Your clinic's"}<br />
               loyalty program
             </h1>
-            <p style={s.leftSub}>
+            <p style={{ ...s.leftSub, color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>
               Earn points, get recall reminders, and share your referral link — all from your Apple or Google Wallet. No app needed.
             </p>
 
@@ -175,10 +188,13 @@ export default function JoinPage() {
                 { icon: '↗', label: 'Refer friends', desc: 'Share your code and both earn 250 pts' },
               ].map((b) => (
                 <div key={b.label} style={s.benefit}>
-                  <div style={s.benefitIcon}>{b.icon}</div>
+                  <div style={{ ...s.benefitIcon,
+                    background: isLight ? 'rgba(59,191,185,0.15)' : 'rgba(59,191,185,0.1)',
+                    border: `1px solid ${isLight ? 'rgba(59,191,185,0.3)' : 'rgba(59,191,185,0.15)'}`,
+                  }}>{b.icon}</div>
                   <div>
-                    <div style={s.benefitLabel}>{b.label}</div>
-                    <div style={s.benefitDesc}>{b.desc}</div>
+                    <div style={{ ...s.benefitLabel, color: isLight ? '#0b1a19' : 'rgba(255,255,255,0.85)' }}>{b.label}</div>
+                    <div style={{ ...s.benefitDesc,  color: isLight ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.3)' }}>{b.desc}</div>
                   </div>
                 </div>
               ))}

@@ -254,10 +254,10 @@ function AccountTab() {
 
   const INPUT = {
     padding: '10px 14px',
-    border: '1.5px solid rgba(255,255,255,0.1)',
+    border: '1.5px solid var(--dp-inbdr)',
     borderRadius: 10, fontSize: 14,
-    background: 'rgba(255,255,255,0.05)',
-    color: '#fff',
+    background: 'var(--dp-inp)',
+    color: 'var(--dp-t1)',
     fontFamily: "'DM Sans', sans-serif",
     outline: 'none',
     width: '100%', boxSizing: 'border-box',
@@ -271,7 +271,7 @@ function AccountTab() {
       {/* ── Change password ── */}
       <form onSubmit={handlePasswordChange} style={PANEL}>
         <div style={SECTION_TITLE}>Change password</div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', marginBottom: 16, marginTop: -8 }}>
+        <div style={{ fontSize: 13, color: 'var(--dp-t3)', marginBottom: 16, marginTop: -8 }}>
           Enter your current password to verify it's you, then choose a new one.
         </div>
 
@@ -329,13 +329,13 @@ function AccountTab() {
 
 const PANEL = {
   display: 'flex', flexDirection: 'column', gap: 16,
-  background: 'rgba(255,255,255,0.04)',
+  background: 'var(--dp-card)',
   borderRadius: 16, padding: '24px 28px',
-  border: '1px solid rgba(255,255,255,0.07)',
+  border: '1px solid var(--dp-bdr)',
   backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
 };
 const SECTION_TITLE = {
-  fontSize: 15, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 4,
+  fontSize: 15, fontWeight: 700, color: 'var(--dp-t2)', marginBottom: 4,
 };
 const SUBMIT_BTN = {
   alignSelf: 'flex-start',
@@ -363,9 +363,9 @@ const ERR_BANNER = {
 function Field({ label, hint, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <label style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.01em' }}>{label}</label>
+      <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--dp-t3)', letterSpacing: '0.01em' }}>{label}</label>
       {children}
-      {hint && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{hint}</span>}
+      {hint && <span style={{ fontSize: 11, color: 'var(--dp-t4)' }}>{hint}</span>}
     </div>
   );
 }
@@ -401,6 +401,7 @@ export default function SettingsClient({ clinic }) {
     phone:             clinic.phone             || '',
     facebook_url:      clinic.facebook_url      || '',
     instagram_url:     clinic.instagram_url     || '',
+    theme:             clinic.theme             || 'dark',
   }), []);
 
   const [form, setForm]         = useState(initialForm);
@@ -569,6 +570,38 @@ export default function SettingsClient({ clinic }) {
                   <input className="st-input" type="url" value={form.instagram_url} onChange={(e) => set('instagram_url', e.target.value)} style={s.input} placeholder="https://instagram.com/yourclinic" />
                 </Field>
               </div>
+
+              {/* Row 5: Page theme */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 10, letterSpacing: '0.01em' }}>
+                  Dashboard &amp; patient page theme
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {[
+                    { value: 'dark',  label: 'Dark',  icon: '🌙', desc: 'Deep teal, dark panels' },
+                    { value: 'light', label: 'Light', icon: '☀️', desc: 'Clean white, soft tones' },
+                  ].map((opt) => {
+                    const active = form.theme === opt.value;
+                    return (
+                      <button key={opt.value} type="button" onClick={() => set('theme', opt.value)} style={{
+                        flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
+                        borderRadius: 12, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
+                        border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                        background: active ? 'rgba(59,191,185,0.08)' : 'rgba(255,255,255,0.03)',
+                      }}>
+                        <span style={{ fontSize: 20 }}>{opt.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#3bbfb9' : 'rgba(255,255,255,0.7)' }}>{opt.label}</div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{opt.desc}</div>
+                        </div>
+                        {active && (
+                          <span style={{ marginLeft: 'auto', width: 8, height: 8, borderRadius: '50%', background: '#3bbfb9', flexShrink: 0 }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
@@ -658,14 +691,14 @@ export default function SettingsClient({ clinic }) {
                     <button key={opt.value} type="button" onClick={() => set('rewards_mode', opt.value)} style={{
                       display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
                       borderRadius: 12, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
-                      border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                      background: active ? 'rgba(59,191,185,0.08)' : 'rgba(255,255,255,0.03)',
+                      border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid var(--dp-bdr)',
+                      background: active ? 'rgba(59,191,185,0.08)' : 'var(--dp-card)',
                     }}>
                       <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-                        border: active ? '5px solid #3bbfb9' : '2px solid rgba(255,255,255,0.2)', background: 'transparent' }} />
+                        border: active ? '5px solid #3bbfb9' : '2px solid var(--dp-inbdr)', background: 'transparent' }} />
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#3bbfb9' : 'rgba(255,255,255,0.7)' }}>{opt.label}</div>
-                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{opt.desc}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#3bbfb9' : 'var(--dp-t2)' }}>{opt.label}</div>
+                        <div style={{ fontSize: 12, color: 'var(--dp-t3)', marginTop: 2 }}>{opt.desc}</div>
                       </div>
                     </button>
                   );
@@ -678,7 +711,7 @@ export default function SettingsClient({ clinic }) {
                     <input className="st-input" type="number" min="1" step="1" value={form.points_per_dollar}
                       onChange={(e) => set('points_per_dollar', e.target.value)}
                       style={{ ...s.input, maxWidth: 90 }} placeholder="5" />
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>
+                    <span style={{ fontSize: 13, color: 'var(--dp-t3)' }}>
                       points = $1.00
                       {form.points_per_dollar && ` · 100 pts = $${(100 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
                     </span>
@@ -697,8 +730,8 @@ export default function SettingsClient({ clinic }) {
               ].map((l) => (
                 <div key={l.label} style={s.linkCard}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: 2 }}>{l.label}</div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', marginBottom: 8 }}>{l.desc}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--dp-t2)', marginBottom: 2 }}>{l.label}</div>
+                    <div style={{ fontSize: 12, color: 'var(--dp-t4)', marginBottom: 8 }}>{l.desc}</div>
                     <a href={l.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#3bbfb9', wordBreak: 'break-all' }}>
                       {l.url}
                     </a>
@@ -716,10 +749,10 @@ export default function SettingsClient({ clinic }) {
             <div style={s.panel}>
               <div style={s.planRow}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--dp-t1)', marginBottom: 4 }}>
                     {clinic.plan.charAt(0).toUpperCase() + clinic.plan.slice(1)} plan
                   </div>
-                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }}>
+                  <div style={{ fontSize: 14, color: 'var(--dp-t3)' }}>
                     {clinic.patient_limit ? `Up to ${clinic.patient_limit.toLocaleString()} patients` : 'Unlimited patients'}
                   </div>
                 </div>
@@ -746,14 +779,14 @@ const s = {
   titleRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 },
   h1: {
     fontFamily: "'Instrument Serif', serif",
-    fontSize: 32, fontWeight: 400, color: '#fff',
+    fontSize: 32, fontWeight: 400, color: 'var(--dp-t1)',
     margin: 0, letterSpacing: '-0.02em',
   },
   tabBar: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottom: '1px solid rgba(255,255,255,0.07)',
+    borderBottom: '1px solid var(--dp-bdr)',
     marginBottom: 28,
   },
   tabList: {
@@ -765,14 +798,14 @@ const s = {
     background: 'none', border: 'none',
     borderBottom: '2px solid transparent',
     fontSize: 14, fontWeight: 500,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'var(--dp-t3)',
     cursor: 'pointer',
     marginBottom: -1,
     transition: 'color 0.15s, border-color 0.15s',
     fontFamily: "'DM Sans', sans-serif",
   },
   tabActive: {
-    color: '#fff',
+    color: 'var(--dp-t1)',
     borderBottomColor: '#3bbfb9',
     fontWeight: 600,
   },
@@ -780,10 +813,10 @@ const s = {
   formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
   panel: {
     display: 'flex', flexDirection: 'column', gap: 20,
-    background: 'rgba(255,255,255,0.04)',
+    background: 'var(--dp-card)',
     borderRadius: 16,
     padding: '28px 28px',
-    border: '1px solid rgba(255,255,255,0.07)',
+    border: '1px solid var(--dp-bdr)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
   },
   walletGrid: {
@@ -798,20 +831,20 @@ const s = {
   },
   input: {
     padding: '10px 14px',
-    border: '1.5px solid rgba(255,255,255,0.1)',
+    border: '1.5px solid var(--dp-inbdr)',
     borderRadius: 10, fontSize: 14,
     outline: 'none',
     width: '100%', boxSizing: 'border-box',
-    background: 'rgba(255,255,255,0.05)',
-    color: '#fff',
+    background: 'var(--dp-inp)',
+    color: 'var(--dp-t1)',
     fontFamily: "'DM Sans', sans-serif",
   },
   linkCard: {
     display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16,
     padding: '18px 20px',
-    background: 'rgba(255,255,255,0.03)',
+    background: 'var(--dp-card)',
     borderRadius: 12,
-    border: '1px solid rgba(255,255,255,0.06)',
+    border: '1px solid var(--dp-bdr)',
   },
   openBtn: {
     flexShrink: 0,

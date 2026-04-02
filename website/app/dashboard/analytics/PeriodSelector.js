@@ -40,8 +40,8 @@ export default function PeriodSelector({ current }) {
 const s = {
   wrap: {
     display: 'inline-flex',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.08)',
+    background: 'var(--dp-inp)',
+    border: '1px solid var(--dp-bdr)',
     borderRadius: 10,
     padding: 3,
     gap: 2,
@@ -53,7 +53,7 @@ const s = {
     background: 'transparent',
     fontSize: 13,
     fontWeight: 500,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'var(--dp-t3)',
     cursor: 'pointer',
     transition: 'background 0.15s, color 0.15s',
   },

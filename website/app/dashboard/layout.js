@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }) {
 
   const { data: clinic } = await supabase
     .from('clinics')
-    .select('id, name, slug, plan, patient_limit, setup_completed')
+    .select('id, name, slug, plan, patient_limit, setup_completed, theme')
     .eq('owner_email', user.email)
     .maybeSingle();
 
