@@ -61,29 +61,48 @@ export default function PatientProfileClient({
         setTimeout(() => setFeedback(''), 3000);
         router.refresh();
       }
-    } catch {} finally { setAwarding(false); }
+    } catch (err) {
+      setFeedback(err?.message || 'Failed to award points.');
+      setTimeout(() => setFeedback(''), 4000);
+    } finally { setAwarding(false); }
   }
 
   async function saveCheckupDate() {
     setSavingDate(true);
     try {
       const token = await getToken();
-      await updatePatient(patient.id, { next_checkup_date: checkupDate || null }, token);
-      setFeedback('Checkup date saved!');
-      setTimeout(() => setFeedback(''), 3000);
-      router.refresh();
-    } catch {} finally { setSavingDate(false); }
+      const data = await updatePatient(patient.id, { next_checkup_date: checkupDate || null }, token);
+      if (data?.ok) {
+        setFeedback('Checkup date saved!');
+        setTimeout(() => setFeedback(''), 3000);
+        router.refresh();
+      } else {
+        setFeedback(data?.error || 'Failed to save date.');
+        setTimeout(() => setFeedback(''), 4000);
+      }
+    } catch (err) {
+      setFeedback(err?.message || 'Failed to save date.');
+      setTimeout(() => setFeedback(''), 4000);
+    } finally { setSavingDate(false); }
   }
 
   async function sendManualNotification(type) {
     setSendingNotif(true);
     try {
       const token = await getToken();
-      await notifyPatient(patient.id, type, token);
-      setFeedback('Notification sent!');
-      setTimeout(() => setFeedback(''), 3000);
-      router.refresh();
-    } catch {} finally { setSendingNotif(false); }
+      const data = await notifyPatient(patient.id, type, token);
+      if (data?.ok) {
+        setFeedback('Notification sent!');
+        setTimeout(() => setFeedback(''), 3000);
+        router.refresh();
+      } else {
+        setFeedback(data?.error || 'Failed to send notification.');
+        setTimeout(() => setFeedback(''), 4000);
+      }
+    } catch (err) {
+      setFeedback(err?.message || 'Failed to send notification.');
+      setTimeout(() => setFeedback(''), 4000);
+    } finally { setSendingNotif(false); }
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dentapass.ca';
