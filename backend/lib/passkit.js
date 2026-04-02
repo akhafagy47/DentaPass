@@ -14,7 +14,6 @@
  *   Member   (one per patient)
  */
 
-import { createHash } from 'crypto';
 
 const PASSKIT_BASE = process.env.PASSKIT_API_URL || 'https://api.pub2.passkit.io';
 const WALLET_BASE  = 'https://pub2.pskt.io';
@@ -88,20 +87,6 @@ async function pkFetch(path, options = {}, retry = true) {
     throw new Error(`PassKit API error ${res.status}: ${body}`);
   }
   return res.json();
-}
-
-// Deterministic base58-encoded ID — PassKit's native "uuidCompressedString" format
-const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-function base58(buf) {
-  let n = BigInt('0x' + buf.toString('hex'));
-  let s = '';
-  while (n > 0n) { s = B58[Number(n % 58n)] + s; n /= 58n; }
-  // Pad to 22 chars — PassKit uuidCompressedString is always 22 characters
-  // ('1' is the zero character in this base58 alphabet)
-  return s.padStart(22, '1');
-}
-function linkId(name) {
-  return createHash('md5').update(name).digest('hex');
 }
 
 // ── Design helpers ─────────────────────────────────────────────────────────────
@@ -396,7 +381,7 @@ function buildLinks(clinic) {
   const links = [];
   if (clinic.booking_url) {
     links.push({
-      id:    'booking',
+      position: 10,
       title: 'Book an Appointment',
       url:   clinic.booking_url,
       type:  'URI_WEB',
@@ -405,7 +390,7 @@ function buildLinks(clinic) {
   }
   if (clinic.phone) {
     links.push({
-      id:    'phone',
+      position: 20,
       title: 'Call Us',
       url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
       type:  'URI_TEL',
@@ -414,7 +399,7 @@ function buildLinks(clinic) {
   }
   if (clinic.address) {
     links.push({
-      id:    'directions',
+      position: 30,
       title: 'Get Directions',
       url:   `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
       type:  'URI_LOCATION',
@@ -423,7 +408,7 @@ function buildLinks(clinic) {
   }
   if (clinic.facebook_url) {
     links.push({
-      id:    'facebook',
+      position: 40,
       title: 'Follow us on Facebook',
       url:   clinic.facebook_url,
       type:  'URI_WEB',
@@ -432,7 +417,7 @@ function buildLinks(clinic) {
   }
   if (clinic.instagram_url) {
     links.push({
-      id:    'instagram',
+      position: 50,
       title: 'Follow us on Instagram',
       url:   clinic.instagram_url,
       type:  'URI_WEB',
@@ -441,7 +426,7 @@ function buildLinks(clinic) {
   }
   if (clinic.google_review_url) {
     links.push({
-      id:    'googleReview',
+      position: 60,
       title: 'Leave a Google Review',
       url:   clinic.google_review_url,
       type:  'URI_WEB',
