@@ -31,7 +31,7 @@ router.post('/award', async (req, res) => {
 
     const { data: patient } = await supabase
       .from('patients')
-      .select('id, first_name, email, phone, clinic_id, points_balance, tier, next_checkup_date, passkit_serial_number, wallet_type, created_at')
+      .select('id, first_name, last_name, email, phone, referral_code, clinic_id, points_balance, tier, next_checkup_date, passkit_serial_number, wallet_type, created_at')
       .eq('id', patientId)
       .single();
 
@@ -39,7 +39,7 @@ router.post('/award', async (req, res) => {
 
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('name, brand_color, passkit_template_id, passkit_program_id, owner_email, action_points, custom_actions')
+      .select('name, slug, brand_color, passkit_template_id, passkit_program_id, owner_email, action_points, custom_actions')
       .eq('id', patient.clinic_id)
       .single();
 
@@ -139,7 +139,7 @@ router.post('/redeem', async (req, res) => {
 
     const { data: patient } = await supabase
       .from('patients')
-      .select('id, email, phone, clinic_id, points_balance, tier, next_checkup_date, passkit_serial_number, created_at')
+      .select('id, first_name, last_name, email, phone, referral_code, clinic_id, points_balance, tier, next_checkup_date, passkit_serial_number, created_at')
       .eq('id', patientId)
       .single();
 
@@ -147,7 +147,7 @@ router.post('/redeem', async (req, res) => {
 
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('rewards_mode, points_per_dollar, passkit_template_id, passkit_program_id')
+      .select('slug, rewards_mode, points_per_dollar, passkit_template_id, passkit_program_id')
       .eq('id', patient.clinic_id)
       .single();
 

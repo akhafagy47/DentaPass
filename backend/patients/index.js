@@ -54,14 +54,14 @@ router.patch('/:id', async (req, res) => {
   if (hasPassUpdate) {
     const { data: patient } = await supabase
       .from('patients')
-      .select('passkit_serial_number, clinic_id, points_balance, tier, next_checkup_date, phone, email, created_at')
+      .select('passkit_serial_number, clinic_id, first_name, last_name, email, phone, referral_code, points_balance, tier, next_checkup_date, created_at')
       .eq('id', id)
       .single();
 
     if (patient?.passkit_serial_number) {
       const { data: clinic } = await supabase
         .from('clinics')
-        .select('passkit_template_id, passkit_program_id')
+        .select('slug, passkit_template_id, passkit_program_id')
         .eq('id', patient.clinic_id)
         .single();
 

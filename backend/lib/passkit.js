@@ -600,6 +600,11 @@ export async function enrollPatient({ patient, clinic }) {
  * PassKit automatically pushes the update to the installed wallet pass.
  */
 export async function updatePatientPass({ patient, clinic }) {
+  const appUrl = process.env.WEBSITE_URL || 'https://denta-pass.vercel.app';
+  const referralLink = (patient.referral_code && clinic.slug)
+    ? `${appUrl}/join/${clinic.slug}?ref=${patient.referral_code}`
+    : undefined;
+
   await pkFetch('/members/member', {
     method: 'PUT',
     body: JSON.stringify({
@@ -609,14 +614,17 @@ export async function updatePatientPass({ patient, clinic }) {
       operation: 'OPERATION_PATCH',
       points:    patient.points_balance,
       person: {
-        ...(patient.email ? { emailAddress: patient.email } : {}),
-        ...(patient.phone ? { mobileNumber: patient.phone } : {}),
+        ...(patient.first_name ? { forename: patient.first_name, displayName: `${patient.first_name} ${patient.last_name || ''}`.trim() } : {}),
+        ...(patient.last_name  ? { surname: patient.last_name } : {}),
+        ...(patient.email      ? { emailAddress: patient.email } : {}),
+        ...(patient.phone      ? { mobileNumber: patient.phone } : {}),
       },
       metaData: {
-        tier:                patient.tier,
+        tier:                patient.tier || '',
         nextCheckupDate:     patient.next_checkup_date || '',
         nextCheckupDateBack: patient.next_checkup_date || '',
-        ...(patient.created_at ? { memberSince: patient.created_at.slice(0, 7).replace('-', '') } : {}),
+        ...(patient.created_at    ? { memberSince: patient.created_at.slice(0, 7).replace('-', '') } : {}),
+        ...(referralLink          ? { referralLink } : {}),
       },
     }),
   });
