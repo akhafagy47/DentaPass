@@ -394,7 +394,7 @@ function buildLinks(clinic) {
   const links = [];
   if (clinic.booking_url) {
     links.push({
-      // id: linkId('booking'),
+      id:    linkId('booking'),
       title: 'Book an Appointment',
       url:   clinic.booking_url,
       type:  'URI_WEB',
@@ -403,7 +403,7 @@ function buildLinks(clinic) {
   }
   if (clinic.phone) {
     links.push({
-      // id: linkId('phone'),
+      id:    linkId('phone'),
       title: 'Call Us',
       url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
       type:  'URI_TEL',
@@ -412,7 +412,7 @@ function buildLinks(clinic) {
   }
   if (clinic.address) {
     links.push({
-      // id: linkId('directions'),
+      id:    linkId('directions'),
       title: 'Get Directions',
       url:   `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
       type:  'URI_LOCATION',
@@ -421,7 +421,7 @@ function buildLinks(clinic) {
   }
   if (clinic.facebook_url) {
     links.push({
-      // id: linkId('facebook'),
+      id:    linkId('facebook'),
       title: 'Follow us on Facebook',
       url:   clinic.facebook_url,
       type:  'URI_WEB',
@@ -430,7 +430,7 @@ function buildLinks(clinic) {
   }
   if (clinic.instagram_url) {
     links.push({
-      // id: linkId('instagram'),
+      id:    linkId('instagram'),
       title: 'Follow us on Instagram',
       url:   clinic.instagram_url,
       type:  'URI_WEB',
@@ -439,7 +439,7 @@ function buildLinks(clinic) {
   }
   if (clinic.google_review_url) {
     links.push({
-      // id: linkId('google-review'),
+      id:    linkId('google-review'),
       title: 'Leave a Google Review',
       url:   clinic.google_review_url,
       type:  'URI_WEB',
