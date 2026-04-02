@@ -571,9 +571,8 @@ export async function enrollPatient({ patient, clinic }) {
   const data = await pkFetch('/members/member', {
     method: 'POST',
     body: JSON.stringify({
-      tierId:     clinic.passkit_template_id,
-      programId:  clinic.passkit_program_id,
-      externalId: patient.id,
+      tierId:    clinic.passkit_template_id,
+      programId: clinic.passkit_program_id,
       person: {
         forename:     patient.first_name,
         surname:      patient.last_name,
@@ -591,8 +590,8 @@ export async function enrollPatient({ patient, clinic }) {
   });
 
   return {
-    serialNumber: data.id,
-    walletUrl:    `${WALLET_BASE}/m/${data.id}`,
+    id:        data.id,
+    walletUrl: `${WALLET_BASE}/m/${data.id}`,
   };
 }
 

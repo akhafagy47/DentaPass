@@ -69,42 +69,53 @@ router.post('/', async (req, res) => {
       referredByPatient = referrer || null;
     }
 
-    // 5. Create patient
+    // 5. Create PassKit wallet pass first — no DB record is written until this succeeds
+    const referralCode = nanoid();
+    let serialNumber, walletUrl;
+    try {
+      const pkResult = await enrollPatient({
+        patient: {
+          first_name: firstName,
+          last_name:  lastName,
+          email:      email || null,
+          phone:      phone || null,
+          referral_code: referralCode,
+          points_balance: 0,
+          next_checkup_date: null,
+        },
+        clinic,
+      });
+      serialNumber = pkResult.id;
+      walletUrl    = pkResult.walletUrl;
+    } catch (pkErr) {
+      console.error('PassKit enrollment error:', pkErr);
+      return res.status(502).json({ error: 'Failed to create wallet pass. Please try again.' });
+    }
+
+    // 6. PassKit accepted — create patient row with serial number already set
     const { data: patient, error: patientErr } = await supabase
       .from('patients')
       .insert({
-        clinic_id: clinic.id,
-        first_name: firstName,
-        last_name: lastName,
-        email: email || null,
-        phone: phone || null,
-        date_of_birth: dateOfBirth || null,
-        referral_code: nanoid(),
-        referred_by: referredByPatient?.id || null,
-        points_balance: 0,
-        tier: 'bronze',
-        last_visit_date: new Date().toISOString(),
-        wallet_type: walletType === 'google' ? 'google' : 'apple',
+        clinic_id:              clinic.id,
+        first_name:             firstName,
+        last_name:              lastName,
+        email:                  email || null,
+        phone:                  phone || null,
+        date_of_birth:          dateOfBirth || null,
+        referral_code:          referralCode,
+        referred_by:            referredByPatient?.id || null,
+        points_balance:         0,
+        tier:                   'bronze',
+        last_visit_date:        new Date().toISOString(),
+        wallet_type:            walletType === 'google' ? 'google' : 'apple',
+        passkit_serial_number:  serialNumber,
       })
       .select()
       .single();
 
     if (patientErr || !patient) {
       console.error('Patient insert error:', patientErr);
-      return res.status(500).json({ error: 'Failed to create patient.' });
-    }
-
-    // 6. Generate PassKit wallet pass
-    let walletUrl = null;
-    try {
-      const { serialNumber, walletUrl: pkUrl } = await enrollPatient({ patient, clinic });
-      walletUrl = pkUrl;
-      await supabase
-        .from('patients')
-        .update({ passkit_serial_number: serialNumber })
-        .eq('id', patient.id);
-    } catch (pkErr) {
-      console.error('PassKit enrollment error:', pkErr);
+      return res.status(500).json({ error: 'Failed to save patient record.' });
     }
 
     // 7. Credit referrer with clinic-configured points

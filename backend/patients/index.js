@@ -31,6 +31,8 @@ router.get('/by-serial/:serial', async (req, res) => {
 /**
  * PATCH /patients/:id
  * Update safe patient fields (checkup date, contact info).
+ * PassKit is updated first — if it rejects, the DB is not touched.
+ * last_visit_date has no corresponding pass field so it bypasses PassKit.
  */
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
@@ -44,31 +46,38 @@ router.patch('/:id', async (req, res) => {
   }
 
   const supabase = getSupabase();
-  const { error } = await supabase.from('patients').update(updates).eq('id', id);
-  if (error) return res.status(500).json({ error: error.message });
 
-  res.json({ ok: true });
+  // Only fields that map to a pass field require a PassKit round-trip first
+  const passFields = ['next_checkup_date', 'phone', 'email'];
+  const hasPassUpdate = Object.keys(updates).some((k) => passFields.includes(k));
 
-  // Sync updated fields to the patient's wallet pass (fire-and-forget)
-  const { data: patient } = await supabase
-    .from('patients')
-    .select('passkit_serial_number, clinic_id, points_balance, tier, next_checkup_date, phone, email, created_at')
-    .eq('id', id)
-    .single();
-
-  if (patient?.passkit_serial_number) {
-    const { data: clinic } = await supabase
-      .from('clinics')
-      .select('passkit_template_id, passkit_program_id')
-      .eq('id', patient.clinic_id)
+  if (hasPassUpdate) {
+    const { data: patient } = await supabase
+      .from('patients')
+      .select('passkit_serial_number, clinic_id, points_balance, tier, next_checkup_date, phone, email, created_at')
+      .eq('id', id)
       .single();
 
-    if (clinic) {
-      updatePatientPass({ patient, clinic }).catch((err) =>
-        console.error('PassKit sync after PATCH failed:', err)
-      );
+    if (patient?.passkit_serial_number) {
+      const { data: clinic } = await supabase
+        .from('clinics')
+        .select('passkit_template_id, passkit_program_id')
+        .eq('id', patient.clinic_id)
+        .single();
+
+      if (clinic) {
+        try {
+          await updatePatientPass({ patient: { ...patient, ...updates }, clinic });
+        } catch (err) {
+          return res.status(502).json({ error: `Wallet pass update failed: ${err.message}` });
+        }
+      }
     }
   }
+
+  const { error } = await supabase.from('patients').update(updates).eq('id', id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
 });
 
 /**

@@ -31,7 +31,7 @@ router.post('/award', async (req, res) => {
 
     const { data: patient } = await supabase
       .from('patients')
-      .select('id, first_name, email, clinic_id, points_balance, passkit_serial_number, wallet_type, created_at')
+      .select('id, first_name, email, phone, clinic_id, points_balance, tier, next_checkup_date, passkit_serial_number, wallet_type, created_at')
       .eq('id', patientId)
       .single();
 
@@ -59,7 +59,6 @@ router.post('/award', async (req, res) => {
     } else if (clinicActionPoints[reason] !== undefined) {
       points = clinicActionPoints[reason];
     } else {
-      // Allow reasons matching a custom action label key (clinic-defined)
       const customMatch = customActionsList.find((a) => a.label === reason);
       if (customMatch) {
         points = customMatch.points;
@@ -68,12 +67,27 @@ router.post('/award', async (req, res) => {
       }
     }
 
-    const updates = { points_balance: patient.points_balance + points };
-    if (reason === 'completed_visit') updates.last_visit_date = new Date().toISOString();
+    const newBalance = patient.points_balance + points;
+
+    // Update PassKit first — if it rejects, abort before touching the DB
+    if (patient.passkit_serial_number) {
+      try {
+        await updatePatientPass({
+          patient: { ...patient, points_balance: newBalance },
+          clinic,
+        });
+      } catch (err) {
+        return res.status(502).json({ error: `Wallet pass update failed: ${err.message}` });
+      }
+    }
+
+    // PassKit accepted — now persist to DB
+    const dbUpdates = { points_balance: newBalance };
+    if (reason === 'completed_visit') dbUpdates.last_visit_date = new Date().toISOString();
 
     const { data: updated } = await supabase
       .from('patients')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', patientId)
       .select('points_balance, tier, passkit_serial_number, next_checkup_date, created_at')
       .single();
@@ -86,20 +100,7 @@ router.post('/award', async (req, res) => {
       awarded_by: awardedBy || 'staff',
     });
 
-    // Push wallet update — must complete before responding to meet 3s requirement
-    if (patient.passkit_serial_number && clinic) {
-      try {
-        await updatePatientPass({
-          patient: { ...updated, passkit_serial_number: patient.passkit_serial_number },
-          clinic,
-        });
-      } catch (pkErr) {
-        console.error('PassKit push failed:', pkErr);
-      }
-    }
-
-    // Send notification via appropriate channel
-    const newBalance = updated.points_balance;
+    // Send notification via appropriate channel (fire-and-forget)
     if (patient.wallet_type === 'google' && patient.email) {
       sendPointsAwardedEmail(
         { ...patient, tier: updated.tier },
@@ -138,7 +139,7 @@ router.post('/redeem', async (req, res) => {
 
     const { data: patient } = await supabase
       .from('patients')
-      .select('id, clinic_id, points_balance, passkit_serial_number, tier, next_checkup_date')
+      .select('id, email, phone, clinic_id, points_balance, tier, next_checkup_date, passkit_serial_number, created_at')
       .eq('id', patientId)
       .single();
 
@@ -162,6 +163,19 @@ router.post('/redeem', async (req, res) => {
       ? parseFloat((points / clinic.points_per_dollar).toFixed(2))
       : null;
 
+    // Update PassKit first — if it rejects, abort before touching the DB
+    if (patient.passkit_serial_number) {
+      try {
+        await updatePatientPass({
+          patient: { ...patient, points_balance: newBalance },
+          clinic,
+        });
+      } catch (err) {
+        return res.status(502).json({ error: `Wallet pass update failed: ${err.message}` });
+      }
+    }
+
+    // PassKit accepted — now persist to DB
     const { data: updated } = await supabase
       .from('patients')
       .update({ points_balance: newBalance })
@@ -177,17 +191,6 @@ router.post('/redeem', async (req, res) => {
       note:         note || null,
       redeemed_by:  redeemedBy || 'staff',
     });
-
-    if (patient.passkit_serial_number && clinic) {
-      try {
-        await updatePatientPass({
-          patient: { ...updated, passkit_serial_number: patient.passkit_serial_number },
-          clinic,
-        });
-      } catch (pkErr) {
-        console.error('PassKit push failed:', pkErr);
-      }
-    }
 
     res.json({ ok: true, newBalance: updated.points_balance, pointsRedeemed: points, dollarValue });
   } catch (err) {
