@@ -447,8 +447,12 @@ export default function SetupWizard({ clinic }) {
         points_per_dollar: form.rewards_mode === 'discounts' && form.points_per_dollar ? parseFloat(form.points_per_dollar) : null,
         setup_completed: true,
       };
-      await updateClinic(clinic.id, payload, session?.access_token);
-      setStep(STEPS.length - 1);
+      const data = await updateClinic(clinic.id, payload, session?.access_token);
+      if (data?.ok) {
+        setStep(STEPS.length - 1);
+      } else {
+        setError(data?.error || 'Failed to save. Please try again.');
+      }
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
     } finally {

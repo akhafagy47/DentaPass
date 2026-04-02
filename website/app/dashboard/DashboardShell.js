@@ -103,9 +103,15 @@ export default function DashboardShell({ children, clinic, userEmail }) {
   const cssVars   = isLight ? LIGHT_VARS : DARK_VARS;
 
   async function handleLogout() {
-    await getSupabaseBrowser().auth.signOut();
-    router.push('/login');
-    router.refresh();
+    try {
+      const { error } = await getSupabaseBrowser().auth.signOut();
+      if (error) console.error('Sign out error:', error.message);
+    } catch (err) {
+      console.error('Sign out failed:', err);
+    } finally {
+      router.push('/login');
+      router.refresh();
+    }
   }
 
   function isActive(href, exact) {

@@ -497,12 +497,18 @@ export default function SettingsClient({ clinic }) {
       payload.points_per_dollar = payload.points_per_dollar === ''
         ? null
         : parseFloat(payload.points_per_dollar);
-      await updateClinic(clinic.id, payload, token);
-      setFeedback('Saved!');
-      setTimeout(() => setFeedback(''), 3000);
-      router.refresh();
-    } catch {
-      setFeedback('Failed to save. Please try again.');
+      const data = await updateClinic(clinic.id, payload, token);
+      if (data?.ok) {
+        setFeedback('Saved!');
+        setTimeout(() => setFeedback(''), 3000);
+        router.refresh();
+      } else {
+        setFeedback(data?.error || 'Failed to save. Please try again.');
+        setTimeout(() => setFeedback(''), 4000);
+      }
+    } catch (err) {
+      setFeedback(err?.message || 'Failed to save. Please try again.');
+      setTimeout(() => setFeedback(''), 4000);
     } finally {
       setSaving(false);
     }
@@ -511,9 +517,12 @@ export default function SettingsClient({ clinic }) {
   async function handleBillingPortal() {
     try {
       const token = await getToken();
-      const { url } = await getBillingPortalUrl(token);
-      window.location.href = url;
-    } catch {}
+      const data = await getBillingPortalUrl(token);
+      window.location.href = data.url;
+    } catch (err) {
+      setFeedback(err?.message || 'Failed to open billing portal.');
+      setTimeout(() => setFeedback(''), 4000);
+    }
   }
 
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL || 'https://denta-pass.vercel.app';
