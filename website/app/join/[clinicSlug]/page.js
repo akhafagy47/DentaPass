@@ -14,20 +14,30 @@ export default function JoinPage() {
   const [walletUrl, setWalletUrl] = useState(null);
   const [errorMsg, setErrorMsg]   = useState('');
   const [clinicName, setClinicName] = useState('');
-  const [theme, setTheme]         = useState('dark');
-  const [form, setForm]           = useState({ firstName: '', lastName: '', email: '', phone: '' });
-  const [errors, setErrors]       = useState({});
+  const [savedTheme, setSavedTheme] = useState('auto');
+  const [systemDark, setSystemDark] = useState(false);
+  const [form, setForm]             = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [errors, setErrors]         = useState({});
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemDark(mq.matches);
+    const handler = (e) => setSystemDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     getClinic(clinicSlug)
       .then((d) => {
-        if (d.name) setClinicName(d.name);
-        if (d.theme) setTheme(d.theme);
+        if (d.name)  setClinicName(d.name);
+        if (d.theme) setSavedTheme(d.theme);
       })
       .catch(() => {});
   }, [clinicSlug]);
 
-  const isLight = theme === 'light';
+  const resolvedTheme = savedTheme === 'auto' ? (systemDark ? 'dark' : 'light') : savedTheme;
+  const isLight = resolvedTheme === 'light';
 
   function validate() {
     const e = {};

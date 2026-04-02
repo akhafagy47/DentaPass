@@ -44,8 +44,19 @@ const LIGHT = {
 
 const tierColor = { bronze: '#CD7F32', silver: '#9CA3AF', gold: '#F59E0B' };
 
-export default function ScanClient({ clinicSlug, theme = 'dark' }) {
-  const T = theme === 'light' ? LIGHT : DARK;
+export default function ScanClient({ clinicSlug, theme = 'auto' }) {
+  const [systemDark, setSystemDark] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemDark(mq.matches);
+    const handler = (e) => setSystemDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const resolvedTheme = theme === 'auto' ? (systemDark ? 'dark' : 'light') : theme;
+  const T = resolvedTheme === 'light' ? LIGHT : DARK;
 
   const [mode, setMode]         = useState('scan'); // 'scan' | 'patient' | 'awarded'
   const [patient, setPatient]   = useState(null);

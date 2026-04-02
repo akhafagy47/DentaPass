@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { getSupabaseBrowser } from '../../lib/supabase-browser';
 
@@ -84,9 +85,21 @@ const LIGHT_VARS = {
 };
 
 export default function DashboardShell({ children, clinic, userEmail }) {
-  const pathname  = usePathname();
-  const router    = useRouter();
-  const isLight   = clinic?.theme === 'light';
+  const pathname   = usePathname();
+  const router     = useRouter();
+  const [systemDark, setSystemDark] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemDark(mq.matches);
+    const handler = (e) => setSystemDark(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const savedTheme = clinic?.theme || 'auto';
+  const resolvedTheme = savedTheme === 'auto' ? (systemDark ? 'dark' : 'light') : savedTheme;
+  const isLight   = resolvedTheme === 'light';
   const cssVars   = isLight ? LIGHT_VARS : DARK_VARS;
 
   async function handleLogout() {

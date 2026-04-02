@@ -401,7 +401,7 @@ export default function SettingsClient({ clinic }) {
     phone:             clinic.phone             || '',
     facebook_url:      clinic.facebook_url      || '',
     instagram_url:     clinic.instagram_url     || '',
-    theme:             clinic.theme             || 'dark',
+    theme:             clinic.theme             || 'auto',
   }), []);
 
   const [form, setForm]         = useState(initialForm);
@@ -578,8 +578,9 @@ export default function SettingsClient({ clinic }) {
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   {[
-                    { value: 'dark',  label: 'Dark',  icon: '🌙', desc: 'Deep teal, dark panels' },
+                    { value: 'auto',  label: 'Auto',  icon: '💻', desc: 'Follows device setting' },
                     { value: 'light', label: 'Light', icon: '☀️', desc: 'Clean white, soft tones' },
+                    { value: 'dark',  label: 'Dark',  icon: '🌙', desc: 'Deep teal, dark panels' },
                   ].map((opt) => {
                     const active = form.theme === opt.value;
                     return (

@@ -188,6 +188,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const allowed = ['name', 'google_review_url', 'booking_url', 'brand_color', 'logo_url',
                    'rewards_mode', 'points_per_dollar', 'points_label', 'setup_completed',
                    'address', 'phone', 'facebook_url', 'instagram_url', 'theme'];
+  if (req.body.theme && !['dark', 'light', 'auto'].includes(req.body.theme)) {
+    return res.status(400).json({ error: 'Invalid theme value.' });
+  }
   const updates = Object.fromEntries(
     Object.entries(req.body).filter(([k]) => allowed.includes(k))
   );

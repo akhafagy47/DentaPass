@@ -21,5 +21,5 @@ export default async function ScanPage({ params }) {
 
   if (!clinic) redirect('/dashboard');
 
-  return <ScanClient clinicSlug={clinicSlug} theme={clinic.theme || 'dark'} />;
+  return <ScanClient clinicSlug={clinicSlug} theme={clinic.theme || 'auto'} />;
 }
