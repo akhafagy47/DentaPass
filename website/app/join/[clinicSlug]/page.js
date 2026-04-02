@@ -16,7 +16,7 @@ export default function JoinPage() {
   const [clinicName, setClinicName] = useState('');
   const [savedTheme, setSavedTheme] = useState('auto');
   const [systemDark, setSystemDark] = useState(false);
-  const [form, setForm]             = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [form, setForm]             = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
   const [errors, setErrors]         = useState({});
 
   useEffect(() => {
@@ -61,6 +61,7 @@ export default function JoinPage() {
         lastName:     form.lastName.trim(),
         email:        form.email.trim(),
         phone:        form.phone.trim(),
+        dateOfBirth:  form.dateOfBirth || undefined,
         clinicSlug,
         referralCode: ref || undefined,
       });
@@ -278,6 +279,18 @@ export default function JoinPage() {
                 autoComplete="tel"
               />
               {errors.phone && <span style={s.errText}>{errors.phone}</span>}
+            </div>
+
+            <div style={s.field}>
+              <label style={s.label}>Date of birth <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional — unlocks birthday bonus points)</span></label>
+              <input
+                type="date"
+                style={{ ...s.input, colorScheme: isLight ? 'light' : 'dark' }}
+                value={form.dateOfBirth}
+                onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                max={new Date().toISOString().split('T')[0]}
+                autoComplete="bday"
+              />
             </div>
 
             <button type="submit" disabled={submitting} className="join-submit" style={{ ...s.submitBtn, opacity: submitting ? 0.7 : 1 }}>

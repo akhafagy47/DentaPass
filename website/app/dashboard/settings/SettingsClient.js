@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateClinic, getBillingPortalUrl } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
@@ -381,6 +381,26 @@ const TABS = [
   { id: 'account',  label: 'Account' },
 ];
 
+// ─── CycleText ────────────────────────────────────────────────────────────────
+function CycleText({ examples, style }) {
+  const [idx, setIdx] = useState(0);
+  const [vis, setVis] = useState(true);
+  useEffect(() => {
+    if (!examples || examples.length <= 1) return;
+    const id = setInterval(() => {
+      setVis(false);
+      setTimeout(() => { setIdx((i) => (i + 1) % examples.length); setVis(true); }, 400);
+    }, 3200);
+    return () => clearInterval(id);
+  }, [examples?.length]);
+  if (!examples?.length) return null;
+  return (
+    <div style={{ ...style, opacity: vis ? 0.75 : 0, transition: 'opacity 0.4s ease' }}>
+      {examples[idx]}
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsClient({ clinic }) {
@@ -402,6 +422,14 @@ export default function SettingsClient({ clinic }) {
     facebook_url:      clinic.facebook_url      || '',
     instagram_url:     clinic.instagram_url     || '',
     theme:             clinic.theme             || 'auto',
+    tier_thresholds:   clinic.tier_thresholds   || { bronze: 0, silver: 5000, gold: 10000 },
+    tier_incentives:   clinic.tier_incentives   || {
+      bronze: ['Priority scheduling', '10% off cosmetic treatments', 'Birthday discount'],
+      silver: ['All Bronze perks', 'Free cleaning every 6 months', '15% off cosmetic treatments'],
+      gold:   ['All Silver perks', 'Free annual whitening kit', '25% off all treatments'],
+    },
+    action_points:     clinic.action_points     || { completed_visit: 500, left_review: 500, referred_friend: 500, birthday: 250 },
+    custom_actions:    clinic.custom_actions    || [],
   }), []);
 
   const [form, setForm]         = useState(initialForm);
@@ -418,7 +446,11 @@ export default function SettingsClient({ clinic }) {
   }
 
   const isDirty = useMemo(() =>
-    Object.keys(initialForm).some((k) => String(form[k]) !== String(initialForm[k]))
+    Object.keys(initialForm).some((k) => {
+      const a = initialForm[k], b = form[k];
+      if (typeof a === 'object' || typeof b === 'object') return JSON.stringify(a) !== JSON.stringify(b);
+      return String(a) !== String(b);
+    })
   , [form]);
 
   function set(key, val) { setForm((f) => ({ ...f, [key]: val })); }
@@ -689,44 +721,212 @@ export default function SettingsClient({ clinic }) {
 
           {/* ── REWARDS ── */}
           {tab === 'rewards' && (
-            <div style={s.panel}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {[
-                  { value: 'tiers',     label: 'Tier system',         desc: 'Patients unlock Bronze → Silver → Gold status as they accumulate points.' },
-                  { value: 'discounts', label: 'Discount redemption', desc: 'Patients redeem points for dollar discounts at the front desk.' },
-                ].map((opt) => {
-                  const active = form.rewards_mode === opt.value;
-                  return (
-                    <button key={opt.value} type="button" onClick={() => set('rewards_mode', opt.value)} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
-                      borderRadius: 12, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
-                      border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid var(--dp-bdr)',
-                      background: active ? 'rgba(59,191,185,0.08)' : 'var(--dp-card)',
-                    }}>
-                      <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-                        border: active ? '5px solid #3bbfb9' : '2px solid var(--dp-inbdr)', background: 'transparent' }} />
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#3bbfb9' : 'var(--dp-t2)' }}>{opt.label}</div>
-                        <div style={{ fontSize: 12, color: 'var(--dp-t3)', marginTop: 2 }}>{opt.desc}</div>
-                      </div>
-                    </button>
-                  );
-                })}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* System selector */}
+              <div style={s.panel}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    { value: 'tiers',     label: 'Tier system',         desc: 'Patients unlock Bronze → Silver → Gold status as they accumulate points.' },
+                    { value: 'discounts', label: 'Discount redemption', desc: 'Patients redeem points for dollar discounts at the front desk.' },
+                  ].map((opt) => {
+                    const active = form.rewards_mode === opt.value;
+                    return (
+                      <button key={opt.value} type="button" onClick={() => set('rewards_mode', opt.value)} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px',
+                        borderRadius: 12, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
+                        border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid var(--dp-bdr)',
+                        background: active ? 'rgba(59,191,185,0.08)' : 'var(--dp-card)',
+                      }}>
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                          border: active ? '5px solid #3bbfb9' : '2px solid var(--dp-inbdr)', background: 'transparent' }} />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#3bbfb9' : 'var(--dp-t2)' }}>{opt.label}</div>
+                          <div style={{ fontSize: 12, color: 'var(--dp-t3)', marginTop: 2 }}>{opt.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {form.rewards_mode === 'discounts' && (
-                <Field label="Conversion rate" hint="How many points equal $1 in discount">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input className="st-input" type="number" min="1" step="1" value={form.points_per_dollar}
-                      onChange={(e) => set('points_per_dollar', e.target.value)}
-                      style={{ ...s.input, maxWidth: 90 }} placeholder="5" />
-                    <span style={{ fontSize: 13, color: 'var(--dp-t3)' }}>
-                      points = $1.00
-                      {form.points_per_dollar && ` · 100 pts = $${(100 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
-                    </span>
+              {/* Motivational tip */}
+              <div style={{ background: 'rgba(59,191,185,0.06)', border: '1px solid rgba(59,191,185,0.2)', borderRadius: 12, padding: '14px 18px' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#3bbfb9', marginBottom: 5 }}>💡 This is the most important part of your loyalty program</div>
+                <div style={{ fontSize: 13, color: 'var(--dp-t2)', lineHeight: 1.65 }}>
+                  The right incentives turn one-time patients into loyal advocates who drive more revenue and Google reviews. Set perks that genuinely excite your patients — exclusive discounts, free treatments, and VIP access are far more effective than generic points. Take a few minutes to customize these carefully.
+                </div>
+              </div>
+
+              {/* How patients earn points */}
+              <div style={s.panel}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--dp-t1)', marginBottom: 2 }}>How patients earn points</div>
+                <div style={{ fontSize: 13, color: 'var(--dp-t3)', marginBottom: 16, lineHeight: 1.5 }}>Customize how many points each action earns. Staff award these from the QR scanner when patients visit.</div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { key: 'completed_visit',  label: 'Completed a visit',    icon: '🦷' },
+                    { key: 'left_review',      label: 'Left a Google review',  icon: '⭐' },
+                    { key: 'referred_friend',  label: 'Referred a friend',     icon: '🤝' },
+                    { key: 'birthday',         label: 'Birthday bonus',        icon: '🎂' },
+                  ].map(({ key, label, icon }) => (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'var(--dp-bg)', borderRadius: 10, border: '1px solid var(--dp-bdr)' }}>
+                      <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+                      <span style={{ flex: 1, fontSize: 14, color: 'var(--dp-t1)' }}>{label}</span>
+                      <input
+                        type="number" min="0" max="10000" step="10"
+                        value={form.action_points[key] ?? ''}
+                        onChange={(e) => set('action_points', { ...form.action_points, [key]: parseInt(e.target.value, 10) || 0 })}
+                        style={{ ...s.input, width: 76, textAlign: 'center', padding: '6px 10px' }}
+                      />
+                      <span style={{ fontSize: 13, color: 'var(--dp-t3)', whiteSpace: 'nowrap' }}>pts</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Custom actions */}
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--dp-t1)', marginBottom: 4 }}>Custom actions</div>
+                  <div style={{ fontSize: 12, color: 'var(--dp-t3)', marginBottom: 10, lineHeight: 1.55 }}>
+                    Add clinic-specific actions to incentivize the treatments you want to grow. Award these manually from the QR scanner.
                   </div>
-                </Field>
+                  <CycleText
+                    examples={[
+                      '"Complete a root canal session → +500 pts"',
+                      '"Try our new teeth whitening treatment → +400 pts"',
+                      '"Book 3 consecutive cleanings → +750 pts"',
+                      '"Accept a recommended crown treatment → +500 pts"',
+                      '"Complete an Invisalign consultation → +350 pts"',
+                      '"Bring a family member for their first exam → +600 pts"',
+                    ]}
+                    style={{ fontSize: 12, color: '#3bbfb9', fontStyle: 'italic', marginBottom: 12, minHeight: 18 }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {form.custom_actions.map((action, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          value={action.label}
+                          onChange={(e) => {
+                            const next = [...form.custom_actions];
+                            next[i] = { ...next[i], label: e.target.value };
+                            set('custom_actions', next);
+                          }}
+                          placeholder="e.g. Complete a whitening session"
+                          style={{ ...s.input, flex: 1 }}
+                        />
+                        <input
+                          type="number" min="0" max="10000" step="10"
+                          value={action.points}
+                          onChange={(e) => {
+                            const next = [...form.custom_actions];
+                            next[i] = { ...next[i], points: parseInt(e.target.value, 10) || 0 };
+                            set('custom_actions', next);
+                          }}
+                          style={{ ...s.input, width: 76, textAlign: 'center', padding: '6px 10px' }}
+                        />
+                        <span style={{ fontSize: 13, color: 'var(--dp-t3)' }}>pts</span>
+                        <button type="button"
+                          onClick={() => set('custom_actions', form.custom_actions.filter((_, j) => j !== i))}
+                          style={{ background: 'none', border: 'none', color: 'var(--dp-t4)', cursor: 'pointer', fontSize: 20, padding: '0 4px', lineHeight: 1 }}>×</button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => set('custom_actions', [...form.custom_actions, { label: '', points: 500 }])}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1.5px dashed var(--dp-bdr)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', color: 'var(--dp-t3)', fontSize: 13, fontWeight: 500 }}
+                    >
+                      <span style={{ fontSize: 16 }}>+</span> Add custom action
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tier config */}
+              {form.rewards_mode === 'tiers' && (
+                <div style={s.panel}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--dp-t1)', marginBottom: 2 }}>Tier rewards</div>
+                  <div style={{ fontSize: 13, color: 'var(--dp-t3)', marginBottom: 20, lineHeight: 1.5 }}>Set the points needed to unlock each tier and the perks patients receive. Make these compelling enough that patients actively work to level up.</div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {[
+                      { key: 'bronze', label: 'Bronze', emoji: '🥉', color: '#CD7F32', bg: 'rgba(205,127,50,0.07)', bdr: 'rgba(205,127,50,0.22)',
+                        examples: ['"Priority scheduling"', '"10% off cosmetic treatments"', '"Free fluoride treatment"', '"Birthday discount card"'] },
+                      { key: 'silver', label: 'Silver', emoji: '🥈', color: '#9CA3AF', bg: 'rgba(156,163,175,0.07)', bdr: 'rgba(156,163,175,0.22)',
+                        examples: ['"All Bronze perks"', '"Free cleaning every 6 months"', '"15% off cosmetic treatments"', '"Priority emergency slots"'] },
+                      { key: 'gold',   label: 'Gold',   emoji: '🥇', color: '#F59E0B', bg: 'rgba(245,158,11,0.07)',  bdr: 'rgba(245,158,11,0.22)',
+                        examples: ['"All Silver perks"', '"Free annual whitening kit"', '"25% off all treatments"', '"VIP same-day appointments"'] },
+                    ].map(({ key, label, emoji, color, bg, bdr, examples }) => (
+                      <div key={key} style={{ background: bg, border: `1px solid ${bdr}`, borderRadius: 12, padding: '16px 18px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                          <span style={{ fontSize: 22 }}>{emoji}</span>
+                          <span style={{ fontSize: 15, fontWeight: 700, color, flex: 1 }}>{label}</span>
+                          <input
+                            type="number" min="0" step="100"
+                            value={form.tier_thresholds[key] ?? 0}
+                            onChange={(e) => set('tier_thresholds', { ...form.tier_thresholds, [key]: parseInt(e.target.value, 10) || 0 })}
+                            disabled={key === 'bronze'}
+                            style={{ ...s.input, width: 88, textAlign: 'center', padding: '6px 10px', opacity: key === 'bronze' ? 0.5 : 1 }}
+                          />
+                          <span style={{ fontSize: 13, color: 'var(--dp-t3)', whiteSpace: 'nowrap' }}>pts to unlock</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {(form.tier_incentives[key] || []).map((inc, i) => (
+                            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <input
+                                type="text" value={inc}
+                                onChange={(e) => {
+                                  const next = { ...form.tier_incentives, [key]: [...(form.tier_incentives[key] || [])] };
+                                  next[key][i] = e.target.value;
+                                  set('tier_incentives', next);
+                                }}
+                                style={{ ...s.input, flex: 1 }}
+                              />
+                              <button type="button"
+                                onClick={() => {
+                                  const next = { ...form.tier_incentives, [key]: form.tier_incentives[key].filter((_, j) => j !== i) };
+                                  set('tier_incentives', next);
+                                }}
+                                style={{ background: 'none', border: 'none', color: 'var(--dp-t4)', cursor: 'pointer', fontSize: 20, padding: '0 4px', lineHeight: 1 }}>×</button>
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
+                            <CycleText
+                              examples={examples}
+                              style={{ fontSize: 11, color, fontStyle: 'italic', flex: 1, minHeight: 16 }}
+                            />
+                            <button type="button"
+                              onClick={() => set('tier_incentives', { ...form.tier_incentives, [key]: [...(form.tier_incentives[key] || []), ''] })}
+                              style={{ background: 'none', border: `1.5px dashed ${bdr}`, borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color, fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              + Add perk
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
+
+              {/* Discount config */}
+              {form.rewards_mode === 'discounts' && (
+                <div style={s.panel}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--dp-t1)', marginBottom: 16 }}>Discount conversion rate</div>
+                  <Field label="Points per dollar" hint="How many points equal $1 off at checkout">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <input className="st-input" type="number" min="1" step="1" value={form.points_per_dollar}
+                        onChange={(e) => set('points_per_dollar', e.target.value)}
+                        style={{ ...s.input, maxWidth: 90 }} placeholder="500" />
+                      <span style={{ fontSize: 13, color: 'var(--dp-t3)' }}>
+                        points = $1.00
+                        {form.points_per_dollar && ` · 1,000 pts = $${(1000 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
+                      </span>
+                    </div>
+                  </Field>
+                </div>
+              )}
+
             </div>
           )}
 

@@ -12,7 +12,7 @@ const nanoid = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 8);
  */
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, clinicSlug, referralCode } = req.body;
+    const { firstName, lastName, email, phone, dateOfBirth, clinicSlug, referralCode } = req.body;
 
     if (!firstName || !lastName || !clinicSlug) {
       return res.status(400).json({ error: 'First name, last name, and clinic are required.' });
@@ -23,7 +23,7 @@ router.post('/', async (req, res) => {
     // 1. Fetch clinic
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('id, name, slug, passkit_template_id, passkit_program_id, patient_limit, brand_color, booking_url')
+      .select('id, name, slug, passkit_template_id, passkit_program_id, patient_limit, brand_color, booking_url, action_points')
       .eq('slug', clinicSlug)
       .single();
 
@@ -78,6 +78,7 @@ router.post('/', async (req, res) => {
         last_name: lastName,
         email: email || null,
         phone: phone || null,
+        date_of_birth: dateOfBirth || null,
         referral_code: nanoid(),
         referred_by: referredByPatient?.id || null,
         points_balance: 0,
@@ -105,16 +106,17 @@ router.post('/', async (req, res) => {
       console.error('PassKit enrollment error:', pkErr);
     }
 
-    // 7. Credit referrer with 250 points
+    // 7. Credit referrer with clinic-configured points
     if (referredByPatient) {
-      const newPoints = referredByPatient.points_balance + 250;
+      const referralPoints = clinic.action_points?.referred_friend ?? 500;
+      const newPoints = referredByPatient.points_balance + referralPoints;
 
       await Promise.all([
         supabase.from('patients').update({ points_balance: newPoints }).eq('id', referredByPatient.id),
         supabase.from('point_events').insert({
           patient_id: referredByPatient.id,
           clinic_id: clinic.id,
-          points: 250,
+          points: referralPoints,
           reason: 'referred_friend',
           awarded_by: 'system',
         }),
@@ -122,7 +124,7 @@ router.post('/', async (req, res) => {
           referrer_patient_id: referredByPatient.id,
           referred_patient_id: patient.id,
           clinic_id: clinic.id,
-          points_awarded: 250,
+          points_awarded: referralPoints,
         }),
       ]);
 

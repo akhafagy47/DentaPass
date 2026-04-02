@@ -4,10 +4,11 @@ import { updatePatientPass } from '../lib/passkit.js';
 
 const router = Router();
 
-const PRESET_POINTS = {
-  completed_visit: 100,
-  left_review:     100,
-  referred_friend: 250,
+const FALLBACK_POINTS = {
+  completed_visit: 500,
+  left_review:     500,
+  referred_friend: 500,
+  birthday:        250,
 };
 
 /**
@@ -25,18 +26,6 @@ router.post('/award', async (req, res) => {
       return res.status(400).json({ error: 'patientId and reason are required.' });
     }
 
-    let points;
-    if (reason === 'custom') {
-      points = parseInt(customPoints, 10);
-      if (!points || points <= 0 || points > 10000) {
-        return res.status(400).json({ error: 'Invalid custom point amount.' });
-      }
-    } else if (PRESET_POINTS[reason] !== undefined) {
-      points = PRESET_POINTS[reason];
-    } else {
-      return res.status(400).json({ error: 'Invalid reason.' });
-    }
-
     const supabase = getSupabase();
 
     const { data: patient } = await supabase
@@ -49,12 +38,33 @@ router.post('/award', async (req, res) => {
 
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('passkit_template_id, passkit_program_id, owner_email')
+      .select('passkit_template_id, passkit_program_id, owner_email, action_points, custom_actions')
       .eq('id', patient.clinic_id)
       .single();
 
     if (!clinic || clinic.owner_email !== user.email) {
       return res.status(403).json({ error: 'Forbidden.' });
+    }
+
+    const clinicActionPoints = clinic.action_points || FALLBACK_POINTS;
+    const customActionsList  = clinic.custom_actions || [];
+
+    let points;
+    if (reason === 'custom') {
+      points = parseInt(customPoints, 10);
+      if (!points || points <= 0 || points > 10000) {
+        return res.status(400).json({ error: 'Invalid custom point amount.' });
+      }
+    } else if (clinicActionPoints[reason] !== undefined) {
+      points = clinicActionPoints[reason];
+    } else {
+      // Allow reasons matching a custom action label key (clinic-defined)
+      const customMatch = customActionsList.find((a) => a.label === reason);
+      if (customMatch) {
+        points = customMatch.points;
+      } else {
+        return res.status(400).json({ error: 'Invalid reason.' });
+      }
     }
 
     const updates = { points_balance: patient.points_balance + points };
