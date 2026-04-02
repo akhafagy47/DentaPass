@@ -14,12 +14,19 @@ export default async function ScanPage({ params }) {
 
   const { data: clinic } = await supabase
     .from('clinics')
-    .select('id, slug, theme')
+    .select('id, slug, theme, action_points, custom_actions')
     .eq('owner_email', user.email)
     .eq('slug', clinicSlug)
     .maybeSingle();
 
   if (!clinic) redirect('/dashboard');
 
-  return <ScanClient clinicSlug={clinicSlug} theme={clinic.theme || 'auto'} />;
+  return (
+    <ScanClient
+      clinicSlug={clinicSlug}
+      theme={clinic.theme || 'auto'}
+      actionPoints={clinic.action_points || { completed_visit: 500, left_review: 500, referred_friend: 500, birthday: 250 }}
+      customActions={clinic.custom_actions || []}
+    />
+  );
 }

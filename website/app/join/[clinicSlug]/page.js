@@ -13,8 +13,9 @@ export default function JoinPage() {
   const [submitting, setSubmitting] = useState(false);
   const [walletUrl, setWalletUrl] = useState(null);
   const [errorMsg, setErrorMsg]   = useState('');
-  const [clinicName, setClinicName] = useState('');
-  const [savedTheme, setSavedTheme] = useState('auto');
+  const [clinicName, setClinicName]   = useState('');
+  const [actionPoints, setActionPoints] = useState(null);
+  const [savedTheme, setSavedTheme]   = useState('auto');
   const [systemDark, setSystemDark] = useState(false);
   const [form, setForm]             = useState({ firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '' });
   const [errors, setErrors]         = useState({});
@@ -30,8 +31,9 @@ export default function JoinPage() {
   useEffect(() => {
     getClinic(clinicSlug)
       .then((d) => {
-        if (d.name)  setClinicName(d.name);
-        if (d.theme) setSavedTheme(d.theme);
+        if (d.name)          setClinicName(d.name);
+        if (d.theme)         setSavedTheme(d.theme);
+        if (d.action_points) setActionPoints(d.action_points);
       })
       .catch(() => {});
   }, [clinicSlug]);
@@ -123,7 +125,7 @@ export default function JoinPage() {
           )}
           {ref && (
             <p style={s.referralNote}>
-              Your friend earns 250 bonus points for referring you!
+              Your friend earns {actionPoints?.referred_friend ?? '…'} bonus points for referring you!
             </p>
           )}
         </div>
@@ -193,10 +195,10 @@ export default function JoinPage() {
 
             <div style={s.benefitList}>
               {[
-                { icon: '★', label: 'Earn points', desc: '100 pts per visit, review, or referral' },
+                { icon: '★', label: 'Earn points',  desc: actionPoints ? `${actionPoints.completed_visit} pts per visit, ${actionPoints.left_review} pts per review` : 'Earn points for every visit and review' },
                 { icon: '💳', label: 'Wallet card',  desc: 'Lives in Apple Wallet or Google Wallet' },
                 { icon: '🔔', label: 'Reminders',    desc: 'Checkup alerts sent straight to your phone' },
-                { icon: '↗', label: 'Refer friends', desc: 'Share your code and both earn 250 pts' },
+                { icon: '↗', label: 'Refer friends', desc: `Share your code — your friend earns you ${actionPoints?.referred_friend ?? '…'} pts` },
               ].map((b) => (
                 <div key={b.label} style={s.benefit}>
                   <div style={{ ...s.benefitIcon,

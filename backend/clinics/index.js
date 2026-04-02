@@ -168,7 +168,7 @@ router.post('/onboard/dev', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   const { data: clinic } = await getSupabase()
     .from('clinics')
-    .select('name, brand_color, logo_url, booking_url, theme')
+    .select('name, brand_color, logo_url, booking_url, theme, action_points, custom_actions')
     .eq('slug', req.params.slug)
     .single();
 

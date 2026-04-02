@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { getPatientBySerial, awardPoints } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
 
-const POINT_BUTTONS = [
-  { label: 'Completed visit', reason: 'completed_visit', points: 100, icon: '🦷' },
-  { label: 'Left a review',   reason: 'left_review',     points: 100, icon: '⭐' },
-  { label: 'Referred a friend', reason: 'referred_friend', points: 250, icon: '🤝' },
+const BUILTIN_META = [
+  { reason: 'completed_visit',  label: 'Completed visit',    icon: '🦷' },
+  { reason: 'left_review',      label: 'Left a review',      icon: '⭐' },
+  { reason: 'referred_friend',  label: 'Referred a friend',  icon: '🤝' },
+  { reason: 'birthday',         label: 'Birthday bonus',      icon: '🎂' },
 ];
 
 const DARK = {
@@ -44,7 +45,7 @@ const LIGHT = {
 
 const tierColor = { bronze: '#CD7F32', silver: '#9CA3AF', gold: '#F59E0B' };
 
-export default function ScanClient({ clinicSlug, theme = 'auto' }) {
+export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = {}, customActions = [] }) {
   const [systemDark, setSystemDark] = useState(false);
 
   useEffect(() => {
@@ -212,7 +213,10 @@ export default function ScanClient({ clinicSlug, theme = 'auto' }) {
           )}
 
           <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {POINT_BUTTONS.map((btn) => (
+            {[
+              ...BUILTIN_META.map((m) => ({ ...m, points: actionPoints[m.reason] ?? 0 })),
+              ...customActions.map((a) => ({ reason: a.label, label: a.label, icon: '✦', points: a.points })),
+            ].map((btn) => (
               <button
                 key={btn.reason}
                 disabled={!!awarding}
