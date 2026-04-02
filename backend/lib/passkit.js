@@ -96,7 +96,9 @@ function base58(buf) {
   let n = BigInt('0x' + buf.toString('hex'));
   let s = '';
   while (n > 0n) { s = B58[Number(n % 58n)] + s; n /= 58n; }
-  return s || '1';
+  // Pad to 22 chars — PassKit uuidCompressedString is always 22 characters
+  // ('1' is the zero character in this base58 alphabet)
+  return s.padStart(22, '1');
 }
 function linkId(name) {
   return base58(createHash('md5').update(name).digest());
