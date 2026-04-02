@@ -101,7 +101,7 @@ function base58(buf) {
   return s.padStart(22, '1');
 }
 function linkId(name) {
-  return base58(createHash('md5').update(name).digest());
+  return createHash('md5').update(name).digest('hex');
 }
 
 // ── Design helpers ─────────────────────────────────────────────────────────────
