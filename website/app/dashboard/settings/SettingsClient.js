@@ -573,7 +573,7 @@ export default function SettingsClient({ clinic }) {
 
               {/* Row 5: Page theme */}
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 10, letterSpacing: '0.01em' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--dp-t3)', marginBottom: 10, letterSpacing: '0.01em' }}>
                   Dashboard &amp; patient page theme
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -587,13 +587,13 @@ export default function SettingsClient({ clinic }) {
                       <button key={opt.value} type="button" onClick={() => set('theme', opt.value)} style={{
                         flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px',
                         borderRadius: 12, textAlign: 'left', cursor: 'pointer', transition: 'all 0.15s',
-                        border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                        background: active ? 'rgba(59,191,185,0.08)' : 'rgba(255,255,255,0.03)',
+                        border: active ? '1.5px solid rgba(59,191,185,0.4)' : '1px solid var(--dp-bdr)',
+                        background: active ? 'rgba(59,191,185,0.08)' : 'var(--dp-bg)',
                       }}>
                         <span style={{ fontSize: 20 }}>{opt.icon}</span>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#3bbfb9' : 'rgba(255,255,255,0.7)' }}>{opt.label}</div>
-                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>{opt.desc}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: active ? '#3bbfb9' : 'var(--dp-t2)' }}>{opt.label}</div>
+                          <div style={{ fontSize: 11, color: 'var(--dp-t4)', marginTop: 1 }}>{opt.desc}</div>
                         </div>
                         {active && (
                           <span style={{ marginLeft: 'auto', width: 8, height: 8, borderRadius: '50%', background: '#3bbfb9', flexShrink: 0 }} />
