@@ -408,6 +408,14 @@ export default function SettingsClient({ clinic }) {
   const [saving, setSaving]     = useState(false);
   const [uploading, setUploading] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [copiedUrl, setCopiedUrl] = useState(null);
+
+  function copyUrl(url) {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedUrl(url);
+      setTimeout(() => setCopiedUrl(null), 2000);
+    });
+  }
 
   const isDirty = useMemo(() =>
     Object.keys(initialForm).some((k) => String(form[k]) !== String(initialForm[k]))
@@ -737,9 +745,24 @@ export default function SettingsClient({ clinic }) {
                       {l.url}
                     </a>
                   </div>
-                  <a href={l.url} target="_blank" rel="noopener noreferrer" style={s.openBtn}>
-                    Open ↗
-                  </a>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => copyUrl(l.url)}
+                      style={{
+                        background: copiedUrl === l.url ? 'rgba(52,211,153,0.12)' : 'var(--dp-bg)',
+                        border: `1px solid ${copiedUrl === l.url ? 'rgba(52,211,153,0.3)' : 'var(--dp-bdr)'}`,
+                        borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600,
+                        color: copiedUrl === l.url ? '#34d399' : 'var(--dp-t2)',
+                        cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {copiedUrl === l.url ? '✓ Copied' : 'Copy'}
+                    </button>
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" style={s.openBtn}>
+                      Open ↗
+                    </a>
+                  </div>
                 </div>
               ))}
             </div>
