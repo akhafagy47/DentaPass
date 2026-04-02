@@ -12,7 +12,7 @@ const nanoid = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 8);
  */
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, dateOfBirth, clinicSlug, referralCode } = req.body;
+    const { firstName, lastName, email, phone, dateOfBirth, clinicSlug, referralCode, walletType } = req.body;
 
     if (!firstName || !lastName || !clinicSlug) {
       return res.status(400).json({ error: 'First name, last name, and clinic are required.' });
@@ -84,6 +84,7 @@ router.post('/', async (req, res) => {
         points_balance: 0,
         tier: 'bronze',
         last_visit_date: new Date().toISOString(),
+        wallet_type: walletType === 'google' ? 'google' : 'apple',
       })
       .select()
       .single();

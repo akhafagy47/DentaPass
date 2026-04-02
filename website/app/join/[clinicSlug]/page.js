@@ -58,6 +58,8 @@ export default function JoinPage() {
     setSubmitting(true);
     setErrorMsg('');
     try {
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const walletType = isAndroid ? 'google' : 'apple';
       const data = await enrollPatient({
         firstName:    form.firstName.trim(),
         lastName:     form.lastName.trim(),
@@ -66,6 +68,7 @@ export default function JoinPage() {
         dateOfBirth:  form.dateOfBirth || undefined,
         clinicSlug,
         referralCode: ref || undefined,
+        walletType,
       });
       setWalletUrl(data.walletUrl);
       setStep('success');

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getSupabase } from '../lib/supabase.js';
-import { sendPushNotification } from '../lib/passkit.js';
+import { sendNotification } from '../lib/passkit.js';
+import { sendRecallEmail, sendReviewRequestEmail } from '../lib/resend.js';
 
 const router = Router();
 
@@ -50,7 +51,9 @@ router.patch('/:id', async (req, res) => {
 
 /**
  * POST /patients/:id/notify
- * Send a manual push notification to a patient's wallet card.
+ * Send a manual notification to a patient via their wallet channel.
+ * Apple Wallet patients receive a PassKit field-update notification.
+ * Google Wallet patients receive a Resend email.
  */
 router.post('/:id/notify', async (req, res) => {
   const { id } = req.params;
@@ -64,26 +67,43 @@ router.post('/:id/notify', async (req, res) => {
 
   const { data: patient } = await supabase
     .from('patients')
-    .select('first_name, passkit_serial_number, clinic_id, clinic:clinics(name, google_review_url)')
+    .select(`
+      first_name, email, wallet_type, points_balance, tier,
+      passkit_serial_number, clinic_id,
+      clinic:clinics(name, brand_color, booking_url, google_review_url, owner_email)
+    `)
     .eq('id', id)
     .single();
 
-  if (!patient?.passkit_serial_number) {
-    return res.status(404).json({ error: 'Patient not found or no wallet card.' });
-  }
+  if (!patient) return res.status(404).json({ error: 'Patient not found.' });
 
-  const messages = {
-    recall:  `Time for your checkup, ${patient.first_name}. Book now and earn 200 bonus points.`,
-    review:  `How was your visit with ${patient.clinic?.name}? Tap to leave a review.`,
-    manual:  `${patient.clinic?.name} has a message for you.`,
-  };
+  const clinic = patient.clinic;
 
   try {
-    await sendPushNotification({ serialNumber: patient.passkit_serial_number, message: messages[type] });
+    if (patient.wallet_type === 'google' && patient.email) {
+      if (type === 'recall') {
+        await sendRecallEmail(patient, clinic);
+      } else if (type === 'review') {
+        await sendReviewRequestEmail(patient, clinic);
+      } else {
+        // manual — send a generic recall email for now
+        await sendRecallEmail(patient, clinic);
+      }
+    } else if (patient.passkit_serial_number) {
+      const messages = {
+        recall: `Your checkup at ${clinic.name} is coming up — book your appointment now`,
+        review: `How was your visit at ${clinic.name}? Tap to leave us a Google review`,
+        manual: `${clinic.name} has a message for you`,
+      };
+      await sendNotification(patient.passkit_serial_number, messages[type]);
+    } else {
+      return res.status(400).json({ error: 'Patient has no notification channel configured.' });
+    }
+
     await supabase.from('notifications').insert({ patient_id: id, clinic_id: patient.clinic_id, type });
     res.json({ ok: true });
   } catch (err) {
-    console.error('Push notification error:', err);
+    console.error('Notification error:', err);
     res.status(500).json({ error: 'Failed to send notification.' });
   }
 });

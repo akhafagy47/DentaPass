@@ -645,17 +645,22 @@ export async function burnPoints({ serialNumber, externalId, programId, points }
 }
 
 /**
- * Send a push notification via wallet card update.
- * PassKit pushes to the patient's installed pass whenever member data changes.
+ * Trigger a lock screen notification on an Apple Wallet pass by updating
+ * the notificationMessage metadata field. PassKit fires the notification
+ * because the PassKit template has changeMessage: "%@" set on this field.
+ *
+ * This is the ONLY supported notification mechanism — PassKit does not
+ * support standalone push messages.
  */
-export async function sendPushNotification({ serialNumber, message }) {
-  await pkFetch('/members/member', {
+export async function sendNotification(serialNumber, message) {
+  const res = await pkFetch('/members/member', {
     method: 'PUT',
     body: JSON.stringify({
-      id:    serialNumber,
-      notes: [{ header: 'DentaPass', body: message }],
+      id: serialNumber,
+      metaData: { notificationMessage: message },
     }),
   });
+  return res;
 }
 
 /**

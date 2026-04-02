@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getSupabase, verifyToken } from '../lib/supabase.js';
-import { updatePatientPass } from '../lib/passkit.js';
+import { updatePatientPass, sendNotification } from '../lib/passkit.js';
+import { sendPointsAwardedEmail } from '../lib/resend.js';
 
 const router = Router();
 
@@ -30,7 +31,7 @@ router.post('/award', async (req, res) => {
 
     const { data: patient } = await supabase
       .from('patients')
-      .select('id, clinic_id, points_balance, passkit_serial_number, created_at')
+      .select('id, first_name, email, clinic_id, points_balance, passkit_serial_number, wallet_type, created_at')
       .eq('id', patientId)
       .single();
 
@@ -38,7 +39,7 @@ router.post('/award', async (req, res) => {
 
     const { data: clinic } = await supabase
       .from('clinics')
-      .select('passkit_template_id, passkit_program_id, owner_email, action_points, custom_actions')
+      .select('name, brand_color, passkit_template_id, passkit_program_id, owner_email, action_points, custom_actions')
       .eq('id', patient.clinic_id)
       .single();
 
@@ -97,7 +98,23 @@ router.post('/award', async (req, res) => {
       }
     }
 
-    res.json({ ok: true, newBalance: updated.points_balance, tier: updated.tier, pointsAwarded: points });
+    // Send notification via appropriate channel
+    const newBalance = updated.points_balance;
+    if (patient.wallet_type === 'google' && patient.email) {
+      sendPointsAwardedEmail(
+        { ...patient, tier: updated.tier },
+        clinic,
+        points,
+        newBalance,
+      ).catch((err) => console.error('Resend points email failed:', err));
+    } else if (patient.passkit_serial_number) {
+      sendNotification(
+        patient.passkit_serial_number,
+        `You now have ${newBalance} points at ${clinic.name}!`,
+      ).catch((err) => console.error('PassKit notification failed:', err));
+    }
+
+    res.json({ ok: true, newBalance, tier: updated.tier, pointsAwarded: points });
   } catch (err) {
     console.error('Award points error:', err);
     res.status(500).json({ error: 'Internal server error.' });
