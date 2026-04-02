@@ -93,7 +93,7 @@ export default function PatientProfileClient({
     <>
       <style>{`
         .pp-input:focus { border-color: rgba(59,191,185,0.5) !important; box-shadow: 0 0 0 3px rgba(59,191,185,0.1); outline: none; }
-        .pp-notif:hover:not(:disabled) { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.15) !important; }
+        .pp-notif:hover:not(:disabled) { background: var(--dp-bdr) !important; border-color: var(--dp-inbdr) !important; }
         .pp-award:hover:not(:disabled) { filter: brightness(1.08); }
         @keyframes pp-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         .pp-card { animation: pp-in 0.35s cubic-bezier(0.16,1,0.3,1) both; }
@@ -129,7 +129,7 @@ export default function PatientProfileClient({
             </div>
             <div style={s.statDivider} />
             <div style={s.stat}>
-              <span style={{ ...s.statVal, color: 'rgba(255,255,255,0.8)' }}>{referrals.length}</span>
+              <span style={{ ...s.statVal, color: 'var(--dp-t2)' }}>{referrals.length}</span>
               <span style={s.statLabel}>Referrals</span>
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function PatientProfileClient({
               ) : (
                 <div style={s.eventList}>
                   {pointEvents.map((e, i) => (
-                    <div key={e.id} style={{ ...s.eventRow, borderBottom: i < pointEvents.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                    <div key={e.id} style={{ ...s.eventRow, borderBottom: i < pointEvents.length - 1 ? '1px solid var(--dp-inp)' : 'none' }}>
                       <span style={{
                         ...s.reasonTag,
                         color: REASON_COLOR[e.reason] || '#94a3b8',
@@ -286,7 +286,7 @@ export default function PatientProfileClient({
               ) : (
                 <div style={s.eventList}>
                   {notifications.map((n, i) => (
-                    <div key={n.id} style={{ ...s.eventRow, borderBottom: i < notifications.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                    <div key={n.id} style={{ ...s.eventRow, borderBottom: i < notifications.length - 1 ? '1px solid var(--dp-inp)' : 'none' }}>
                       <span style={{
                         ...s.reasonTag,
                         color: n.type === 'review' ? '#fbbf24' : '#3bbfb9',
@@ -315,16 +315,16 @@ const s = {
   page: { display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1000 },
   backBtn: {
     background: 'none', border: 'none',
-    color: 'rgba(255,255,255,0.3)', fontSize: 13,
+    color: 'var(--dp-t4)', fontSize: 13,
     cursor: 'pointer', padding: '4px 0',
     alignSelf: 'flex-start',
     transition: 'color 0.15s',
     fontFamily: "'DM Sans', sans-serif",
   },
   profileHeader: {
-    background: 'rgba(255,255,255,0.04)',
+    background: 'var(--dp-card)',
     borderRadius: 16, padding: '22px 24px',
-    border: '1px solid rgba(255,255,255,0.07)',
+    border: '1px solid var(--dp-bdr)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
     display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap',
   },
@@ -335,13 +335,13 @@ const s = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontWeight: 700, fontSize: 20, flexShrink: 0, letterSpacing: '0.02em',
   },
-  name: { fontSize: 20, fontWeight: 700, color: '#fff', margin: '0 0 4px', letterSpacing: '-0.01em' },
-  meta: { display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 13, color: 'rgba(255,255,255,0.35)' },
+  name: { fontSize: 20, fontWeight: 700, color: 'var(--dp-t1)', margin: '0 0 4px', letterSpacing: '-0.01em' },
+  meta: { display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 13, color: 'var(--dp-t4)' },
   statsRow: { display: 'flex', alignItems: 'center', gap: 20, marginLeft: 'auto', flexWrap: 'wrap' },
   stat: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
   statVal: { fontSize: 22, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' },
-  statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 },
-  statDivider: { width: 1, height: 32, background: 'rgba(255,255,255,0.08)' },
+  statLabel: { fontSize: 10, color: 'var(--dp-t4)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600 },
+  statDivider: { width: 1, height: 32, background: 'var(--dp-bdr)' },
   feedbackBanner: {
     background: 'rgba(52,211,153,0.1)',
     color: '#34d399',
@@ -351,23 +351,23 @@ const s = {
   cols: { display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 16 },
   col: { display: 'flex', flexDirection: 'column', gap: 14 },
   card: {
-    background: 'rgba(255,255,255,0.04)',
+    background: 'var(--dp-card)',
     borderRadius: 14, padding: '18px 20px',
-    border: '1px solid rgba(255,255,255,0.07)',
+    border: '1px solid var(--dp-bdr)',
     backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
   },
   cardTitle: {
     fontSize: 12, fontWeight: 700,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'var(--dp-t4)',
     margin: '0 0 14px',
     textTransform: 'uppercase', letterSpacing: '0.07em',
   },
   input: {
     flex: 1, padding: '10px 13px',
-    border: '1.5px solid rgba(255,255,255,0.1)',
+    border: '1.5px solid var(--dp-inbdr)',
     borderRadius: 10, fontSize: 14,
-    background: 'rgba(255,255,255,0.05)',
-    color: '#fff',
+    background: 'var(--dp-inp)',
+    color: 'var(--dp-t1)',
     fontFamily: "'DM Sans', sans-serif",
     transition: 'border-color 0.15s, box-shadow 0.15s',
   },
@@ -381,11 +381,11 @@ const s = {
     fontFamily: "'DM Sans', sans-serif",
   },
   notifBtn: {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.09)',
+    background: 'var(--dp-card)',
+    border: '1px solid var(--dp-bdr)',
     borderRadius: 10, padding: '11px 14px',
     fontSize: 14, cursor: 'pointer',
-    color: 'rgba(255,255,255,0.65)',
+    color: 'var(--dp-t2)',
     display: 'flex', alignItems: 'center', gap: 10,
     transition: 'background 0.15s, border-color 0.15s',
     fontFamily: "'DM Sans', sans-serif",
@@ -398,11 +398,11 @@ const s = {
   },
   referralBox: {
     display: 'flex', alignItems: 'center', gap: 10,
-    background: 'rgba(255,255,255,0.03)',
+    background: 'var(--dp-card)',
     borderRadius: 8, padding: '10px 12px',
-    border: '1px solid rgba(255,255,255,0.06)',
+    border: '1px solid var(--dp-div)',
   },
-  referralCode: { fontSize: 12, color: 'rgba(255,255,255,0.3)', flex: 1, wordBreak: 'break-all' },
+  referralCode: { fontSize: 12, color: 'var(--dp-t4)', flex: 1, wordBreak: 'break-all' },
   copyBtn: {
     background: 'rgba(59,191,185,0.12)', color: '#3bbfb9',
     border: '1px solid rgba(59,191,185,0.2)', borderRadius: 6,
@@ -416,6 +416,6 @@ const s = {
     flex: 1,
   },
   eventPts: { fontWeight: 700, fontSize: 14, minWidth: 36, textAlign: 'right' },
-  eventDate: { color: 'rgba(255,255,255,0.25)', fontSize: 12, whiteSpace: 'nowrap' },
-  empty: { fontSize: 13, color: 'rgba(255,255,255,0.25)', margin: 0 },
+  eventDate: { color: 'var(--dp-t4)', fontSize: 12, whiteSpace: 'nowrap' },
+  empty: { fontSize: 13, color: 'var(--dp-t4)', margin: 0 },
 };
