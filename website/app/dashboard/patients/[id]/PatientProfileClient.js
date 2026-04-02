@@ -39,6 +39,7 @@ export default function PatientProfileClient({
   const [feedback, setFeedback]       = useState('');
   const [sendingNotif, setSendingNotif] = useState(false);
   const [checkupDate, setCheckupDate] = useState(patient.next_checkup_date || '');
+  const [checkupTime, setCheckupTime] = useState(patient.next_checkup_time || '');
   const [savingDate, setSavingDate]   = useState(false);
 
   async function getToken() {
@@ -71,7 +72,7 @@ export default function PatientProfileClient({
     setSavingDate(true);
     try {
       const token = await getToken();
-      const data = await updatePatient(patient.id, { next_checkup_date: checkupDate || null }, token);
+      const data = await updatePatient(patient.id, { next_checkup_date: checkupDate || null, next_checkup_time: checkupTime || null }, token);
       if (data?.ok) {
         setFeedback('Checkup date saved!');
         setTimeout(() => setFeedback(''), 3000);
@@ -191,8 +192,8 @@ export default function PatientProfileClient({
 
             {/* Next checkup */}
             <div className="pp-card" style={{ ...s.card, animationDelay: '0.05s' }}>
-              <h2 style={s.cardTitle}>Next checkup date</h2>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <h2 style={s.cardTitle}>Next checkup</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <input
                   type="date"
                   className="pp-input"
@@ -200,14 +201,23 @@ export default function PatientProfileClient({
                   onChange={(e) => setCheckupDate(e.target.value)}
                   style={{ ...s.input, colorScheme: 'dark' }}
                 />
-                <button
-                  className="pp-award"
-                  disabled={savingDate}
-                  onClick={saveCheckupDate}
-                  style={s.btn}
-                >
-                  {savingDate ? <Spinner color="#081312" /> : 'Save'}
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    type="time"
+                    className="pp-input"
+                    value={checkupTime}
+                    onChange={(e) => setCheckupTime(e.target.value)}
+                    style={{ ...s.input, flex: 1, colorScheme: 'dark' }}
+                  />
+                  <button
+                    className="pp-award"
+                    disabled={savingDate}
+                    onClick={saveCheckupDate}
+                    style={s.btn}
+                  >
+                    {savingDate ? <Spinner color="#081312" /> : 'Save'}
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -36,7 +36,7 @@ router.get('/by-serial/:serial', async (req, res) => {
  */
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  const allowed = ['next_checkup_date', 'last_visit_date', 'phone', 'email'];
+  const allowed = ['next_checkup_date', 'next_checkup_time', 'last_visit_date', 'phone', 'email'];
   const updates = Object.fromEntries(
     Object.entries(req.body).filter(([k]) => allowed.includes(k))
   );
@@ -48,13 +48,13 @@ router.patch('/:id', async (req, res) => {
   const supabase = getSupabase();
 
   // Only fields that map to a pass field require a PassKit round-trip first
-  const passFields = ['next_checkup_date', 'phone', 'email'];
+  const passFields = ['next_checkup_date', 'next_checkup_time', 'phone', 'email'];
   const hasPassUpdate = Object.keys(updates).some((k) => passFields.includes(k));
 
   if (hasPassUpdate) {
     const { data: patient } = await supabase
       .from('patients')
-      .select('passkit_serial_number, clinic_id, first_name, last_name, email, phone, referral_code, points_balance, tier, next_checkup_date, created_at')
+      .select('passkit_serial_number, clinic_id, first_name, last_name, email, phone, referral_code, points_balance, tier, next_checkup_date, next_checkup_time, created_at')
       .eq('id', id)
       .single();
 

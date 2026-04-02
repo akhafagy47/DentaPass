@@ -256,6 +256,24 @@ function buildDataFields(clinic) {
       googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 0 },
     },
 
+    // Appointment time — auxiliary row, front of card (invisible when blank)
+    {
+      uniqueName: 'meta.appointmentTime',
+      label: 'Time',
+      dataType: 'TEXT',
+      defaultValue: '',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'RIGHT',
+        positionSettings: { section: 'AUXILIARY_FIELDS', priority: 3 },
+        changeMessage: '',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 1 },
+    },
+
     // ── BACK FIELDS (Apple Wallet back + PassKit web/Google Pay detail view) ────
 
     // Instructions — Apple Wallet only, shown at the top of the back
@@ -312,6 +330,24 @@ function buildDataFields(clinic) {
       googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 0 },
     },
 
+    // Appointment time — repeated on back alongside the checkup date
+    {
+      uniqueName: 'meta.appointmentTimeBack',
+      label: 'Appointment time',
+      dataType: 'TEXT',
+      defaultValue: '',
+      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'BACK_FIELDS', priority: 2 },
+        changeMessage: '', //'Your appointment is at %@.',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 1 },
+    },
+
     // Referral link — patient-specific URL set at enrollment
     {
       uniqueName: 'meta.referralLink',
@@ -321,13 +357,13 @@ function buildDataFields(clinic) {
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
         textAlignment: 'LEFT',
-        positionSettings: { section: 'BACK_FIELDS', priority: 2 },
+        positionSettings: { section: 'BACK_FIELDS', priority: 3 },
         changeMessage: '',
         dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
       },
-      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 3 },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_TEXT_MODULE', textModulePriority: 4 },
     },
 
     // Program info / rewards explanation
@@ -339,7 +375,7 @@ function buildDataFields(clinic) {
       usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
       appleWalletFieldRenderOptions: {
         textAlignment: 'LEFT',
-        positionSettings: { section: 'BACK_FIELDS', priority: 3 },
+        positionSettings: { section: 'BACK_FIELDS', priority: 4 },
         changeMessage: '',
         dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
         timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
@@ -467,6 +503,15 @@ function buildTemplateBody(clinic) {
   };
 }
 
+// Format "HH:MM" (24h) → "9:00 AM" for display on the pass
+function formatTime(hhmm) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour   = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -585,6 +630,7 @@ export async function enrollPatient({ patient, clinic }) {
         memberSince,
         ...(referralLink ? { referralLink } : {}),
         ...(patient.next_checkup_date ? { nextCheckupDate: patient.next_checkup_date, nextCheckupDateBack: patient.next_checkup_date } : {}),
+        ...(patient.next_checkup_time ? { appointmentTime: formatTime(patient.next_checkup_time), appointmentTimeBack: formatTime(patient.next_checkup_time) } : {}),
       },
     }),
   });
@@ -623,6 +669,8 @@ export async function updatePatientPass({ patient, clinic }) {
         tier:                patient.tier || '',
         nextCheckupDate:     patient.next_checkup_date || '',
         nextCheckupDateBack: patient.next_checkup_date || '',
+        appointmentTime:     formatTime(patient.next_checkup_time) || '',
+        appointmentTimeBack: formatTime(patient.next_checkup_time) || '',
         ...(patient.created_at    ? { memberSince: patient.created_at.slice(0, 7).replace('-', '') } : {}),
         ...(referralLink          ? { referralLink } : {}),
       },
