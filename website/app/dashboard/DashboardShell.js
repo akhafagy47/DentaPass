@@ -71,16 +71,16 @@ const DARK_VARS = {
 const LIGHT_VARS = {
   '--dp-bg':    '#f5f9f8',
   '--dp-card':  '#ffffff',
-  '--dp-bdr':   'rgba(0,0,0,0.07)',
+  '--dp-bdr':   'rgba(0,0,0,0.1)',
   '--dp-inp':   '#ffffff',
-  '--dp-inbdr': 'rgba(0,0,0,0.12)',
+  '--dp-inbdr': 'rgba(0,0,0,0.15)',
   '--dp-t1':    '#0b1a19',
-  '--dp-t2':    'rgba(0,0,0,0.65)',
-  '--dp-t3':    'rgba(0,0,0,0.45)',
-  '--dp-t4':    'rgba(0,0,0,0.3)',
-  '--dp-div':   'rgba(0,0,0,0.07)',
+  '--dp-t2':    'rgba(0,0,0,0.72)',
+  '--dp-t3':    'rgba(0,0,0,0.55)',
+  '--dp-t4':    'rgba(0,0,0,0.42)',
+  '--dp-div':   'rgba(0,0,0,0.1)',
   '--dp-sbg':   '#ffffff',
-  '--dp-sbdr':  'rgba(0,0,0,0.08)',
+  '--dp-sbdr':  'rgba(0,0,0,0.1)',
 };
 
 export default function DashboardShell({ children, clinic, userEmail }) {
