@@ -609,6 +609,10 @@ export async function updatePatientPass({ patient, clinic }) {
       programId: clinic.passkit_program_id,
       operation: 'OPERATION_PATCH',
       points:    patient.points_balance,
+      person: {
+        ...(patient.email ? { emailAddress: patient.email } : {}),
+        ...(patient.phone ? { mobileNumber: patient.phone } : {}),
+      },
       metaData: {
         tier:                patient.tier,
         nextCheckupDate:     patient.next_checkup_date || '',

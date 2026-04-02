@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getSupabase } from '../lib/supabase.js';
-import { sendNotification } from '../lib/passkit.js';
+import { sendNotification, updatePatientPass } from '../lib/passkit.js';
 import { sendRecallEmail, sendReviewRequestEmail } from '../lib/resend.js';
 
 const router = Router();
@@ -46,7 +46,29 @@ router.patch('/:id', async (req, res) => {
   const supabase = getSupabase();
   const { error } = await supabase.from('patients').update(updates).eq('id', id);
   if (error) return res.status(500).json({ error: error.message });
+
   res.json({ ok: true });
+
+  // Sync updated fields to the patient's wallet pass (fire-and-forget)
+  const { data: patient } = await supabase
+    .from('patients')
+    .select('passkit_serial_number, clinic_id, points_balance, tier, next_checkup_date, phone, email, created_at')
+    .eq('id', id)
+    .single();
+
+  if (patient?.passkit_serial_number) {
+    const { data: clinic } = await supabase
+      .from('clinics')
+      .select('passkit_template_id, passkit_program_id')
+      .eq('id', patient.clinic_id)
+      .single();
+
+    if (clinic) {
+      updatePatientPass({ patient, clinic }).catch((err) =>
+        console.error('PassKit sync after PATCH failed:', err)
+      );
+    }
+  }
 });
 
 /**
