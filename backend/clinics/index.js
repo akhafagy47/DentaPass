@@ -29,7 +29,8 @@ router.get('/onboard/session', async (req, res) => {
       return res.status(402).json({ error: 'Payment not completed.' });
     }
     res.json({ email: session.metadata?.ownerEmail });
-  } catch {
+  } catch (err) {
+    console.error('Stripe session retrieve error:', err);
     res.status(400).json({ error: 'Invalid session.' });
   }
 });

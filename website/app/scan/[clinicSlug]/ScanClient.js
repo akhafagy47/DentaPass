@@ -133,7 +133,9 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const code      = jsQR(imageData.data, imageData.width, imageData.height);
       if (code?.data) { await handleQRCode(code.data); return; }
-    } catch {}
+    } catch (err) {
+      console.error('QR scan frame error:', err);
+    }
     animRef.current = requestAnimationFrame(scanFrame);
   }
 
@@ -145,7 +147,9 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
       const p = await getPatientBySerial(serial);
       setPatient(p);
       setMode('patient');
-    } catch {
+    } catch (err) {
+      setCameraError(err?.message || 'QR code not recognised. Try again.');
+      setTimeout(() => setCameraError(''), 2500);
       animRef.current = requestAnimationFrame(scanFrame);
     }
   }
@@ -164,7 +168,10 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
           setShowCustom(false); setCustomPts('');
         }, 3000);
       }
-    } catch {}
+    } catch (err) {
+      setCameraError(err?.message || 'Failed to award points. Please try again.');
+      setTimeout(() => setCameraError(''), 4000);
+    }
     setAwarding(null);
   }
 
