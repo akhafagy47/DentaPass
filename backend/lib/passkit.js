@@ -217,6 +217,27 @@ function buildDataFields(clinic) {
       googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_LOYALTY_POINTS', textModulePriority: 0 },
     },
 
+    // Notification trigger — auxiliary row, front of card.
+    // Value is updated by sendNotification(); changeMessage: '%@' causes iOS
+    // to display the value as a lock screen alert. Empty label so it stays
+    // invisible when blank; Apple Wallet omits empty fields from the visual layout.
+    {
+      uniqueName: 'meta.notificationMessage',
+      label: '',
+      dataType: 'TEXT',
+      defaultValue: '',
+      usage: ['USAGE_APPLE_WALLET'],
+      appleWalletFieldRenderOptions: {
+        textAlignment: 'LEFT',
+        positionSettings: { section: 'AUXILIARY_FIELDS', priority: 2 },
+        changeMessage: '%@',
+        dateStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        timeStyle: 'DATE_TIME_STYLE_DO_NOT_USE',
+        numberStyle: 'NUMBER_STYLE_DO_NOT_USE',
+      },
+      googlePayFieldRenderOptions: { googlePayPosition: 'GOOGLE_PAY_FIELD_DO_NOT_USE', textModulePriority: 0 },
+    },
+
     // Next checkup date — auxiliary row, right side (front of card)
     {
       uniqueName: 'meta.nextCheckupDate',
