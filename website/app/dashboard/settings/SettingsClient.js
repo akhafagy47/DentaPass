@@ -917,7 +917,7 @@ export default function SettingsClient({ clinic }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <input className="st-input" type="number" min="1" step="1" value={form.points_per_dollar}
                         onChange={(e) => set('points_per_dollar', e.target.value)}
-                        style={{ ...s.input, maxWidth: 90 }} placeholder="500" />
+                        style={{ ...s.input, maxWidth: 90 }} placeholder="10" />
                       <span style={{ fontSize: 13, color: 'var(--dp-t3)' }}>
                         points = $1.00
                         {form.points_per_dollar && ` · 1,000 pts = $${(1000 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
