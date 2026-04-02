@@ -177,9 +177,23 @@ router.get('/:slug', async (req, res) => {
   res.json(clinic);
 });
 
+// All fields needed to build a PassKit template body.
+// Used in both the setup fetch and the design-update fetch so the two
+// paths always send identical payloads — no field is silently dropped.
+const TEMPLATE_BUILD_FIELDS =
+  'name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, ' +
+  'booking_url, google_review_url, address, phone, facebook_url, instagram_url, timezone';
+
+// Any change to these fields must be pushed to PassKit before the DB is written.
+const DESIGN_FIELDS = new Set([
+  'name', 'brand_color', 'logo_url', 'points_label', 'rewards_mode', 'points_per_dollar',
+  'booking_url', 'google_review_url', 'address', 'phone', 'facebook_url', 'instagram_url', 'timezone',
+]);
+
 /**
  * PATCH /clinics/:id
  * Auth protected — update clinic settings.
+ * For design fields: PassKit template is updated first; DB is only written if PassKit accepts.
  */
 router.patch('/:id', requireAuth, async (req, res) => {
   if (req.clinic.id !== req.params.id) {
@@ -203,9 +217,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
   const supabase = getSupabase();
 
-  // When setup wizard completes, run PassKit setup synchronously before saving setup_completed
+  // ── Setup wizard completion ──────────────────────────────────────────────────
+  // PassKit program + template + tier are created before setup_completed is saved.
   if (updates.setup_completed === true) {
-    // Don't write setup_completed yet — only save it if PassKit succeeds
     const { setup_completed: _, ...updatesWithoutSetup } = updates;
 
     if (Object.keys(updatesWithoutSetup).length) {
@@ -216,7 +230,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
     try {
       const { data: clinic, error: clinicFetchErr } = await supabase
         .from('clinics')
-        .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, facebook_url, instagram_url, timezone')
+        .select(TEMPLATE_BUILD_FIELDS)
         .eq('id', req.params.id)
         .maybeSingle();
 
@@ -238,32 +252,33 @@ router.patch('/:id', requireAuth, async (req, res) => {
     return res.json({ ok: true });
   }
 
-  const { error } = await supabase.from('clinics').update(updates).eq('id', req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
-
-  // Push updated card design to all patients' wallet passes if any design field changed
-  const DESIGN_FIELDS = ['name', 'brand_color', 'logo_url', 'points_label', 'rewards_mode',
-                         'points_per_dollar', 'booking_url'];
-  const designChanged = !updates.setup_completed && Object.keys(updates).some((k) => DESIGN_FIELDS.includes(k));
+  // ── Design field changes — PassKit first ─────────────────────────────────────
+  // If any field that affects the pass template is changing, update PassKit with
+  // the projected (merged) clinic state before writing to the DB. This ensures
+  // the pass template is never missing fields that weren't included in the update.
+  const designChanged = Object.keys(updates).some((k) => DESIGN_FIELDS.has(k));
 
   if (designChanged) {
-    // Fire-and-forget — don't block the response
-    (async () => {
-      try {
-        const { data: clinic } = await supabase
-          .from('clinics')
-          .select('name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, booking_url, google_review_url, address, phone, timezone, passkit_template_id, passkit_template_design_id')
-          .eq('id', req.params.id)
-          .single();
-        if (!clinic?.passkit_template_id) return;
+    const { data: clinic, error: fetchErr } = await supabase
+      .from('clinics')
+      .select(`${TEMPLATE_BUILD_FIELDS}, passkit_template_id, passkit_template_design_id`)
+      .eq('id', req.params.id)
+      .single();
 
-        await updateClinicTemplate({ clinic });
+    if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+
+    if (clinic?.passkit_template_design_id) {
+      try {
+        await updateClinicTemplate({ clinic: { ...clinic, ...updates } });
       } catch (pkErr) {
-        console.error('PassKit tier update failed:', pkErr.message);
+        return res.status(502).json({ error: `Wallet template update failed: ${pkErr.message}` });
       }
-    })();
+    }
   }
 
+  // ── Write to DB ──────────────────────────────────────────────────────────────
+  const { error } = await supabase.from('clinics').update(updates).eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
 });
 

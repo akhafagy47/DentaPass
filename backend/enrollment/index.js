@@ -12,7 +12,7 @@ const nanoid = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 8);
  */
 router.post('/', async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, dateOfBirth, clinicSlug, referralCode, walletType } = req.body;
+    const { firstName, lastName, email, phone, dateOfBirth, clinicSlug, referralCode: incomingReferralCode, walletType } = req.body;
 
     if (!firstName || !lastName || !clinicSlug) {
       return res.status(400).json({ error: 'First name, last name, and clinic are required.' });
@@ -57,20 +57,20 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // 4. Resolve referral code
+    // 4. Resolve referral code (code of the patient who referred this new patient)
     let referredByPatient = null;
-    if (referralCode) {
+    if (incomingReferralCode) {
       const { data: referrer } = await supabase
         .from('patients')
         .select('id, points_balance, passkit_serial_number')
-        .eq('referral_code', referralCode)
+        .eq('referral_code', incomingReferralCode)
         .eq('clinic_id', clinic.id)
         .maybeSingle();
       referredByPatient = referrer || null;
     }
 
     // 5. Create PassKit wallet pass first — no DB record is written until this succeeds
-    const referralCode = nanoid();
+    const newReferralCode = nanoid();
     let serialNumber, walletUrl;
     try {
       const pkResult = await enrollPatient({
@@ -79,7 +79,7 @@ router.post('/', async (req, res) => {
           last_name:  lastName,
           email:      email || null,
           phone:      phone || null,
-          referral_code: referralCode,
+          referral_code: newReferralCode,
           points_balance: 0,
           next_checkup_date: null,
         },
@@ -102,7 +102,7 @@ router.post('/', async (req, res) => {
         email:                  email || null,
         phone:                  phone || null,
         date_of_birth:          dateOfBirth || null,
-        referral_code:          referralCode,
+        referral_code:          newReferralCode,
         referred_by:            referredByPatient?.id || null,
         points_balance:         0,
         tier:                   'bronze',
