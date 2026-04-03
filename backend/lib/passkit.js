@@ -494,13 +494,12 @@ async function createPassTemplate({ clinic }) {
  */
 async function updatePassTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
-  await pkFetch('/template', {
-    method: 'PUT',
-    body: JSON.stringify({
-      ...buildTemplateBody(clinic),
-      id: clinic.passkit_template_design_id,
-    }),
-  });
+  const body = { ...buildTemplateBody(clinic), id: clinic.passkit_template_design_id };
+  // PassKit requires its own assigned IDs on every link in PUT requests.
+  // If we don't have stored IDs yet, omit links entirely — PassKit preserves existing ones.
+  const hasStoredIds = (clinic.passkit_links || []).some((l) => l.id);
+  if (!hasStoredIds) delete body.links;
+  await pkFetch('/template', { method: 'PUT', body: JSON.stringify(body) });
 }
 
 /**
