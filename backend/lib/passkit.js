@@ -13,7 +13,7 @@
  *   Tier     (one per clinic)             →  clinics.passkit_template_id
  *   Member   (one per patient)
  */
-
+import { createHash } from 'crypto';
 
 const PASSKIT_BASE = process.env.PASSKIT_API_URL || 'https://api.pub2.passkit.io';
 const WALLET_BASE  = 'https://pub2.pskt.io';
@@ -87,6 +87,11 @@ async function pkFetch(path, options = {}, retry = true) {
     throw new Error(`PassKit API error ${res.status}: ${body}`);
   }
   return res.json();
+}
+
+// Deterministic 32-character hex UUID for link IDs (no hyphens, lowercase hex)
+function linkId(name) {
+  return createHash('md5').update(name).digest('hex');
 }
 
 // ── Design helpers ─────────────────────────────────────────────────────────────
@@ -381,56 +386,62 @@ function buildLinks(clinic) {
   const links = [];
   if (clinic.booking_url) {
     links.push({
+      Id:       linkId('booking'),
       position: 10,
-      title: 'Book an Appointment',
-      url:   clinic.booking_url,
-      type:  'URI_WEB',
-      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      title:    'Book an Appointment',
+      url:      clinic.booking_url,
+      type:     'URI_WEB',
+      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   if (clinic.phone) {
     links.push({
+      Id:       linkId('phone'),
       position: 20,
-      title: 'Call Us',
-      url:   `tel:${clinic.phone.replace(/\s/g, '')}`,
-      type:  'URI_TEL',
-      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      title:    'Call Us',
+      url:      `tel:${clinic.phone.replace(/\s/g, '')}`,
+      type:     'URI_TEL',
+      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   if (clinic.address) {
     links.push({
+      Id:       linkId('directions'),
       position: 30,
-      title: 'Get Directions',
-      url:   `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
-      type:  'URI_LOCATION',
-      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      title:    'Get Directions',
+      url:      `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
+      type:     'URI_LOCATION',
+      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   if (clinic.facebook_url) {
     links.push({
+      Id:       linkId('facebook'),
       position: 40,
-      title: 'Follow us on Facebook',
-      url:   clinic.facebook_url,
-      type:  'URI_WEB',
-      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      title:    'Follow us on Facebook',
+      url:      clinic.facebook_url,
+      type:     'URI_WEB',
+      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   if (clinic.instagram_url) {
     links.push({
+      Id:       linkId('instagram'),
       position: 50,
-      title: 'Follow us on Instagram',
-      url:   clinic.instagram_url,
-      type:  'URI_WEB',
-      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      title:    'Follow us on Instagram',
+      url:      clinic.instagram_url,
+      type:     'URI_WEB',
+      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   if (clinic.google_review_url) {
     links.push({
+      Id:       linkId('google-review'),
       position: 60,
-      title: 'Leave a Google Review',
-      url:   clinic.google_review_url,
-      type:  'URI_WEB',
-      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
+      title:    'Leave a Google Review',
+      url:      clinic.google_review_url,
+      type:     'URI_WEB',
+      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
     });
   }
   return links;
@@ -519,34 +530,14 @@ async function createPassTemplate({ clinic }) {
  * Update a clinic's pass template design via PUT /template.
  * PassKit automatically pushes the update to all installed passes using this template.
  *
- * Link IDs are not writable on create — PassKit assigns them. On update they are
- * required. We GET the existing template first, build a title→id map from its
- * links, then inject those IDs into the new links array before the PUT.
  */
 async function updatePassTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
 
-  // Fetch existing template to get PassKit-assigned link IDs
-  const existing = await pkFetch(`/template/${clinic.passkit_template_design_id}`);
-  console.log('[PassKit] GET /template response links:', JSON.stringify(existing?.links ?? null));
-
-  const linkIdByTitle = {};
-  for (const link of existing?.links ?? []) {
-    if (link.id && link.title) linkIdByTitle[link.title] = link.id;
-  }
-  console.log('[PassKit] linkIdByTitle map:', JSON.stringify(linkIdByTitle));
-
-  const body = buildTemplateBody(clinic);
-  const linksWithIds = body.links.map((link) =>
-    linkIdByTitle[link.title] ? { ...link, id: linkIdByTitle[link.title] } : link
-  );
-  console.log('[PassKit] PUT /template links payload:', JSON.stringify(linksWithIds));
-
   await pkFetch('/template', {
     method: 'PUT',
     body: JSON.stringify({
-      ...body,
-      links: linksWithIds,
+      ...buildTemplateBody(clinic),
       id: clinic.passkit_template_design_id,
     }),
   });
