@@ -471,17 +471,31 @@ function formatTime(hhmm) {
 
 /**
  * Create a per-clinic pass template (card design) via POST /template.
- * Returns { templateDesignId, links } — links contains PassKit-assigned IDs
- * that must be stored on the clinic and used in future PUT /template calls.
+ * POST only returns { id } — no links. We immediately GET the template to
+ * retrieve PassKit-assigned link IDs, which must be stored and used in
+ * future PUT /template calls.
+ * Returns { templateDesignId, links }.
  */
 async function createPassTemplate({ clinic }) {
   const body = buildTemplateBody(clinic);
-  const data = await pkFetch('/template', {
+  const created = await pkFetch('/template', {
     method: 'POST',
     body: JSON.stringify(body),
   });
-  console.log('[PassKit] POST /template — assigned links:', JSON.stringify(data.links));
-  return { templateDesignId: data.id, links: data.links || [] };
+  const templateDesignId = created.id;
+
+  // GET the full template to retrieve PassKit-assigned link IDs.
+  // Response schema: { template: { id, links: [...], ... } }
+  let links = [];
+  try {
+    const full = await pkFetch(`/template/${templateDesignId}`);
+    links = full.template?.links || [];
+    console.log('[PassKit] GET /template — assigned links:', JSON.stringify(links));
+  } catch (err) {
+    console.warn('[PassKit] Could not retrieve link IDs after template creation:', err.message);
+  }
+
+  return { templateDesignId, links };
 }
 
 /**
