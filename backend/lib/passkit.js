@@ -14,6 +14,7 @@
  *   Member   (one per patient)
  */
 import { createHash } from 'crypto';
+import bs58 from 'bs58';
 
 const PASSKIT_BASE = process.env.PASSKIT_API_URL || 'https://api.pub2.passkit.io';
 const WALLET_BASE  = 'https://pub2.pskt.io';
@@ -89,15 +90,10 @@ async function pkFetch(path, options = {}, retry = true) {
   return res.json();
 }
 
-// Base58 alphabet (standard Bitcoin/PassKit)
-const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-
-// Encode a 16-byte Buffer as a 22-character base58 string (PassKit uuidCompressedString)
+// Encode a 16-byte Buffer as a 22-character base58 string (PassKit uuidCompressedString).
+// bs58 handles leading-zero bytes correctly; pad to exactly 22 chars with '1' (base58 zero).
 function base58uuid(buf) {
-  let n = BigInt('0x' + buf.toString('hex'));
-  let s = '';
-  while (n > 0n) { s = B58[Number(n % 58n)] + s; n /= 58n; }
-  return s.padStart(22, '1');
+  return bs58.encode(buf).padStart(22, '1');
 }
 
 // Deterministic UUID v5 (SHA-1, RFC 4122 version/variant bits) encoded as base58.
@@ -106,9 +102,11 @@ function base58uuid(buf) {
 const LINK_NS = Buffer.from('6ba7b8109dad11d180b400c04fd430c8', 'hex'); // DNS namespace UUID
 function linkId(name) {
   const hash = createHash('sha1').update(LINK_NS).update(name).digest();
-  hash[6] = (hash[6] & 0x0f) | 0x50; // version 5
-  hash[8] = (hash[8] & 0x3f) | 0x80; // variant RFC 4122
-  return base58uuid(hash.slice(0, 16));
+  const uuidBuf = Buffer.alloc(16);
+  hash.copy(uuidBuf, 0, 0, 16);
+  uuidBuf[6] = (uuidBuf[6] & 0x0f) | 0x50; // version 5
+  uuidBuf[8] = (uuidBuf[8] & 0x3f) | 0x80; // variant RFC 4122
+  return base58uuid(uuidBuf);
 }
 
 // ── Design helpers ─────────────────────────────────────────────────────────────
