@@ -85,6 +85,7 @@ async function pkFetch(path, options = {}, retry = true) {
 
   if (!res.ok) {
     const body = await res.text();
+    console.error(`[PassKit] ${options.method || 'GET'} ${path} → ${res.status}:`, body);
     throw new Error(`PassKit API error ${res.status}: ${body}`);
   }
   return res.json();
