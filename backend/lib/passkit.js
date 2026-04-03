@@ -89,9 +89,26 @@ async function pkFetch(path, options = {}, retry = true) {
   return res.json();
 }
 
-// Deterministic 32-character hex UUID for link IDs (no hyphens, lowercase hex)
+// Base58 alphabet (standard Bitcoin/PassKit)
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+// Encode a 16-byte Buffer as a 22-character base58 string (PassKit uuidCompressedString)
+function base58uuid(buf) {
+  let n = BigInt('0x' + buf.toString('hex'));
+  let s = '';
+  while (n > 0n) { s = B58[Number(n % 58n)] + s; n /= 58n; }
+  return s.padStart(22, '1');
+}
+
+// Deterministic UUID v5 (SHA-1, RFC 4122 version/variant bits) encoded as base58.
+// PassKit validates link IDs as uuidCompressedString — the decoded bytes must be
+// a valid UUID, which requires version (byte 6) and variant (byte 8) bits set correctly.
+const LINK_NS = Buffer.from('6ba7b8109dad11d180b400c04fd430c8', 'hex'); // DNS namespace UUID
 function linkId(name) {
-  return createHash('md5').update(name).digest('hex');
+  const hash = createHash('sha1').update(LINK_NS).update(name).digest();
+  hash[6] = (hash[6] & 0x0f) | 0x50; // version 5
+  hash[8] = (hash[8] & 0x3f) | 0x80; // variant RFC 4122
+  return base58uuid(hash.slice(0, 16));
 }
 
 // ── Design helpers ─────────────────────────────────────────────────────────────
