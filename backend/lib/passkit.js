@@ -58,7 +58,8 @@ async function refreshToken() {
 async function getToken() {
   // Refresh 60 seconds before expiry
   if (!_token || Date.now() > _expiry - 60_000) {
-    await refreshToken();
+    const refreshed = await refreshToken();
+    return refreshed;
   }
   return _token;
 }
@@ -511,7 +512,7 @@ async function updateImages(clinic) {
   if (!clinic.logo_url || (!imageIds.icon && !imageIds.logo)) return;
   const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
 
-  await Promise.all([
+  const results = await Promise.all([
     imageIds.icon && pkFetch('/image', {
       method: 'PUT',
       body: JSON.stringify({ id: imageIds.icon, imageData: base + 'logo-icon.png' }),
@@ -521,6 +522,7 @@ async function updateImages(clinic) {
       body: JSON.stringify({ id: imageIds.logo, imageData: base + 'logo.png' }),
     }),
   ].filter(Boolean));
+  return results;
 }
 
 /**
@@ -554,10 +556,11 @@ async function createAllLinks(clinic) {
  */
 async function updateLink(link) {
   if (!link.id) return;
-  await pkFetch('/link', {
+  const result = await pkFetch('/link', {
     method: 'PUT',
     body: JSON.stringify(link),
   });
+  return result;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -575,14 +578,24 @@ async function createPassTemplate({ clinic, imageIds, links }) {
 
 /**
  * Update a clinic's pass template design via PUT /template.
- * Links and images are managed separately via PUT /template/link and PUT /images —
- * they are intentionally omitted here. PassKit preserves existing links server-side.
+ * Always uses `images` (URL-based) rather than stored imageIds — this ensures
+ * logo changes are picked up reliably. PassKit re-downloads and updates imageIds
+ * internally. Stored imageIds are only used on initial creation to avoid the
+ * imageIds:null portal bug.
+ * Links with stored PassKit IDs are included; omitted if none stored.
  */
 async function updatePassTemplate({ clinic }) {
   if (!clinic.passkit_template_design_id) return;
-  const imageIds = clinic.passkit_image_ids || null;
-  const body = { ...buildTemplateBody(clinic, { imageIds }), id: clinic.passkit_template_design_id };
-  await pkFetch('/template', { method: 'PUT', body: JSON.stringify(body) });
+  // Pass imageIds: null so buildTemplateBody falls back to `images` URLs —
+  // ensures logo changes are always picked up on update.
+  const links = buildLinks(clinic);
+  const linksForBody = links.some((l) => l.id) ? links : null;
+  const body = {
+    ...buildTemplateBody(clinic, { imageIds: null, links: linksForBody }),
+    id: clinic.passkit_template_design_id,
+  };
+  const result = await pkFetch('/template', { method: 'PUT', body: JSON.stringify(body) });
+  return result;
 }
 
 /**
@@ -681,15 +694,35 @@ export async function createClinicTemplate({ clinic }) {
 export async function updateClinicTemplate({ clinic }) {
   if (!clinic.passkit_template_design_id) return;
 
-  // 1. Update links (only those with stored PassKit IDs)
-  const links = buildLinks(clinic);
-  await Promise.all(links.filter((l) => l.id).map(updateLink));
+  // 1. Best-effort: update individual link objects via PUT /link
+  //    Non-fatal — template PUT below carries links with stored IDs anyway
+  try {
+    const links = buildLinks(clinic);
+    const linkResults = await Promise.all(links.filter((l) => l.id).map(updateLink));
+    console.log('[PassKit] Links updated:', linkResults.length);
+  } catch (err) {
+    console.warn('[PassKit] Link update failed (non-fatal):', err.message);
+  }
 
-  // 2. Update images if stored imageIds exist
-  if (clinic.passkit_image_ids) await updateImages(clinic);
+  // 2. Best-effort: update image records via PUT /image
+  //    Non-fatal — template PUT below uses URL-based images which always works
+  if (clinic.passkit_image_ids) {
+    try {
+      const imageResults = await updateImages(clinic);
+      console.log('[PassKit] Images updated:', imageResults?.length ?? 0);
+    } catch (err) {
+      console.warn('[PassKit] Image update failed (non-fatal):', err.message);
+    }
+  }
 
-  // 3. Update the template (colors, name, data fields — no links, no images)
-  await updatePassTemplate({ clinic });
+  // 3. Critical: update the template — this is what actually pushes changes to passes
+  try {
+    const templateResult = await updatePassTemplate({ clinic });
+    console.log('[PassKit] Template updated — id:', templateResult?.id);
+  } catch (err) {
+    console.error('[PassKit] Template update failed:', err.message);
+    throw err;
+  }
 }
 
 /**
@@ -742,7 +775,7 @@ export async function updatePatientPass({ patient, clinic }) {
     ? `${appUrl}/join/${clinic.slug}?ref=${patient.referral_code}`
     : undefined;
 
-  await pkFetch('/members/member', {
+  const result = await pkFetch('/members/member', {
     method: 'PUT',
     body: JSON.stringify({
       id:        patient.passkit_serial_number,
@@ -767,6 +800,7 @@ export async function updatePatientPass({ patient, clinic }) {
       },
     }),
   });
+  return result;
 }
 
 /**
@@ -838,8 +872,9 @@ export async function sendNotification(serialNumber, message) {
  * Delete a patient's wallet pass (e.g. when a clinic cancels).
  */
 export async function deletePatientPass({ serialNumber }) {
-  await pkFetch('/members/member', {
+  const result = await pkFetch('/members/member', {
     method: 'DELETE',
     body: JSON.stringify({ id: serialNumber }),
   });
+  return result;
 }
