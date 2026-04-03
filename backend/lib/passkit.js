@@ -528,15 +528,19 @@ async function updatePassTemplate({ clinic }) {
 
   // Fetch existing template to get PassKit-assigned link IDs
   const existing = await pkFetch(`/template/${clinic.passkit_template_design_id}`);
+  console.log('[PassKit] GET /template response links:', JSON.stringify(existing?.links ?? null));
+
   const linkIdByTitle = {};
   for (const link of existing?.links ?? []) {
     if (link.id && link.title) linkIdByTitle[link.title] = link.id;
   }
+  console.log('[PassKit] linkIdByTitle map:', JSON.stringify(linkIdByTitle));
 
   const body = buildTemplateBody(clinic);
   const linksWithIds = body.links.map((link) =>
     linkIdByTitle[link.title] ? { ...link, id: linkIdByTitle[link.title] } : link
   );
+  console.log('[PassKit] PUT /template links payload:', JSON.stringify(linksWithIds));
 
   await pkFetch('/template', {
     method: 'PUT',
