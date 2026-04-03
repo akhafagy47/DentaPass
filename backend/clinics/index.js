@@ -182,12 +182,12 @@ router.get('/:slug', async (req, res) => {
 // paths always send identical payloads — no field is silently dropped.
 const TEMPLATE_BUILD_FIELDS =
   'name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, ' +
-  'address, phone, passkit_links, timezone';
+  'address, phone, passkit_links, passkit_image_ids, timezone';
 
 // Any change to these fields must be pushed to PassKit before the DB is written.
 const DESIGN_FIELDS = new Set([
   'name', 'brand_color', 'logo_url', 'points_label', 'rewards_mode', 'points_per_dollar',
-  'address', 'phone', 'passkit_links', 'timezone',
+  'address', 'phone', 'passkit_links', 'passkit_image_ids', 'timezone',
 ]);
 
 /**
@@ -202,7 +202,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
   const allowed = ['name', 'brand_color', 'logo_url',
                    'rewards_mode', 'points_per_dollar', 'points_label', 'setup_completed',
-                   'address', 'phone', 'passkit_links', 'theme',
+                   'address', 'phone', 'passkit_links', 'passkit_image_ids', 'theme',
                    'tier_thresholds', 'tier_incentives', 'action_points', 'custom_actions'];
   if (req.body.theme && !['dark', 'light', 'auto'].includes(req.body.theme)) {
     return res.status(400).json({ error: 'Invalid theme value.' });
@@ -238,9 +238,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
       if (!clinic) throw new Error('Clinic not found.');
       if (!clinic.logo_url) throw new Error('A logo is required before completing setup.');
 
-      const { programId, templateDesignId, tierId, links } = await createClinicTemplate({ clinic });
+      const { programId, templateDesignId, tierId, links, imageIds } = await createClinicTemplate({ clinic });
       const { error: finalErr } = await supabase.from('clinics')
-        .update({ setup_completed: true, passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId, passkit_links: links })
+        .update({ setup_completed: true, passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId, passkit_links: links, passkit_image_ids: imageIds })
         .eq('id', req.params.id);
       if (finalErr) throw new Error(`Failed to save PassKit IDs: ${finalErr.message}`);
       console.log('[PassKit] Program + template + tier created for clinic', clinic.slug);
@@ -261,7 +261,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (designChanged) {
     const { data: clinic, error: fetchErr } = await supabase
       .from('clinics')
-      .select(`${TEMPLATE_BUILD_FIELDS}, passkit_template_id, passkit_template_design_id, passkit_links`)
+      .select(`${TEMPLATE_BUILD_FIELDS}, passkit_template_id, passkit_template_design_id, passkit_links, passkit_image_ids`)
       .eq('id', req.params.id)
       .single();
 

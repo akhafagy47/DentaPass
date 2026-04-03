@@ -375,10 +375,30 @@ function buildDataFields(clinic) {
 }
 
 /**
- * Links shown in Google Wallet's detail view and Apple Wallet back.
- * URLs for booking, review, facebook, instagram come from clinic.passkit_links (JSONB).
- * phone/address links are built dynamically from their own columns.
- * PassKit-assigned link IDs are stored in passkit_links and injected here for PUT calls.
+ * Build the raw link list for a clinic — no stored IDs injected.
+ * Used when creating links fresh via POST /template/link.
+ */
+function buildRawLinks(clinic) {
+  const stored    = clinic.passkit_links || [];
+  const getUrl    = (title) => stored.find((l) => l.title === title)?.url;
+
+  const links = [];
+  const bookingUrl  = getUrl('Book an Appointment');
+  if (bookingUrl)  links.push({ position: 10, title: 'Book an Appointment',    url: bookingUrl,  type: 'URI_WEB',      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] });
+  if (clinic.phone)   links.push({ position: 20, title: 'Call Us',             url: `tel:${clinic.phone.replace(/\s/g, '')}`,                              type: 'URI_TEL',      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] });
+  if (clinic.address) links.push({ position: 30, title: 'Get Directions',      url: `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,    type: 'URI_LOCATION', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] });
+  const facebookUrl = getUrl('Follow us on Facebook');
+  if (facebookUrl) links.push({ position: 40, title: 'Follow us on Facebook',  url: facebookUrl, type: 'URI_WEB',      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] });
+  const instagramUrl = getUrl('Follow us on Instagram');
+  if (instagramUrl) links.push({ position: 50, title: 'Follow us on Instagram', url: instagramUrl, type: 'URI_WEB',    usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] });
+  const reviewUrl   = getUrl('Leave a Google Review');
+  if (reviewUrl)   links.push({ position: 60, title: 'Leave a Google Review',  url: reviewUrl,   type: 'URI_WEB',      usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] });
+  return links;
+}
+
+/**
+ * Build the link list with stored PassKit-assigned IDs injected.
+ * Used when updating links via PUT /template/link.
  */
 function buildLinks(clinic) {
   const stored    = clinic.passkit_links || [];
@@ -386,54 +406,38 @@ function buildLinks(clinic) {
   for (const l of stored) {
     if (l.id && l.title) idByTitle[l.title] = l.id;
   }
-  const withId = (link) =>
-    idByTitle[link.title] ? { ...link, id: idByTitle[link.title] } : link;
-  const getUrl = (title) => stored.find((l) => l.title === title)?.url;
-
-  const links = [];
-  const bookingUrl = getUrl('Book an Appointment');
-  if (bookingUrl) links.push(withId({ position: 10, title: 'Book an Appointment', url: bookingUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
-  if (clinic.phone) links.push(withId({ position: 20, title: 'Call Us', url: `tel:${clinic.phone.replace(/\s/g, '')}`, type: 'URI_TEL', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
-  if (clinic.address) links.push(withId({ position: 30, title: 'Get Directions', url: `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`, type: 'URI_LOCATION', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
-  const facebookUrl = getUrl('Follow us on Facebook');
-  if (facebookUrl) links.push(withId({ position: 40, title: 'Follow us on Facebook', url: facebookUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
-  const instagramUrl = getUrl('Follow us on Instagram');
-  if (instagramUrl) links.push(withId({ position: 50, title: 'Follow us on Instagram', url: instagramUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
-  const reviewUrl = getUrl('Leave a Google Review');
-  if (reviewUrl) links.push(withId({ position: 60, title: 'Leave a Google Review', url: reviewUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
-  return links;
+  return buildRawLinks(clinic).map((link) =>
+    idByTitle[link.title] ? { ...link, id: idByTitle[link.title] } : link
+  );
 }
 
 /**
- * Full tier body sent to PassKit on create and update.
- * Matches the schema of the actual PassKit template object.
+ * Build the PassKit template body.
  *
- * Note on logos: PassKit requires images to be uploaded separately via
- * POST /membership/image (returns an imageId). The imageId is stored in
- * clinics.passkit_logo_image_id and injected here when present.
- * Until the image is uploaded, the card uses no logo.
+ * @param {object} clinic
+ * @param {object} [opts.imageIds]  PassKit-assigned image IDs — use instead of raw URLs when available.
+ * @param {Array}  [opts.links]     Pre-built links array (with IDs on create, omitted on update).
  */
-function buildTemplateBody(clinic) {
-  // Derive the three Supabase image URLs from logo_url.
-  // `images` (not `imageIds`) is the correct field for URL-based image injection —
-  // PassKit uploads them internally and stores the resulting IDs in imageIds itself.
-  const images = clinic.logo_url ? (() => {
+function buildTemplateBody(clinic, { imageIds = null, links = null } = {}) {
+  // Prefer stored imageIds (from POST /images) over raw URLs.
+  // imageIds tells PassKit to use already-uploaded images directly.
+  // Fall back to `images` (URLs) only if no imageIds are stored yet.
+  let imageField = {};
+  if (imageIds && (imageIds.icon || imageIds.logo)) {
+    imageField = { imageIds };
+  } else if (clinic.logo_url) {
     const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
-    return {
-      icon:      base + 'logo-icon.png',       // 114×114px
-      // thumbnail: base + 'logo-thumbnail.png',  // 320×320px
-      logo:      base + 'logo.png',            // 660×660px
-    };
-  })() : {};
+    imageField = { images: { icon: base + 'logo-icon.png', logo: base + 'logo.png' } };
+  }
 
-  return {
+  const body = {
     name: clinic.name,
     organizationName: clinic.name,
     protocol: 'MEMBERSHIP',
     revision: 1,
     description: `${clinic.name} Loyalty Card`,
     colors: buildColors(clinic),
-    images,
+    ...imageField,
     data: {
       dataFields: buildDataFields(clinic),
       dataCollectionPageSettings: {
@@ -449,13 +453,18 @@ function buildTemplateBody(clinic) {
       altText: '${pid}',
       messageEncoding: 'utf8',
     },
-    links: buildLinks(clinic),
     appleWalletSettings: { passType: 'GENERIC' },
     googlePaySettings:   { passType: 'LOYALTY' },
     expirySettings:      { expiryType: 'EXPIRE_NONE' },
     defaultLanguage: 'EN',
     timezone: clinic.timezone || 'America/Edmonton',
   };
+
+  // Include links only when explicitly provided (create path).
+  // On update, links are managed separately via PUT /template/link.
+  if (links !== null) body.links = links;
+
+  return body;
 }
 
 // Format "HH:MM" (24h) → "9:00 AM" for display on the pass
@@ -467,110 +476,219 @@ function formatTime(hhmm) {
   return `${hour}:${String(m).padStart(2, '0')} ${period}`;
 }
 
+// ── PassKit resource helpers ──────────────────────────────────────────────────
+
+/**
+ * Upload clinic images to PassKit via POST /images.
+ * Returns the PassKit-assigned imageIds object { icon, logo }.
+ * Stored on the clinic row as passkit_image_ids and referenced in all future
+ * template calls instead of raw image URLs.
+ */
+async function createImages(clinic) {
+  if (!clinic.logo_url) return {};
+  const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
+  const data = await pkFetch('/images', {
+    method: 'POST',
+    body: JSON.stringify({
+      name:      clinic.name,
+      imageData: {
+        icon: base + 'logo-icon.png',
+        logo: base + 'logo.png',
+      },
+    }),
+  });
+  // Response: { icon: "passkit-image-id", logo: "passkit-image-id" }
+  return { icon: data.icon || null, logo: data.logo || null };
+}
+
+/**
+ * Update clinic images in-place via PUT /images (one call per image type).
+ * Uses stored passkit_image_ids so PassKit updates the existing image records
+ * without requiring a template re-push.
+ */
+async function updateImages(clinic) {
+  const imageIds = clinic.passkit_image_ids || {};
+  if (!clinic.logo_url || (!imageIds.icon && !imageIds.logo)) return;
+  const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
+
+  await Promise.all([
+    imageIds.icon && pkFetch('/images', {
+      method: 'PUT',
+      body: JSON.stringify({ id: imageIds.icon, imageData: base + 'logo-icon.png' }),
+    }),
+    imageIds.logo && pkFetch('/images', {
+      method: 'PUT',
+      body: JSON.stringify({ id: imageIds.logo, imageData: base + 'logo.png' }),
+    }),
+  ].filter(Boolean));
+}
+
+/**
+ * Create a single link via POST /template/link.
+ * Returns the link object with its PassKit-assigned id attached.
+ */
+async function createLink(link) {
+  const { id: _ignored, ...payload } = link; // id is not writable on create
+  const data = await pkFetch('/template/link', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return { ...link, id: data.id };
+}
+
+/**
+ * Create all links for a clinic via POST /template/link.
+ * Returns the links array with PassKit-assigned IDs.
+ */
+async function createAllLinks(clinic) {
+  const raw = buildRawLinks(clinic);
+  if (!raw.length) return [];
+  const results = await Promise.all(raw.map(createLink));
+  console.log('[PassKit] Created links:', JSON.stringify(results.map((l) => ({ id: l.id, title: l.title }))));
+  return results;
+}
+
+/**
+ * Update a single link in-place via PUT /template/link.
+ * Skips links without a stored PassKit ID.
+ */
+async function updateLink(link) {
+  if (!link.id) return;
+  await pkFetch('/template/link', {
+    method: 'PUT',
+    body: JSON.stringify(link),
+  });
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
  * Create a per-clinic pass template (card design) via POST /template.
- * POST only returns { id } — no links. We immediately GET the template to
- * retrieve PassKit-assigned link IDs, which must be stored and used in
- * future PUT /template calls.
- * Returns { templateDesignId, links }.
+ * Receives pre-created imageIds and links (both with PassKit-assigned IDs),
+ * so no GET /template is needed after creation.
  */
-async function createPassTemplate({ clinic }) {
-  const body = buildTemplateBody(clinic);
-  const created = await pkFetch('/template', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-  const templateDesignId = created.id;
-
-  // GET the full template to retrieve PassKit-assigned link IDs.
-  // Response schema: { template: { id, links: [...], ... } }
-  let links = [];
-  try {
-    const full = await pkFetch(`/template/${templateDesignId}`);
-    links = full.template?.links || [];
-    console.log('[PassKit] GET /template — assigned links:', JSON.stringify(links));
-  } catch (err) {
-    console.warn('[PassKit] Could not retrieve link IDs after template creation:', err.message);
-  }
-
-  return { templateDesignId, links };
+async function createPassTemplate({ clinic, imageIds, links }) {
+  const body = buildTemplateBody(clinic, { imageIds, links });
+  const created = await pkFetch('/template', { method: 'POST', body: JSON.stringify(body) });
+  return { templateDesignId: created.id };
 }
 
 /**
  * Update a clinic's pass template design via PUT /template.
- * PassKit automatically pushes the update to all installed passes using this template.
- *
- * Link IDs are assigned by PassKit on create and stored on the clinic row as
- * passkit_links. We inject those IDs here so PUT can match and update existing links.
- * If passkit_links is empty (legacy clinics), links are omitted from the PUT.
+ * Links and images are managed separately via PUT /template/link and PUT /images —
+ * they are intentionally omitted here. PassKit preserves existing links server-side.
  */
 async function updatePassTemplate({ clinic }) {
-  if (!clinic.passkit_template_id) return;
-  const body = { ...buildTemplateBody(clinic), id: clinic.passkit_template_design_id };
-  // PassKit requires its own assigned IDs on every link in PUT requests.
-  // If we don't have stored IDs yet, omit links entirely — PassKit preserves existing ones.
-  const hasStoredIds = (clinic.passkit_links || []).some((l) => l.id);
-  if (!hasStoredIds) delete body.links;
+  if (!clinic.passkit_template_design_id) return;
+  const imageIds = clinic.passkit_image_ids || null;
+  const body = { ...buildTemplateBody(clinic, { imageIds }), id: clinic.passkit_template_design_id };
   await pkFetch('/template', { method: 'PUT', body: JSON.stringify(body) });
 }
 
 /**
- * Create a PassKit program, pass template (design), and tier for a clinic.
- * Called when the setup wizard completes — by then the clinic has its logo,
- * brand color, and all required fields. Creates all three in one shot.
- * Returns { programId, templateDesignId, tierId } — store all three on the clinic row.
+ * Create a PassKit program, images, links, pass template (design), and tier for a clinic.
+ * Called when the setup wizard completes.
+ *
+ * Order matters:
+ *   1. Program       — establishes the loyalty program
+ *   2. Images        — upload logo/icon, get PassKit imageIds
+ *   3. Links         — create each link object, get PassKit link IDs
+ *   4. Template      — create card design using stored imageIds + links with IDs
+ *   5. Tier          — binds program + template, enables enrollment
+ *
+ * Returns { programId, templateDesignId, tierId, links, imageIds }
+ * All IDs must be stored on the clinic row.
  *
  * PassKit hierarchy per clinic:
  *   Program → Template (design) → Tier → Members (patients)
  */
 export async function createClinicTemplate({ clinic }) {
-  // 1. Create program
-  const programBody = {
-    name:                     `${clinic.name}`,
-    status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
-    pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
-    profileImageSettings:     'PROFILE_IMAGE_NONE',
-    autoDeleteDaysAfterExpiry: 0,
-    passRecoverySettings: {
-      enabled:  true,
-      delivery: 'DELIVERY_REDIRECT',
-      fieldsToMatchUponRecovery: ['person.emailAddress'],
-    },
-  };
+  // Step 1: Create program
   console.log('[PassKit] Step 1: creating program for clinic:', clinic.name);
-  const program = await pkFetch('/members/program', { method: 'POST', body: JSON.stringify(programBody) });
+  const program = await pkFetch('/members/program', {
+    method: 'POST',
+    body: JSON.stringify({
+      name:                     clinic.name,
+      status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
+      pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
+      profileImageSettings:     'PROFILE_IMAGE_NONE',
+      autoDeleteDaysAfterExpiry: 0,
+      passRecoverySettings: {
+        enabled:  true,
+        delivery: 'DELIVERY_REDIRECT',
+        fieldsToMatchUponRecovery: ['person.emailAddress'],
+      },
+    }),
+  });
   console.log('[PassKit] Step 1 success — programId:', program.id);
 
-  // 2. Create pass template
-  console.log('[PassKit] Step 2: creating pass template');
-  const { templateDesignId, links } = await createPassTemplate({ clinic });
-  console.log('[PassKit] Step 2 success — templateDesignId:', templateDesignId);
+  // Step 2: Upload images, get PassKit-assigned imageIds
+  // imageIds are stored on the clinic row and used in all future template calls.
+  let imageIds = {};
+  try {
+    console.log('[PassKit] Step 2: uploading images');
+    imageIds = await createImages(clinic);
+    console.log('[PassKit] Step 2 success — imageIds:', imageIds);
+  } catch (err) {
+    console.warn('[PassKit] Step 2 image upload failed, proceeding without imageIds:', err.message);
+  }
 
-  // 3. Create tier — needs both programId and passTemplateId
-  const tierBody = {
-    id:               `${clinic.slug}-member`,
-    name:             'Member',
-    tierIndex:        1,
-    programId:        program.id,
-    passTemplateId:   templateDesignId,
-    expirySettings:   { expiryType: 'EXPIRE_NONE' },
-    timezone:         clinic.timezone || 'America/Edmonton',
-    allowTierEnrolment: { value: true },
-  };
-  console.log('[PassKit] Step 3: creating tier');
-  const tier = await pkFetch('/members/tier', { method: 'POST', body: JSON.stringify(tierBody) });
-  console.log('[PassKit] Step 3 success — tierId:', tier.id);
+  // Step 3: Create links, get PassKit-assigned link IDs
+  // IDs are stored on the clinic row (passkit_links) and used for PUT /template/link updates.
+  let links = [];
+  try {
+    console.log('[PassKit] Step 3: creating links');
+    links = await createAllLinks(clinic);
+    console.log('[PassKit] Step 3 success —', links.length, 'links created');
+  } catch (err) {
+    console.warn('[PassKit] Step 3 link creation failed:', err.message);
+  }
 
-  return { programId: program.id, templateDesignId, tierId: tier.id, links };
+  // Step 4: Create template using stored imageIds and links (which now have IDs)
+  console.log('[PassKit] Step 4: creating pass template');
+  const { templateDesignId } = await createPassTemplate({ clinic, imageIds, links });
+  console.log('[PassKit] Step 4 success — templateDesignId:', templateDesignId);
+
+  // Step 5: Create tier — needs both programId and passTemplateId
+  console.log('[PassKit] Step 5: creating tier');
+  const tier = await pkFetch('/members/tier', {
+    method: 'POST',
+    body: JSON.stringify({
+      id:               `${clinic.slug}-member`,
+      name:             'Member',
+      tierIndex:        1,
+      programId:        program.id,
+      passTemplateId:   templateDesignId,
+      expirySettings:   { expiryType: 'EXPIRE_NONE' },
+      timezone:         clinic.timezone || 'America/Edmonton',
+      allowTierEnrolment: { value: true },
+    }),
+  });
+  console.log('[PassKit] Step 5 success — tierId:', tier.id);
+
+  return { programId: program.id, templateDesignId, tierId: tier.id, links, imageIds };
 }
 
 /**
- * Push updated card design (colors, logo, points label, etc.) to all patient passes.
- * Updates the pass template — PassKit automatically propagates to all installed passes.
+ * Push updated card design (colors, logo, links, etc.) to all patient passes.
+ *
+ * Order:
+ *   1. Update each link in-place via PUT /template/link (URL/title changes)
+ *   2. Update images in-place via PUT /images (logo changes)
+ *   3. Update the template itself via PUT /template (colors, name, data fields)
+ *      Links and imageIds are omitted — managed above as independent resources.
  */
 export async function updateClinicTemplate({ clinic }) {
+  if (!clinic.passkit_template_design_id) return;
+
+  // 1. Update links (only those with stored PassKit IDs)
+  const links = buildLinks(clinic);
+  await Promise.all(links.filter((l) => l.id).map(updateLink));
+
+  // 2. Update images if stored imageIds exist
+  if (clinic.passkit_image_ids) await updateImages(clinic);
+
+  // 3. Update the template (colors, name, data fields — no links, no images)
   await updatePassTemplate({ clinic });
 }
 
