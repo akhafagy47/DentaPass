@@ -65,7 +65,7 @@ function CardPreview({ form }) {
   const FONT = '-apple-system,"SF Pro Text","Helvetica Neue",sans-serif';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, userSelect: 'none' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, userSelect: 'none' }}>
       <style>{`
         .sw-card-inner { transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.4,0.2,0.2,1); position: relative; }
         .sw-card-inner.flipped { transform: rotateY(180deg); }
@@ -159,16 +159,16 @@ function CardPreview({ form }) {
       </div>
       </div>
 
-      {/* Flip button — beside the card so card height never covers it */}
+      {/* Flip button — centered below the card */}
       <button
         type="button"
         onClick={() => setFlipped(f => !f)}
-        style={{ marginTop: 8, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--dp-card)', border: '1.5px solid var(--dp-bdr)', borderRadius: 20, padding: '6px 12px', fontSize: 12, color: 'var(--dp-t3)', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--dp-card)', border: '1.5px solid var(--dp-bdr)', borderRadius: 20, padding: '6px 16px', fontSize: 12, color: 'var(--dp-t3)', cursor: 'pointer', fontFamily: FONT }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
         </svg>
-        {flipped ? 'Front' : 'Back'}
+        {flipped ? 'View front' : 'View back'}
       </button>
     </div>
   );
@@ -543,7 +543,7 @@ export default function SetupWizard({ clinic }) {
 
         {/* Right — live card preview */}
         {!isDone && (
-          <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 56 }}>
+          <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dp-t3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Live preview</div>
             <CardPreview form={form} />
           </div>
