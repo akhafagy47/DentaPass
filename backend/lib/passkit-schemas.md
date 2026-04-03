@@ -407,12 +407,242 @@ Stored on `clinics` table as JSONB. Each entry:
 
 ## Image Sizes (for `images` field)
 
-| Key         | Size       | Notes            |
-|-------------|------------|------------------|
-| `icon`      | 114×114px  | Required         |
-| `logo`      | 660×660px  | Required         |
-| `thumbnail` | 320×320px  | Optional, unused |
+| Key         | Size        | Notes                                   |
+|-------------|-------------|----------------------------------------|
+| `icon`      | 87×87px     | Required — Apple Wallet lock screen     |
+| `logo`      | 660×660px   | Required — circle-cropped by Google Pay |
+| `appleLogo` | ≤480×150px  | Optional — rectangular Apple-only logo  |
+| `hero`      | 1032×336px  | Google Pay strip + install dialog       |
+| `thumbnail` | ≥320×320px  | Membership passes (2:3–3:2 ratio)       |
+| `banner`    | any         | Landing page / email, treated as @2x    |
 
 > Images are sent as Supabase public URLs. PassKit downloads and stores them internally,
 > populating `imageIds`. If PassKit cannot fetch the URLs, `imageIds` is `null`, which
 > causes the PassKit portal to crash (`this.template.imageIds[e]`). This is a PassKit portal bug.
+
+---
+
+## POST /template/link — Create Link
+
+**Request body:**
+
+```json
+{
+  "url": "https://...",
+  "title": "Book an Appointment",
+  "type": "URI_WEB",
+  "usage": ["USAGE_APPLE_WALLET", "USAGE_GOOGLE_PAY"],
+  "position": 10
+}
+```
+
+> `id` field is **not writable** — PassKit assigns it on creation.
+
+**Response:** `{ "id": "string" }`
+
+---
+
+## PUT /template/link — Update Link
+
+**Request body** — same shape as Create, but include the PassKit-assigned `id`:
+
+```json
+{
+  "id": "PassKit-assigned-link-id",
+  "url": "https://...",
+  "title": "Book an Appointment",
+  "type": "URI_WEB",
+  "usage": ["USAGE_APPLE_WALLET", "USAGE_GOOGLE_PAY"],
+  "position": 10
+}
+```
+
+**Response:** full link object (same fields as request, `id` is not writable note still applies).
+
+**`type` enum:**
+
+| Value            | Description      |
+|------------------|------------------|
+| `URI_DO_NOT_USE` | (avoid)          |
+| `URI_WEB`        | Website URL      |
+| `URI_TEL`        | Phone `tel:…`    |
+| `URI_EMAIL`      | Email address    |
+| `URI_LOCATION`   | Maps/address     |
+| `URI_CALENDAR`   | Calendar event   |
+
+**`usage` enum:** `NO_USAGE` | `USAGE_APPLE_WALLET` | `USAGE_GOOGLE_PAY` | `USAGE_DATA_COLLECTION_PAGE`
+
+---
+
+## POST /template/location — Create Location
+
+**Request body:**
+
+```json
+{
+  "name": "Clinic Name",
+  "lat": 53.5461,
+  "lon": -113.4938,
+  "alt": 0,
+  "lockScreenMessage": "You're near us — tap to open your pass!",
+  "position": 10
+}
+```
+
+> `id` is system-generated. `lat` and `lockScreenMessage` are required. iOS only for lock screen message.
+
+**Response:** `{ "id": "string" }`
+
+---
+
+## PUT /template/location — Update Location
+
+**Request body:** same as Create but with `id`. **Response:** full location object.
+
+---
+
+## POST /template/beacon — Create Beacon
+
+**Request body:**
+
+```json
+{
+  "uuid": "valid-uuid",
+  "name": "Reception Beacon",
+  "major": 1,
+  "minor": 1,
+  "lockScreenMessage": "Welcome! Tap to open your pass.",
+  "position": 10
+}
+```
+
+> `uuid` and `lockScreenMessage` are required. Beacons are **Apple Wallet only**.
+
+**Response:** `{ "id": "string" }`
+
+---
+
+## PUT /template/beacon — Update Beacon
+
+**Request body:** same as Create but with `id`. **Response:** full beacon object.
+
+---
+
+## POST /images — Create Images
+
+**Request body:**
+
+```json
+{
+  "name": "Clinic Logo",
+  "imageData": {
+    "icon": "https://...supabase.co/.../icon.png",
+    "logo": "https://...supabase.co/.../logo.png"
+  }
+}
+```
+
+> `name` and `imageData` are required. Values can be public URLs or base64-encoded data.
+
+**Response:** `imageIds` object — keys are image type names (`icon`, `logo`, etc.), values are PassKit-assigned IDs.
+
+---
+
+## PUT /images — Update Image
+
+**Request body:**
+
+```json
+{
+  "id": "passkit-image-id",
+  "name": "Updated Name",
+  "imageData": "optional-new-image-url-or-base64"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "passkit-image-id",
+  "name": "Clinic Logo",
+  "url": "https://hosted-url",
+  "use": "logo",
+  "languages": ["EN"],
+  "ownerUsername": "...",
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+```
+
+**`use` enum** (image type): `icon` | `logo` | `appleLogo` | `hero` | `eventStrip` | `strip` | `thumbnail` | `background` | `footer` | `security` | `privilege` | `airlineAlliance` | `personalization` | `banner` | `message` | `profile` | `appImage` | `stampedImage` | `unstampedImage` | `stampImage` | `wideLogo` | `secondaryLogo` | `artwork` | `primaryLogo` | `venueMap`
+
+---
+
+## Pass Template — Full Field Reference
+
+Additional fields available on `POST /template` and `PUT /template` beyond what DentaPass currently uses:
+
+### `colors` object
+
+| Field                 | Notes                                              |
+|-----------------------|----------------------------------------------------|
+| `backgroundColor`     | Card background hex (with or without `#` prefix)  |
+| `labelColor`          | Apple Wallet field label color                     |
+| `textColor`           | Apple Wallet field value color                     |
+| `stripColor`          | Text over strip image (Apple, optional)            |
+
+### `barcode` object
+
+| Field              | Notes                                         |
+|--------------------|-----------------------------------------------|
+| `format`           | `QR` \| `AZTEC` \| `PDF417` \| `CODE128` \| `NONE` |
+| `payload`          | Data encoded; use `${pid}` for serial number  |
+| `altText`          | Text below barcode                            |
+| `messageEncoding`  | e.g. `"utf8"`                                 |
+| `suppressSecurity` | Set `true` to disable Google Pay shimmer      |
+| `rotatingBarcode`  | TOTP rotating barcode (Google Pay)            |
+
+### `appleWalletSettings` object
+
+| Field         | Notes                                                      |
+|---------------|------------------------------------------------------------|
+| `passType`    | `GENERIC` \| `STORE_CARD` \| `COUPON` \| `EVENT_TICKET` \| `BOARDING_PASS` |
+| `logoText`    | Text in place of (or alongside) logo                       |
+| `userInfo`    | JSON string passed to companion app (not shown on pass)    |
+| `maxDistance` | GPS lock screen trigger radius (metres)                    |
+
+### `googlePaySettings` object
+
+| Field      | Notes                                                        |
+|------------|--------------------------------------------------------------|
+| `passType` | `LOYALTY` \| `OFFER` \| `GIFT` \| `EVENT` \| `FLIGHT` \| `TRANSIT` |
+
+### `expirySettings` object
+
+```json
+{ "expiryType": "EXPIRE_NONE" }
+```
+
+Other values: `EXPIRE_DATE` (set fixed date), `EXPIRE_DAYS_AFTER_ISSUE`.
+
+### `sharing` object
+
+```json
+{
+  "prohibitSharing": false,
+  "url": "https://...",
+  "description": "Share your pass"
+}
+```
+
+> If `url` is provided, Apple's "Share Pass" button redirects to this URL instead of sharing the pass file.
+
+### `protocol` enum
+
+| Value              | Description                  |
+|--------------------|------------------------------|
+| `MEMBERSHIP`       | Generic membership (DentaPass uses this) |
+| `SINGLE_USE_COUPON`| One-time coupon              |
+| `EVENT_TICKETING`  | Event tickets                |
+| `FLIGHT_PROTOCOL`  | Boarding passes              |
