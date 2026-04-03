@@ -63,7 +63,7 @@ export async function sendRecallEmail(patient, clinic) {
     <p style="margin:0;font-size:15px;color:#374151;line-height:1.65;">
       You currently have <strong>${patient.points_balance ?? 0} points</strong>${tierBadge(patient.tier)} on your loyalty card.
     </p>
-    ${clinic.booking_url ? ctaButton('Book my appointment', clinic.booking_url, accent) : ''}
+    ${(() => { const l = (clinic.passkit_links || []).find((x) => x.title === 'Book an Appointment'); return l?.url ? ctaButton('Book my appointment', l.url, accent) : ''; })()}
   `;
 
   await resend.emails.send({
@@ -87,7 +87,7 @@ export async function sendReviewRequestEmail(patient, clinic) {
     <p style="margin:0;font-size:15px;color:#374151;line-height:1.65;">
       We hope your visit to <strong>${clinic.name}</strong> went great. If you have a moment, we'd love a Google review — it means a lot to our team and helps other patients find us.
     </p>
-    ${clinic.google_review_url ? ctaButton('Leave a review', clinic.google_review_url, accent) : ''}
+    ${(() => { const l = (clinic.passkit_links || []).find((x) => x.title === 'Leave a Google Review'); return l?.url ? ctaButton('Leave a review', l.url, accent) : ''; })()}
   `;
 
   await resend.emails.send({

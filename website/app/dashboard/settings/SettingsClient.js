@@ -408,10 +408,13 @@ export default function SettingsClient({ clinic }) {
   const fileRef = useRef(null);
   const [tab, setTab] = useState('clinic');
 
-  const initialForm = useMemo(() => ({
+  const initialForm = useMemo(() => {
+    const links = clinic.passkit_links || [];
+    const linkUrl = (title) => links.find((l) => l.title === title)?.url || '';
+    return ({
     name:              clinic.name              || '',
-    google_review_url: clinic.google_review_url || '',
-    booking_url:       clinic.booking_url       || '',
+    google_review_url: linkUrl('Leave a Google Review'),
+    booking_url:       linkUrl('Book an Appointment'),
     brand_color:       clinic.brand_color       || '#3bbfb9',
     logo_url:          clinic.logo_url          || '',
     points_label:      clinic.points_label      || 'Points',
@@ -419,8 +422,8 @@ export default function SettingsClient({ clinic }) {
     points_per_dollar: clinic.points_per_dollar || '',
     address:           clinic.address           || '',
     phone:             clinic.phone             || '',
-    facebook_url:      clinic.facebook_url      || '',
-    instagram_url:     clinic.instagram_url     || '',
+    facebook_url:      linkUrl('Follow us on Facebook'),
+    instagram_url:     linkUrl('Follow us on Instagram'),
     theme:             clinic.theme             || 'auto',
     tier_thresholds:   clinic.tier_thresholds   || { bronze: 0, silver: 5000, gold: 10000 },
     tier_incentives:   clinic.tier_incentives   || {
@@ -430,7 +433,7 @@ export default function SettingsClient({ clinic }) {
     },
     action_points:     clinic.action_points     || { completed_visit: 500, left_review: 500, referred_friend: 500, birthday: 250 },
     custom_actions:    clinic.custom_actions    || [],
-  }), []);
+  }); }, []);
 
   const [form, setForm]         = useState(initialForm);
   const [saving, setSaving]     = useState(false);
@@ -492,12 +495,16 @@ export default function SettingsClient({ clinic }) {
     if (!isDirty) return;
     setSaving(true);
     try {
-      const token   = await getToken();
-      const payload = { ...form };
-      payload.points_per_dollar = payload.points_per_dollar === ''
-        ? null
-        : parseFloat(payload.points_per_dollar);
-      const data = await updateClinic(clinic.id, payload, token);
+      const token = await getToken();
+      const { booking_url, google_review_url, facebook_url, instagram_url, ...rest } = { ...form };
+      rest.points_per_dollar = rest.points_per_dollar === '' ? null : parseFloat(rest.points_per_dollar);
+      const passkit_links = [
+        booking_url       && { title: 'Book an Appointment',   url: booking_url,       type: 'URI_WEB', position: 10, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+        facebook_url      && { title: 'Follow us on Facebook', url: facebook_url,      type: 'URI_WEB', position: 40, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+        instagram_url     && { title: 'Follow us on Instagram',url: instagram_url,     type: 'URI_WEB', position: 50, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+        google_review_url && { title: 'Leave a Google Review', url: google_review_url, type: 'URI_WEB', position: 60, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+      ].filter(Boolean);
+      const data = await updateClinic(clinic.id, { ...rest, passkit_links }, token);
       if (data?.ok) {
         setFeedback('Saved!');
         setTimeout(() => setFeedback(''), 3000);

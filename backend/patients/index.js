@@ -101,7 +101,7 @@ router.post('/:id/notify', async (req, res) => {
     .select(`
       first_name, email, wallet_type, points_balance, tier,
       passkit_serial_number, clinic_id,
-      clinic:clinics(name, brand_color, booking_url, google_review_url, owner_email)
+      clinic:clinics(name, brand_color, passkit_links, owner_email)
     `)
     .eq('id', id)
     .single();

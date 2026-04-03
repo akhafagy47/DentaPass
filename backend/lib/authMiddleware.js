@@ -11,7 +11,7 @@ export async function requireAuth(req, res, next) {
   const supabase = getSupabase();
   const { data: clinic } = await supabase
     .from('clinics')
-    .select('id, slug, name, plan, patient_limit, passkit_program_id, passkit_template_id, passkit_template_design_id, google_review_url, booking_url, brand_color, stripe_customer_id')
+    .select('id, slug, name, plan, patient_limit, passkit_program_id, passkit_template_id, passkit_template_design_id, brand_color, stripe_customer_id')
     .eq('owner_email', user.email)
     .maybeSingle();
 

@@ -94,9 +94,12 @@ export default function JoinPage() {
           .suc-card { animation: successIn 0.5s cubic-bezier(0.16,1,0.3,1) both; }
           .suc-check { animation: checkPop 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
           .wallet-btn:hover { transform: translateY(-2px); box-shadow: 0 20px 48px rgba(59,191,185,0.35) !important; }
+          @media (max-width: 500px) {
+            .suc-card { padding: 32px 20px !important; border-radius: 16px !important; }
+          }
         `}</style>
         <div style={s.bgGlow} />
-        <div className="suc-card" style={s.successCard}>
+        <div className="suc-card" style={{ ...s.successCard }}>
           <div className="suc-check" style={s.checkRing}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <path d="M4 12l6 6L20 6" stroke="#3bbfb9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -167,6 +170,13 @@ export default function JoinPage() {
         .join-input:focus { border-color: #3bbfb9 !important; box-shadow: 0 0 0 3px rgba(59,191,185,0.12) !important; outline: none; }
         .join-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(59,191,185,0.35) !important; }
         .join-submit { transition: transform 0.2s, box-shadow 0.2s, opacity 0.15s; }
+        @media (max-width: 640px) {
+          .join-shell  { grid-template-columns: 1fr !important; border-radius: 20px !important; }
+          .join-left   { padding: 24px 20px 20px !important; gap: 14px !important; }
+          .join-right  { padding: 24px 20px 28px !important; }
+          .join-benefits { display: none !important; }
+          .join-left-sub { display: none !important; }
+        }
       `}</style>
 
       <div style={{ ...s.bgGlow, background: isLight
@@ -174,7 +184,7 @@ export default function JoinPage() {
         : 'radial-gradient(ellipse 70% 50% at 20% 40%, rgba(59,191,185,0.1) 0%, transparent 55%)' }} />
       <div style={s.bgOrb} />
 
-      <div style={{ ...s.shell, background: isLight ? '#f0f9f8' : '#fff' }}>
+      <div className="join-shell" style={{ ...s.shell, background: isLight ? '#f0f9f8' : '#fff' }}>
 
         {/* ── Left panel ── */}
         <div className="join-left" style={{
@@ -192,11 +202,11 @@ export default function JoinPage() {
               {clinicName ? `${clinicName}'s` : "Your clinic's"}<br />
               loyalty program
             </h1>
-            <p style={{ ...s.leftSub, color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>
+            <p className="join-left-sub" style={{ ...s.leftSub, color: isLight ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)' }}>
               Earn points, get recall reminders, and share your referral link — all from your Apple or Google Wallet. No app needed.
             </p>
 
-            <div style={s.benefitList}>
+            <div className="join-benefits" style={s.benefitList}>
               {[
                 { icon: '★', label: 'Earn points',  desc: actionPoints ? `${actionPoints.completed_visit} pts per visit, ${actionPoints.left_review} pts per review` : 'Earn points for every visit and review' },
                 { icon: '💳', label: 'Wallet card',  desc: 'Lives in Apple Wallet or Google Wallet' },

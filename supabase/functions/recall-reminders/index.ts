@@ -61,7 +61,7 @@ async function sendRecallEmail(patient: Record<string, unknown>, clinic: Record<
     <h2 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#111827;">Time for your checkup, ${patient.first_name}</h2>
     <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.65;">Your next checkup at <strong>${clinic.name}</strong> is coming up. Regular visits keep your smile healthy and your points growing.</p>
     <p style="margin:0;font-size:15px;color:#374151;">You currently have <strong>${patient.points_balance ?? 0} points</strong> on your loyalty card.</p>
-    ${clinic.booking_url ? `<a href="${clinic.booking_url}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:${accent};color:#fff;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">Book my appointment</a>` : ''}
+    ${(() => { const url = ((clinic.passkit_links as any[]) ?? []).find((l: any) => l.title === 'Book an Appointment')?.url; return url ? `<a href="${url}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:${accent};color:#fff;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">Book my appointment</a>` : ''; })()}
   </td></tr>
   <tr><td style="padding:0 32px 28px;"><p style="margin:0;font-size:12px;color:#9ca3af;">${clinic.name} team</p></td></tr>
 </table>
@@ -97,7 +97,7 @@ Deno.serve(async () => {
     .select(`
       id, first_name, email, wallet_type, points_balance, tier,
       passkit_serial_number, clinic_id,
-      clinic:clinics(name, brand_color, booking_url, owner_email)
+      clinic:clinics(name, brand_color, passkit_links, owner_email)
     `)
     .eq('next_checkup_date', targetDate)
     .not('clinic_id', 'is', null);

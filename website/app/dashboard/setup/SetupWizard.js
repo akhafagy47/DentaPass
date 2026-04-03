@@ -163,7 +163,7 @@ function CardPreview({ form }) {
       <button
         type="button"
         onClick={() => setFlipped(f => !f)}
-        style={{ marginTop: 8, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: 20, padding: '6px 12px', fontSize: 12, color: '#64748b', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
+        style={{ marginTop: 8, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--dp-card)', border: '1.5px solid var(--dp-bdr)', borderRadius: 20, padding: '6px 12px', fontSize: 12, color: 'var(--dp-t3)', cursor: 'pointer', fontFamily: FONT, whiteSpace: 'nowrap' }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
@@ -189,7 +189,7 @@ function StepBrand({ form, set, fileRef, uploading, onLogoChange }) {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
           {PRESETS.map(c => (
             <button key={c} type="button" onClick={() => set('brand_color', c)}
-              style={{ width: 32, height: 32, borderRadius: 8, background: c, border: form.brand_color === c ? '3px solid #111' : '2px solid transparent', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'transform 0.1s', flexShrink: 0 }}
+              style={{ width: 32, height: 32, borderRadius: 8, background: c, border: form.brand_color === c ? '3px solid var(--dp-t1)' : '2px solid transparent', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'transform 0.1s', flexShrink: 0 }}
               title={c}
             />
           ))}
@@ -207,7 +207,7 @@ function StepBrand({ form, set, fileRef, uploading, onLogoChange }) {
         <label style={s.label}>Logo <span style={s.hint}>(PNG, JPG or WebP · at least 200×200px · auto-cropped to square)</span></label>
         <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style={{ display: 'none' }} onChange={onLogoChange} />
         <button type="button" onClick={() => fileRef.current?.click()}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: '1.5px dashed #e2e8f0', borderRadius: 10, background: '#fafafa', cursor: 'pointer', fontSize: 13, color: '#64748b', width: '100%', boxSizing: 'border-box' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', border: '1.5px dashed var(--dp-inbdr)', borderRadius: 10, background: 'var(--dp-inp)', cursor: 'pointer', fontSize: 13, color: 'var(--dp-t3)', width: '100%', boxSizing: 'border-box' }}>
           {uploading ? <span style={{ color: '#2563eb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Spinner color="#2563eb" />Uploading…</span>
             : form.logo_url ? <>
                 <img src={form.logo_url} alt="logo" style={{ height: 28, maxWidth: 80, objectFit: 'contain', borderRadius: 4 }} />
@@ -240,7 +240,7 @@ function StepLoyalty({ form, set }) {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
           {['Points', 'Stars', 'Smiles', 'Coins', 'Rewards'].map(opt => (
             <button key={opt} type="button" onClick={() => set('points_label', opt)}
-              style={{ padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: form.points_label === opt ? '2px solid #2563eb' : '1.5px solid #e2e8f0', background: form.points_label === opt ? '#eff6ff' : '#fff', color: form.points_label === opt ? '#2563eb' : '#374151', transition: 'all 0.1s' }}>
+              style={{ padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: form.points_label === opt ? '2px solid #2563eb' : '1.5px solid var(--dp-bdr)', background: form.points_label === opt ? '#eff6ff' : 'var(--dp-inp)', color: form.points_label === opt ? '#2563eb' : 'var(--dp-t2)', transition: 'all 0.1s' }}>
               {opt}
             </button>
           ))}
@@ -257,11 +257,11 @@ function StepLoyalty({ form, set }) {
           const active = form.rewards_mode === opt.value;
           return (
             <button key={opt.value} type="button" onClick={() => set('rewards_mode', opt.value)}
-              style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer', width: '100%', marginBottom: 8, border: active ? '2px solid #2563eb' : '1.5px solid #e2e8f0', background: active ? '#eff6ff' : '#fff', transition: 'all 0.15s' }}>
-              <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1, border: active ? '5px solid #2563eb' : '2px solid #cbd5e1', background: '#fff' }} />
+              style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer', width: '100%', marginBottom: 8, border: active ? '2px solid #2563eb' : '1.5px solid var(--dp-bdr)', background: active ? '#eff6ff' : 'var(--dp-inp)', transition: 'all 0.15s' }}>
+              <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1, border: active ? '5px solid #2563eb' : '2px solid var(--dp-inbdr)', background: 'var(--dp-inp)' }} />
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#2563eb' : '#111' }}>{opt.label}</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{opt.desc}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#2563eb' : 'var(--dp-t1)' }}>{opt.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--dp-t3)', marginTop: 2 }}>{opt.desc}</div>
               </div>
             </button>
           );
@@ -273,7 +273,7 @@ function StepLoyalty({ form, set }) {
           <label style={s.label}>Conversion rate</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <input type="number" min="1" step="1" style={{ ...s.input, maxWidth: 80 }} value={form.points_per_dollar} onChange={e => set('points_per_dollar', e.target.value)} placeholder="5" />
-            <span style={{ fontSize: 13, color: '#64748b' }}>
+            <span style={{ fontSize: 13, color: 'var(--dp-t3)' }}>
               {form.points_label || 'points'} = $1.00
               {form.points_per_dollar && ` · 100 pts = $${(100 / parseFloat(form.points_per_dollar)).toFixed(2)}`}
             </span>
@@ -287,14 +287,14 @@ function StepLoyalty({ form, set }) {
 function StepLinks({ form, set }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <p style={{ margin: 0, fontSize: 14, color: '#64748b', lineHeight: 1.6 }}>
+      <p style={{ margin: 0, fontSize: 14, color: 'var(--dp-t2)', lineHeight: 1.6 }}>
         These appear on the back of your patients' wallet card as tappable buttons.
       </p>
 
       <div>
         <label style={s.label}>Clinic address <span style={s.hint}>optional — powers "Get Directions" on the card</span></label>
         <input style={s.input} value={form.address} onChange={e => set('address', e.target.value)} placeholder="123 Main St, Edmonton, AB T6W 0L7" />
-        <p style={{ margin: '6px 0 0', fontSize: 12, color: '#94a3b8' }}>
+        <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--dp-t3)' }}>
           Opens Google Maps on Android and Apple Maps on iOS.
         </p>
       </div>
@@ -312,7 +312,7 @@ function StepLinks({ form, set }) {
       <div>
         <label style={s.label}>Google Review URL <span style={s.hint}>optional — patients earn 100 pts for leaving a review</span></label>
         <input style={s.input} type="url" value={form.google_review_url} onChange={e => set('google_review_url', e.target.value)} placeholder="https://g.page/r/…/review" />
-        <p style={{ margin: '6px 0 0', fontSize: 12, color: '#94a3b8' }}>
+        <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--dp-t3)' }}>
           Find this in Google Business Profile → Get more reviews → Share review form
         </p>
       </div>
@@ -339,8 +339,8 @@ function StepDone({ clinicName }) {
         </svg>
       </div>
       <div>
-        <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800, color: '#111' }}>Your card is ready!</h2>
-        <p style={{ margin: 0, fontSize: 14, color: '#64748b', lineHeight: 1.7 }}>
+        <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800, color: 'var(--dp-t1)' }}>Your card is ready!</h2>
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--dp-t2)', lineHeight: 1.7 }}>
           <strong>{clinicName}</strong>'s loyalty card has been created and is live in the PassKit network. Patients can now scan your enrollment QR code to add it to their Apple or Google Wallet.
         </p>
       </div>
@@ -350,13 +350,13 @@ function StepDone({ clinicName }) {
           ['Award points at checkout', 'Open a patient\'s profile and tap "Award Points" after each visit.'],
           ['Customise anytime', 'Head to Settings to update your colours, logo, or rewards mode later.'],
         ].map(([title, desc]) => (
-          <div key={title} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+          <div key={title} style={{ display: 'flex', gap: 12, padding: '12px 14px', background: 'var(--dp-sbg)', borderRadius: 10, border: '1px solid var(--dp-bdr)' }}>
             <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#2563eb', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>{title}</div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>{desc}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--dp-t1)', marginBottom: 2 }}>{title}</div>
+              <div style={{ fontSize: 12, color: 'var(--dp-t2)' }}>{desc}</div>
             </div>
           </div>
         ))}
@@ -391,10 +391,10 @@ export default function SetupWizard({ clinic }) {
     points_per_dollar: clinic.points_per_dollar ? String(clinic.points_per_dollar) : '5',
     address:           clinic.address           || '',
     phone:             clinic.phone             || '',
-    booking_url:       clinic.booking_url       || '',
-    google_review_url: clinic.google_review_url || '',
-    facebook_url:      clinic.facebook_url      || '',
-    instagram_url:     clinic.instagram_url     || '',
+    booking_url:       (clinic.passkit_links || []).find((l) => l.title === 'Book an Appointment')?.url || '',
+    google_review_url: (clinic.passkit_links || []).find((l) => l.title === 'Leave a Google Review')?.url || '',
+    facebook_url:      (clinic.passkit_links || []).find((l) => l.title === 'Follow us on Facebook')?.url || '',
+    instagram_url:     (clinic.passkit_links || []).find((l) => l.title === 'Follow us on Instagram')?.url || '',
   });
 
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
@@ -442,9 +442,17 @@ export default function SetupWizard({ clinic }) {
     setError('');
     try {
       const { data: { session } } = await getSupabaseBrowser().auth.getSession();
+      const { booking_url, google_review_url, facebook_url, instagram_url, ...rest } = form;
+      const passkit_links = [
+        booking_url       && { title: 'Book an Appointment',   url: booking_url,       type: 'URI_WEB', position: 10, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+        facebook_url      && { title: 'Follow us on Facebook', url: facebook_url,      type: 'URI_WEB', position: 40, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+        instagram_url     && { title: 'Follow us on Instagram',url: instagram_url,     type: 'URI_WEB', position: 50, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+        google_review_url && { title: 'Leave a Google Review', url: google_review_url, type: 'URI_WEB', position: 60, usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] },
+      ].filter(Boolean);
       const payload = {
-        ...form,
-        points_per_dollar: form.rewards_mode === 'discounts' && form.points_per_dollar ? parseFloat(form.points_per_dollar) : null,
+        ...rest,
+        passkit_links,
+        points_per_dollar: rest.rewards_mode === 'discounts' && rest.points_per_dollar ? parseFloat(rest.points_per_dollar) : null,
         setup_completed: true,
       };
       const data = await updateClinic(clinic.id, payload, session?.access_token);
@@ -465,21 +473,21 @@ export default function SetupWizard({ clinic }) {
   const canGoBack = step > 0 && !isDone;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f0f4ff 0%, #fafafa 60%)', display: 'flex', flexDirection: 'column', fontFamily: "-apple-system,'Segoe UI',sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: 'var(--dp-bg)', display: 'flex', flexDirection: 'column', fontFamily: "-apple-system,'Segoe UI',sans-serif" }}>
 
       {/* Top bar */}
-      <div style={{ height: 56, borderBottom: '1px solid rgba(0,0,0,0.07)', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', padding: '0 32px', gap: 12, position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ width: 28, height: 28, background: '#111', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <div style={{ height: 56, borderBottom: '1px solid var(--dp-bdr)', background: 'var(--dp-sbg)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', padding: '0 32px', gap: 12, position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ width: 28, height: 28, background: 'var(--dp-t1)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dp-bg)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
         </div>
-        <span style={{ fontSize: 15, fontWeight: 700, color: '#111', letterSpacing: '-0.01em' }}>DentaPass Setup</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--dp-t1)', letterSpacing: '-0.01em' }}>DentaPass Setup</span>
 
         {/* Step pills */}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           {STEPS.slice(0, -1).map((st, i) => (
-            <div key={st.id} style={{ width: 28, height: 6, borderRadius: 3, background: i <= step ? '#2563eb' : '#e2e8f0', transition: 'background 0.3s' }} />
+            <div key={st.id} style={{ width: 28, height: 6, borderRadius: 3, background: i <= step ? '#2563eb' : 'var(--dp-bdr)', transition: 'background 0.3s' }} />
           ))}
         </div>
       </div>
@@ -496,10 +504,10 @@ export default function SetupWizard({ clinic }) {
                 Step {step + 1} of {STEPS.length - 1}
               </div>
             )}
-            <h1 style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 800, color: '#111', letterSpacing: '-0.02em' }}>
+            <h1 style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 800, color: 'var(--dp-t1)', letterSpacing: '-0.02em' }}>
               {STEPS[step].title}
             </h1>
-            <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>{STEPS[step].subtitle}</p>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--dp-t2)' }}>{STEPS[step].subtitle}</p>
           </div>
 
           {/* Step content */}
@@ -514,13 +522,13 @@ export default function SetupWizard({ clinic }) {
           <div style={{ marginTop: 36, display: 'flex', gap: 10 }}>
             {canGoBack && (
               <button type="button" onClick={() => setStep(s => s - 1)}
-                style={{ padding: '12px 22px', border: '1.5px solid #e2e8f0', borderRadius: 10, background: '#fff', fontSize: 14, fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
+                style={{ padding: '12px 22px', border: '1.5px solid var(--dp-bdr)', borderRadius: 10, background: 'var(--dp-card)', fontSize: 14, fontWeight: 600, color: 'var(--dp-t2)', cursor: 'pointer' }}>
                 ← Back
               </button>
             )}
             {isDone ? (
               <button type="button" onClick={() => { window.location.href = '/dashboard'; }}
-                style={{ flex: 1, padding: '13px', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em' }}>
+                style={{ flex: 1, padding: '13px', background: 'var(--dp-t1)', color: 'var(--dp-bg)', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', letterSpacing: '-0.01em' }}>
                 Go to Dashboard →
               </button>
             ) : (
@@ -536,7 +544,7 @@ export default function SetupWizard({ clinic }) {
         {/* Right — live card preview */}
         {!isDone && (
           <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 56 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Live preview</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dp-t3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Live preview</div>
             <CardPreview form={form} />
           </div>
         )}
@@ -548,12 +556,12 @@ export default function SetupWizard({ clinic }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = {
-  label: { display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6 },
-  hint:  { fontWeight: 400, color: '#94a3b8', fontSize: 12 },
+  label: { display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--dp-t1)', marginBottom: 6 },
+  hint:  { fontWeight: 400, color: 'var(--dp-t3)', fontSize: 12 },
   input: {
     display: 'block', width: '100%', padding: '10px 12px',
-    border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 14,
+    border: '1.5px solid var(--dp-inbdr)', borderRadius: 8, fontSize: 14,
     outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-    color: '#111', background: '#fff',
+    color: 'var(--dp-t1)', background: 'var(--dp-inp)',
   },
 };

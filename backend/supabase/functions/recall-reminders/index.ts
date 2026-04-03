@@ -35,7 +35,7 @@ Deno.serve(async () => {
   // Query patients due for checkup in 30 days who have a wallet card
   const { data: patients, error } = await supabase
     .from('patients')
-    .select('id, first_name, passkit_serial_number, clinic_id, clinic:clinics(name, booking_url)')
+    .select('id, first_name, passkit_serial_number, clinic_id, clinic:clinics(name, passkit_links)')
     .eq('next_checkup_date', targetDateStr)
     .not('passkit_serial_number', 'is', null);
 

@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
   // Fetch the notification to get the clinic's review URL
   const { data: notif } = await supabase
     .from('notifications')
-    .select('id, clicked_at, clinic:clinics(google_review_url)')
+    .select('id, clicked_at, clinic:clinics(passkit_links)')
     .eq('id', id)
     .eq('type', 'review')
     .maybeSingle();
@@ -26,7 +26,7 @@ export async function GET(request, { params }) {
       .eq('id', id);
   }
 
-  const reviewUrl = notif?.clinic?.google_review_url;
+  const reviewUrl = (notif?.clinic?.passkit_links || []).find((l) => l.title === 'Leave a Google Review')?.url;
   if (!reviewUrl) {
     return new NextResponse('Not found', { status: 404 });
   }

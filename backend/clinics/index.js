@@ -169,7 +169,7 @@ router.post('/onboard/dev', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   const { data: clinic } = await getSupabase()
     .from('clinics')
-    .select('name, brand_color, logo_url, booking_url, theme, action_points, custom_actions')
+    .select('name, brand_color, logo_url, passkit_links, theme, action_points, custom_actions')
     .eq('slug', req.params.slug)
     .single();
 
@@ -182,12 +182,12 @@ router.get('/:slug', async (req, res) => {
 // paths always send identical payloads — no field is silently dropped.
 const TEMPLATE_BUILD_FIELDS =
   'name, slug, brand_color, logo_url, points_label, rewards_mode, points_per_dollar, ' +
-  'booking_url, google_review_url, address, phone, facebook_url, instagram_url, timezone';
+  'address, phone, passkit_links, timezone';
 
 // Any change to these fields must be pushed to PassKit before the DB is written.
 const DESIGN_FIELDS = new Set([
   'name', 'brand_color', 'logo_url', 'points_label', 'rewards_mode', 'points_per_dollar',
-  'booking_url', 'google_review_url', 'address', 'phone', 'facebook_url', 'instagram_url', 'timezone',
+  'address', 'phone', 'passkit_links', 'timezone',
 ]);
 
 /**
@@ -200,9 +200,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
     return res.status(403).json({ error: 'Forbidden.' });
   }
 
-  const allowed = ['name', 'google_review_url', 'booking_url', 'brand_color', 'logo_url',
+  const allowed = ['name', 'brand_color', 'logo_url',
                    'rewards_mode', 'points_per_dollar', 'points_label', 'setup_completed',
-                   'address', 'phone', 'facebook_url', 'instagram_url', 'theme',
+                   'address', 'phone', 'passkit_links', 'theme',
                    'tier_thresholds', 'tier_incentives', 'action_points', 'custom_actions'];
   if (req.body.theme && !['dark', 'light', 'auto'].includes(req.body.theme)) {
     return res.status(400).json({ error: 'Invalid theme value.' });
@@ -238,9 +238,9 @@ router.patch('/:id', requireAuth, async (req, res) => {
       if (!clinic) throw new Error('Clinic not found.');
       if (!clinic.logo_url) throw new Error('A logo is required before completing setup.');
 
-      const { programId, templateDesignId, tierId } = await createClinicTemplate({ clinic });
+      const { programId, templateDesignId, tierId, links } = await createClinicTemplate({ clinic });
       const { error: finalErr } = await supabase.from('clinics')
-        .update({ setup_completed: true, passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId })
+        .update({ setup_completed: true, passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId, passkit_links: links })
         .eq('id', req.params.id);
       if (finalErr) throw new Error(`Failed to save PassKit IDs: ${finalErr.message}`);
       console.log('[PassKit] Program + template + tier created for clinic', clinic.slug);
@@ -261,15 +261,28 @@ router.patch('/:id', requireAuth, async (req, res) => {
   if (designChanged) {
     const { data: clinic, error: fetchErr } = await supabase
       .from('clinics')
-      .select(`${TEMPLATE_BUILD_FIELDS}, passkit_template_id, passkit_template_design_id`)
+      .select(`${TEMPLATE_BUILD_FIELDS}, passkit_template_id, passkit_template_design_id, passkit_links`)
       .eq('id', req.params.id)
       .single();
 
     if (fetchErr) return res.status(500).json({ error: fetchErr.message });
 
     if (clinic?.passkit_template_design_id) {
+      // Merge passkit_links: preserve PassKit-assigned IDs from DB, apply new URLs from update.
+      let mergedLinks = clinic.passkit_links || [];
+      if (updates.passkit_links) {
+        const idByTitle = {};
+        for (const l of mergedLinks) {
+          if (l.id && l.title) idByTitle[l.title] = l.id;
+        }
+        mergedLinks = updates.passkit_links.map((l) =>
+          idByTitle[l.title] ? { ...l, id: idByTitle[l.title] } : l
+        );
+        updates.passkit_links = mergedLinks;
+      }
+
       try {
-        await updateClinicTemplate({ clinic: { ...clinic, ...updates } });
+        await updateClinicTemplate({ clinic: { ...clinic, ...updates, passkit_links: mergedLinks } });
       } catch (pkErr) {
         return res.status(502).json({ error: `Wallet template update failed: ${pkErr.message}` });
       }

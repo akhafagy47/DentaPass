@@ -13,7 +13,7 @@ export default async function PatientProfilePage({ params }) {
 
   const { data: clinic } = await supabase
     .from('clinics')
-    .select('id, google_review_url')
+    .select('id, passkit_links')
     .eq('owner_email', user.email)
     .maybeSingle();
 
@@ -56,7 +56,7 @@ export default async function PatientProfilePage({ params }) {
       notifications={notifications ?? []}
       referrals={referrals ?? []}
       clinicId={clinic.id}
-      googleReviewUrl={clinic.google_review_url}
+      googleReviewUrl={(clinic.passkit_links || []).find((l) => l.title === 'Leave a Google Review')?.url || ''}
     />
   );
 }

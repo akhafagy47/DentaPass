@@ -39,7 +39,7 @@ Deno.serve(async () => {
   // Patients who visited in the window and have a wallet card
   const { data: candidates, error } = await supabase
     .from('patients')
-    .select('id, first_name, passkit_serial_number, clinic_id, clinic:clinics(name, google_review_url)')
+    .select('id, first_name, passkit_serial_number, clinic_id, clinic:clinics(name, passkit_links)')
     .gte('last_visit_date', windowStart.toISOString())
     .lte('last_visit_date', windowEnd.toISOString())
     .not('passkit_serial_number', 'is', null);
@@ -56,7 +56,8 @@ Deno.serve(async () => {
   let failed = 0;
 
   for (const patient of candidates ?? []) {
-    if (!patient.clinic?.google_review_url) {
+    const reviewUrl = (patient.clinic?.passkit_links ?? []).find((l: any) => l.title === 'Leave a Google Review')?.url;
+    if (!reviewUrl) {
       skipped++;
       continue;
     }

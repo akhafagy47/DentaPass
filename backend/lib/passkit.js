@@ -375,71 +375,32 @@ function buildDataFields(clinic) {
 }
 
 /**
- * Links shown in Google Wallet's detail view (Leave Review, Book Appointment).
- * Apple Wallet uses back fields for the same info.
+ * Links shown in Google Wallet's detail view and Apple Wallet back.
+ * URLs for booking, review, facebook, instagram come from clinic.passkit_links (JSONB).
+ * phone/address links are built dynamically from their own columns.
+ * PassKit-assigned link IDs are stored in passkit_links and injected here for PUT calls.
  */
 function buildLinks(clinic) {
+  const stored    = clinic.passkit_links || [];
+  const idByTitle = {};
+  for (const l of stored) {
+    if (l.id && l.title) idByTitle[l.title] = l.id;
+  }
+  const withId = (link) =>
+    idByTitle[link.title] ? { ...link, id: idByTitle[link.title] } : link;
+  const getUrl = (title) => stored.find((l) => l.title === title)?.url;
+
   const links = [];
-  if (clinic.booking_url) {
-    links.push({
-
-      position: 10,
-      title:    'Book an Appointment',
-      url:      clinic.booking_url,
-      type:     'URI_WEB',
-      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
-    });
-  }
-  if (clinic.phone) {
-    links.push({
-
-      position: 20,
-      title:    'Call Us',
-      url:      `tel:${clinic.phone.replace(/\s/g, '')}`,
-      type:     'URI_TEL',
-      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
-    });
-  }
-  if (clinic.address) {
-    links.push({
-
-      position: 30,
-      title:    'Get Directions',
-      url:      `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
-      type:     'URI_LOCATION',
-      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
-    });
-  }
-  if (clinic.facebook_url) {
-    links.push({
-
-      position: 40,
-      title:    'Follow us on Facebook',
-      url:      clinic.facebook_url,
-      type:     'URI_WEB',
-      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
-    });
-  }
-  if (clinic.instagram_url) {
-    links.push({
-
-      position: 50,
-      title:    'Follow us on Instagram',
-      url:      clinic.instagram_url,
-      type:     'URI_WEB',
-      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
-    });
-  }
-  if (clinic.google_review_url) {
-    links.push({
-
-      position: 60,
-      title:    'Leave a Google Review',
-      url:      clinic.google_review_url,
-      type:     'URI_WEB',
-      usage:    ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'],
-    });
-  }
+  const bookingUrl = getUrl('Book an Appointment');
+  if (bookingUrl) links.push(withId({ position: 10, title: 'Book an Appointment', url: bookingUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
+  if (clinic.phone) links.push(withId({ position: 20, title: 'Call Us', url: `tel:${clinic.phone.replace(/\s/g, '')}`, type: 'URI_TEL', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
+  if (clinic.address) links.push(withId({ position: 30, title: 'Get Directions', url: `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`, type: 'URI_LOCATION', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
+  const facebookUrl = getUrl('Follow us on Facebook');
+  if (facebookUrl) links.push(withId({ position: 40, title: 'Follow us on Facebook', url: facebookUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
+  const instagramUrl = getUrl('Follow us on Instagram');
+  if (instagramUrl) links.push(withId({ position: 50, title: 'Follow us on Instagram', url: instagramUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
+  const reviewUrl = getUrl('Leave a Google Review');
+  if (reviewUrl) links.push(withId({ position: 60, title: 'Leave a Google Review', url: reviewUrl, type: 'URI_WEB', usage: ['USAGE_APPLE_WALLET', 'USAGE_GOOGLE_PAY'] }));
   return links;
 }
 
@@ -510,34 +471,33 @@ function formatTime(hhmm) {
 
 /**
  * Create a per-clinic pass template (card design) via POST /template.
- * Returns the PassKit-generated template ID.
+ * Returns { templateDesignId, links } — links contains PassKit-assigned IDs
+ * that must be stored on the clinic and used in future PUT /template calls.
  */
 async function createPassTemplate({ clinic }) {
   const body = buildTemplateBody(clinic);
-  console.log('[PassKit] POST /template body:', JSON.stringify(body, null, 2));
   const data = await pkFetch('/template', {
     method: 'POST',
     body: JSON.stringify(body),
   });
-  return data.id;
+  console.log('[PassKit] POST /template — assigned links:', JSON.stringify(data.links));
+  return { templateDesignId: data.id, links: data.links || [] };
 }
 
 /**
  * Update a clinic's pass template design via PUT /template.
  * PassKit automatically pushes the update to all installed passes using this template.
  *
+ * Link IDs are assigned by PassKit on create and stored on the clinic row as
+ * passkit_links. We inject those IDs here so PUT can match and update existing links.
+ * If passkit_links is empty (legacy clinics), links are omitted from the PUT.
  */
 async function updatePassTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
-
-  // Links are excluded from PUT — PassKit assigns link IDs on create and requires
-  // them on update, but provides no endpoint to retrieve them. Omitting links leaves
-  // existing ones intact while colors, fields, and images update correctly.
-  const { links: _omit, ...templateBody } = buildTemplateBody(clinic);
   await pkFetch('/template', {
     method: 'PUT',
     body: JSON.stringify({
-      ...templateBody,
+      ...buildTemplateBody(clinic),
       id: clinic.passkit_template_design_id,
     }),
   });
@@ -572,7 +532,7 @@ export async function createClinicTemplate({ clinic }) {
 
   // 2. Create pass template
   console.log('[PassKit] Step 2: creating pass template');
-  const templateDesignId = await createPassTemplate({ clinic });
+  const { templateDesignId, links } = await createPassTemplate({ clinic });
   console.log('[PassKit] Step 2 success — templateDesignId:', templateDesignId);
 
   // 3. Create tier — needs both programId and passTemplateId
@@ -590,7 +550,7 @@ export async function createClinicTemplate({ clinic }) {
   const tier = await pkFetch('/members/tier', { method: 'POST', body: JSON.stringify(tierBody) });
   console.log('[PassKit] Step 3 success — tierId:', tier.id);
 
-  return { programId: program.id, templateDesignId, tierId: tier.id };
+  return { programId: program.id, templateDesignId, tierId: tier.id, links };
 }
 
 /**
