@@ -502,7 +502,7 @@ async function createImages(clinic) {
 }
 
 /**
- * Update clinic images in-place via PUT /images (one call per image type).
+ * Update clinic images in-place via PUT /image (one call per image type).
  * Uses stored passkit_image_ids so PassKit updates the existing image records
  * without requiring a template re-push.
  */
@@ -512,11 +512,11 @@ async function updateImages(clinic) {
   const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
 
   await Promise.all([
-    imageIds.icon && pkFetch('/images', {
+    imageIds.icon && pkFetch('/image', {
       method: 'PUT',
       body: JSON.stringify({ id: imageIds.icon, imageData: base + 'logo-icon.png' }),
     }),
-    imageIds.logo && pkFetch('/images', {
+    imageIds.logo && pkFetch('/image', {
       method: 'PUT',
       body: JSON.stringify({ id: imageIds.logo, imageData: base + 'logo.png' }),
     }),
@@ -524,12 +524,12 @@ async function updateImages(clinic) {
 }
 
 /**
- * Create a single link via POST /template/link.
+ * Create a single link via POST /link.
  * Returns the link object with its PassKit-assigned id attached.
  */
 async function createLink(link) {
   const { id: _ignored, ...payload } = link; // id is not writable on create
-  const data = await pkFetch('/template/link', {
+  const data = await pkFetch('/link', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -537,7 +537,7 @@ async function createLink(link) {
 }
 
 /**
- * Create all links for a clinic via POST /template/link.
+ * Create all links for a clinic via POST /link.
  * Returns the links array with PassKit-assigned IDs.
  */
 async function createAllLinks(clinic) {
@@ -549,12 +549,12 @@ async function createAllLinks(clinic) {
 }
 
 /**
- * Update a single link in-place via PUT /template/link.
+ * Update a single link in-place via PUT /link.
  * Skips links without a stored PassKit ID.
  */
 async function updateLink(link) {
   if (!link.id) return;
-  await pkFetch('/template/link', {
+  await pkFetch('/link', {
     method: 'PUT',
     body: JSON.stringify(link),
   });

@@ -422,7 +422,7 @@ Stored on `clinics` table as JSONB. Each entry:
 
 ---
 
-## POST /template/link — Create Link
+## POST /link — Create Link
 
 **Request body:**
 
@@ -442,7 +442,7 @@ Stored on `clinics` table as JSONB. Each entry:
 
 ---
 
-## PUT /template/link — Update Link
+## PUT /link — Update Link
 
 **Request body** — same shape as Create, but include the PassKit-assigned `id`:
 
@@ -548,7 +548,7 @@ Stored on `clinics` table as JSONB. Each entry:
 
 ---
 
-## PUT /images — Update Image
+## PUT /image — Update Image
 
 **Request body:**
 
