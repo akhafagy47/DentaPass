@@ -239,9 +239,18 @@ router.patch('/:id', requireAuth, async (req, res) => {
       if (!clinic.logo_url) throw new Error('A logo is required before completing setup.');
 
       const { programId, templateDesignId, tierId, links, imageIds } = await createClinicTemplate({ clinic });
-      const { error: finalErr } = await supabase.from('clinics')
-        .update({ setup_completed: true, passkit_program_id: programId, passkit_template_design_id: templateDesignId, passkit_template_id: tierId, passkit_links: links, passkit_image_ids: imageIds })
-        .eq('id', req.params.id);
+
+      // Only overwrite passkit_links when PassKit returned actual link objects with IDs.
+      // If link creation failed (empty array), keep whatever URL data was saved by the wizard.
+      const dbUpdate = {
+        setup_completed:              true,
+        passkit_program_id:           programId,
+        passkit_template_design_id:   templateDesignId,
+        passkit_template_id:          tierId,
+        passkit_image_ids:            imageIds,
+        ...(links.length > 0 ? { passkit_links: links } : {}),
+      };
+      const { error: finalErr } = await supabase.from('clinics').update(dbUpdate).eq('id', req.params.id);
       if (finalErr) throw new Error(`Failed to save PassKit IDs: ${finalErr.message}`);
       console.log('[PassKit] Program + template + tier created for clinic', clinic.slug);
     } catch (pkErr) {
