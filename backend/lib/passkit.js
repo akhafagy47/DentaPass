@@ -13,8 +13,6 @@
  *   Tier     (one per clinic)             →  clinics.passkit_template_id
  *   Member   (one per patient)
  */
-import { createHash } from 'crypto';
-import bs58 from 'bs58';
 
 const PASSKIT_BASE = process.env.PASSKIT_API_URL || 'https://api.pub2.passkit.io';
 const WALLET_BASE  = 'https://pub2.pskt.io';
@@ -91,24 +89,6 @@ async function pkFetch(path, options = {}, retry = true) {
   return res.json();
 }
 
-// Encode a 16-byte Buffer as a 22-character base58 string (PassKit uuidCompressedString).
-// bs58 handles leading-zero bytes correctly; pad to exactly 22 chars with '1' (base58 zero).
-function base58uuid(buf) {
-  return bs58.encode(buf).padStart(22, '1');
-}
-
-// Deterministic UUID v5 (SHA-1, RFC 4122 version/variant bits) encoded as base58.
-// PassKit validates link IDs as uuidCompressedString — the decoded bytes must be
-// a valid UUID, which requires version (byte 6) and variant (byte 8) bits set correctly.
-const LINK_NS = Buffer.from('6ba7b8109dad11d180b400c04fd430c8', 'hex'); // DNS namespace UUID
-function linkId(name) {
-  const hash = createHash('sha1').update(LINK_NS).update(name).digest();
-  const uuidBuf = Buffer.alloc(16);
-  hash.copy(uuidBuf, 0, 0, 16);
-  uuidBuf[6] = (uuidBuf[6] & 0x0f) | 0x50; // version 5
-  uuidBuf[8] = (uuidBuf[8] & 0x3f) | 0x80; // variant RFC 4122
-  return base58uuid(uuidBuf);
-}
 
 // ── Design helpers ─────────────────────────────────────────────────────────────
 
@@ -402,7 +382,7 @@ function buildLinks(clinic) {
   const links = [];
   if (clinic.booking_url) {
     links.push({
-      id:       linkId('booking'),
+
       position: 10,
       title:    'Book an Appointment',
       url:      clinic.booking_url,
@@ -412,7 +392,7 @@ function buildLinks(clinic) {
   }
   if (clinic.phone) {
     links.push({
-      id:       linkId('phone'),
+
       position: 20,
       title:    'Call Us',
       url:      `tel:${clinic.phone.replace(/\s/g, '')}`,
@@ -422,7 +402,7 @@ function buildLinks(clinic) {
   }
   if (clinic.address) {
     links.push({
-      id:       linkId('directions'),
+
       position: 30,
       title:    'Get Directions',
       url:      `https://maps.google.com/?q=${encodeURIComponent(clinic.address)}`,
@@ -432,7 +412,7 @@ function buildLinks(clinic) {
   }
   if (clinic.facebook_url) {
     links.push({
-      id:       linkId('facebook'),
+
       position: 40,
       title:    'Follow us on Facebook',
       url:      clinic.facebook_url,
@@ -442,7 +422,7 @@ function buildLinks(clinic) {
   }
   if (clinic.instagram_url) {
     links.push({
-      id:       linkId('instagram'),
+
       position: 50,
       title:    'Follow us on Instagram',
       url:      clinic.instagram_url,
@@ -452,7 +432,7 @@ function buildLinks(clinic) {
   }
   if (clinic.google_review_url) {
     links.push({
-      id:       linkId('google-review'),
+
       position: 60,
       title:    'Leave a Google Review',
       url:      clinic.google_review_url,
@@ -550,10 +530,14 @@ async function createPassTemplate({ clinic }) {
 async function updatePassTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
 
+  // Links are excluded from PUT — PassKit assigns link IDs on create and requires
+  // them on update, but provides no endpoint to retrieve them. Omitting links leaves
+  // existing ones intact while colors, fields, and images update correctly.
+  const { links: _omit, ...templateBody } = buildTemplateBody(clinic);
   await pkFetch('/template', {
     method: 'PUT',
     body: JSON.stringify({
-      ...buildTemplateBody(clinic),
+      ...templateBody,
       id: clinic.passkit_template_design_id,
     }),
   });
