@@ -518,13 +518,31 @@ async function createPassTemplate({ clinic }) {
 /**
  * Update a clinic's pass template design via PUT /template.
  * PassKit automatically pushes the update to all installed passes using this template.
+ *
+ * Link IDs are not writable on create — PassKit assigns them. On update they are
+ * required. We GET the existing template first, build a title→id map from its
+ * links, then inject those IDs into the new links array before the PUT.
  */
 async function updatePassTemplate({ clinic }) {
   if (!clinic.passkit_template_id) return;
+
+  // Fetch existing template to get PassKit-assigned link IDs
+  const existing = await pkFetch(`/template/${clinic.passkit_template_design_id}`);
+  const linkIdByTitle = {};
+  for (const link of existing?.links ?? []) {
+    if (link.id && link.title) linkIdByTitle[link.title] = link.id;
+  }
+
+  const body = buildTemplateBody(clinic);
+  const linksWithIds = body.links.map((link) =>
+    linkIdByTitle[link.title] ? { ...link, id: linkIdByTitle[link.title] } : link
+  );
+
   await pkFetch('/template', {
     method: 'PUT',
     body: JSON.stringify({
-      ...buildTemplateBody(clinic),
+      ...body,
+      links: linksWithIds,
       id: clinic.passkit_template_design_id,
     }),
   });
