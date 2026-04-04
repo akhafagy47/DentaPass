@@ -257,7 +257,7 @@ function StepLoyalty({ form, set }) {
           const active = form.rewards_mode === opt.value;
           return (
             <button key={opt.value} type="button" onClick={() => set('rewards_mode', opt.value)}
-              style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer', width: '100%', marginBottom: 8, border: active ? '2px solid #2563eb' : '1.5px solid var(--dp-bdr)', background: active ? '#eff6ff' : 'var(--dp-inp)', transition: 'all 0.15s' }}>
+              style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 12, textAlign: 'left', cursor: 'pointer', width: '100%', marginBottom: 8, border: active ? '2px solid #2563eb' : '1.5px solid var(--dp-bdr)', background: active ? 'rgba(37,99,235,0.12)' : 'var(--dp-inp)', transition: 'all 0.15s' }}>
               <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1, border: active ? '5px solid #2563eb' : '2px solid var(--dp-inbdr)', background: 'var(--dp-inp)' }} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: active ? '#2563eb' : 'var(--dp-t1)' }}>{opt.label}</div>
@@ -405,18 +405,30 @@ export default function SetupWizard({ clinic }) {
     setUploading(true);
     setError('');
     try {
-      const blobs = await cropAll(file);  // produces icon (87px), thumbnail (320px), logo (660px)
+      const blobs = await cropAll(file);
       const sb    = getSupabaseBrowser();
-      const base  = `${clinic.id}`;
+      const ts    = Date.now();
+      const base  = `${clinic.id}/${ts}`;
 
       await Promise.all([
-        sb.storage.from('clinic-logos').upload(`${base}/logo-icon.png`,      blobs.icon,      { upsert: true, contentType: 'image/png' }),
-        sb.storage.from('clinic-logos').upload(`${base}/logo-thumbnail.png`, blobs.thumbnail, { upsert: true, contentType: 'image/png' }),
-        sb.storage.from('clinic-logos').upload(`${base}/logo.png`,           blobs.logo,      { upsert: true, contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo-icon.png`,  blobs.icon,      { contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo.png`,       blobs.logo,      { contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo-apple.png`, blobs.appleLogo, { contentType: 'image/png' }),
       ]);
 
       const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(`${base}/logo.png`);
-      set('logo_url', `${publicUrl}?t=${Date.now()}`);
+
+      // Delete previous upload if the user changed the logo mid-setup (best-effort)
+      const oldMatch = form.logo_url?.match(/clinic-logos\/(.+)\/logo\.png/);
+      if (oldMatch) {
+        sb.storage.from('clinic-logos').remove([
+          `${oldMatch[1]}/logo.png`,
+          `${oldMatch[1]}/logo-icon.png`,
+          `${oldMatch[1]}/logo-apple.png`,
+        ]).catch(() => {});
+      }
+
+      set('logo_url', publicUrl);
       e.target.value = '';  // reset so selecting the same file again triggers onChange
     } catch (err) {
       setError(err.message || 'Logo upload failed. Please try again.');
@@ -545,7 +557,7 @@ export default function SetupWizard({ clinic }) {
         {!isDone && (
           <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dp-t3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Live preview</div>
-            <CardPreview form={form} />
+            <CardPreview key={step} form={form} />
           </div>
         )}
       </div>

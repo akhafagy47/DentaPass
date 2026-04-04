@@ -18,6 +18,40 @@ function cropToSize(img, size) {
   );
 }
 
+/**
+ * Center-crops an image File/Blob to a rectangle and resizes to `tw`×`th` px.
+ * Crops to the target aspect ratio first, then scales down.
+ */
+function cropToRect(img, tw, th) {
+  const { naturalWidth: w, naturalHeight: h } = img;
+  const targetRatio = tw / th;
+  const srcRatio    = w / h;
+
+  let sx, sy, sw, sh;
+  if (srcRatio > targetRatio) {
+    // Source is wider — crop sides
+    sh = h;
+    sw = h * targetRatio;
+    sx = (w - sw) / 2;
+    sy = 0;
+  } else {
+    // Source is taller — crop top/bottom
+    sw = w;
+    sh = w / targetRatio;
+    sx = 0;
+    sy = (h - sh) / 2;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = tw;
+  canvas.height = th;
+  canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas export failed')), 'image/png'),
+  );
+}
+
 function loadImage(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -29,11 +63,10 @@ function loadImage(file) {
 }
 
 /**
- * Generates three PNG blobs from a source image file, each center-cropped and
- * resized to exactly the dimensions PassKit requires for each slot:
- *   icon      →  87 × 87 px   (Apple Wallet icon)
- *   thumbnail → 320 × 320 px  (Google Wallet pass image)
- *   logo      → 660 × 660 px  (Apple Wallet logo strip)
+ * Generates three PNG blobs from a source image file:
+ *   icon      →  87 ×  87 px  (Apple Wallet lock screen icon)
+ *   logo      → 660 × 660 px  (Google Pay circle-cropped logo)
+ *   appleLogo → 480 × 150 px  (Apple Wallet rectangular logo strip)
  *
  * Throws if the source image is smaller than 200×200px.
  */
@@ -44,11 +77,11 @@ export async function cropAll(file) {
     throw new Error('Logo must be at least 200×200px.');
   }
 
-  const [icon, thumbnail, logo] = await Promise.all([
+  const [icon, logo, appleLogo] = await Promise.all([
     cropToSize(img, 114),
-    cropToSize(img, 320),
     cropToSize(img, 660),
+    cropToRect(img, 480, 150),
   ]);
 
-  return { icon, thumbnail, logo };
+  return { icon, logo, appleLogo };
 }

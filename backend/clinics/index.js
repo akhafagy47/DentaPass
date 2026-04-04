@@ -238,16 +238,18 @@ router.patch('/:id', requireAuth, async (req, res) => {
       if (!clinic) throw new Error('Clinic not found.');
       if (!clinic.logo_url) throw new Error('A logo is required before completing setup.');
 
-      const { programId, templateDesignId, tierId, links, imageIds } = await createClinicTemplate({ clinic });
+      const onProgress = async (data) => {
+        await supabase.from('clinics').update(data).eq('id', req.params.id);
+      };
 
-      // Only overwrite passkit_links when PassKit returned actual link objects with IDs.
-      // If link creation failed (empty array), keep whatever URL data was saved by the wizard.
+      const { programId, templateDesignId, tierId, links, imageIds } = await createClinicTemplate({ clinic, onProgress });
+
       const dbUpdate = {
-        setup_completed:              true,
-        passkit_program_id:           programId,
-        passkit_template_design_id:   templateDesignId,
-        passkit_template_id:          tierId,
-        passkit_image_ids:            imageIds,
+        setup_completed:            true,
+        passkit_program_id:         programId,
+        passkit_template_design_id: templateDesignId,
+        passkit_template_id:        tierId,
+        passkit_image_ids:          imageIds,
         ...(links.length > 0 ? { passkit_links: links } : {}),
       };
       const { error: finalErr } = await supabase.from('clinics').update(dbUpdate).eq('id', req.params.id);
@@ -291,7 +293,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
       }
 
       try {
-        await updateClinicTemplate({ clinic: { ...clinic, ...updates, passkit_links: mergedLinks } });
+        const pkResult = await updateClinicTemplate({ clinic: { ...clinic, ...updates, passkit_links: mergedLinks } });
+        if (pkResult?.newImageIds) updates.passkit_image_ids = pkResult.newImageIds;
       } catch (pkErr) {
         return res.status(502).json({ error: `Wallet template update failed: ${pkErr.message}` });
       }

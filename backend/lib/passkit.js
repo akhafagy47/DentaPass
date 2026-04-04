@@ -420,15 +420,16 @@ function buildLinks(clinic) {
  * @param {Array}  [opts.links]     Pre-built links array (with IDs on create, omitted on update).
  */
 function buildTemplateBody(clinic, { imageIds = null, links = null } = {}) {
-  // Prefer stored imageIds (from POST /images) over raw URLs.
-  // imageIds tells PassKit to use already-uploaded images directly.
-  // Fall back to `images` (URLs) only if no imageIds are stored yet.
+  // Prefer imageIds (stored PassKit IDs) — keeps the portal from crashing on
+  // imageIds:null. Logo changes are pushed separately via PUT /image before
+  // this is called, so the stored IDs always point to up-to-date images.
+  // Fall back to `images` URLs only on first creation (no IDs yet).
   let imageField = {};
   if (imageIds && (imageIds.icon || imageIds.logo)) {
     imageField = { imageIds };
   } else if (clinic.logo_url) {
-    const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
-    imageField = { images: { icon: base + 'logo-icon.png', logo: base + 'logo.png' } };
+    const base = clinic.logo_url.replace(/\/logo\.png.*$/, '/');
+    imageField = { images: { icon: base + 'logo-icon.png', logo: base + 'logo.png', appleLogo: base + 'logo-apple.png' } };
   }
 
   const body = {
@@ -451,7 +452,6 @@ function buildTemplateBody(clinic, { imageIds = null, links = null } = {}) {
     barcode: {
       format: 'QR',
       payload: '${pid}',
-      altText: '${pid}',
       messageEncoding: 'utf8',
     },
     appleWalletSettings: { passType: 'GENERIC' },
@@ -487,42 +487,30 @@ function formatTime(hhmm) {
  */
 async function createImages(clinic) {
   if (!clinic.logo_url) return {};
-  const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
+  const base = clinic.logo_url.replace(/\/logo\.png.*$/, '/');
   const data = await pkFetch('/images', {
     method: 'POST',
     body: JSON.stringify({
       name:      clinic.name,
       imageData: {
-        icon: base + 'logo-icon.png',
-        logo: base + 'logo.png',
+        icon:      base + 'logo-icon.png',
+        logo:      base + 'logo.png',
+        appleLogo: base + 'logo-apple.png',
       },
     }),
   });
-  // Response: { icon: "passkit-image-id", logo: "passkit-image-id" }
-  return { icon: data.icon || null, logo: data.logo || null };
+  return { icon: data.icon || null, logo: data.logo || null, appleLogo: data.appleLogo || null };
 }
 
 /**
  * Update clinic images in-place via PUT /image (one call per image type).
- * Uses stored passkit_image_ids so PassKit updates the existing image records
- * without requiring a template re-push.
+ * Always creates fresh PassKit image records (POST /images) so PassKit
+ * re-downloads from the new Supabase path. Returns the new imageIds.
  */
 async function updateImages(clinic) {
-  const imageIds = clinic.passkit_image_ids || {};
-  if (!clinic.logo_url || (!imageIds.icon && !imageIds.logo)) return;
-  const base = clinic.logo_url.replace(/\/logo\.png(\?.*)?$/, '/');
-
-  const results = await Promise.all([
-    imageIds.icon && pkFetch('/image', {
-      method: 'PUT',
-      body: JSON.stringify({ id: imageIds.icon, imageData: base + 'logo-icon.png' }),
-    }),
-    imageIds.logo && pkFetch('/image', {
-      method: 'PUT',
-      body: JSON.stringify({ id: imageIds.logo, imageData: base + 'logo.png' }),
-    }),
-  ].filter(Boolean));
-  return results;
+  if (!clinic.logo_url) return { count: 0 };
+  const newImageIds = await createImages(clinic);
+  return { count: Object.keys(newImageIds).length, newImageIds, imageIds: newImageIds };
 }
 
 /**
@@ -570,8 +558,8 @@ async function updateLink(link) {
  * Receives pre-created imageIds and links (both with PassKit-assigned IDs),
  * so no GET /template is needed after creation.
  */
-async function createPassTemplate({ clinic, imageIds, links }) {
-  const body = buildTemplateBody(clinic, { imageIds, links });
+async function createPassTemplate({ clinic, links }) {
+  const body = buildTemplateBody(clinic, { links });
   const created = await pkFetch('/template', { method: 'POST', body: JSON.stringify(body) });
   return { templateDesignId: created.id };
 }
@@ -579,19 +567,18 @@ async function createPassTemplate({ clinic, imageIds, links }) {
 /**
  * Update a clinic's pass template design via PUT /template.
  * Always uses `images` (URL-based) rather than stored imageIds — this ensures
- * logo changes are picked up reliably. PassKit re-downloads and updates imageIds
- * internally. Stored imageIds are only used on initial creation to avoid the
- * imageIds:null portal bug.
+ * logo changes are picked up via `images` URLs. Stored imageIds are also sent
+ * so the PassKit portal never sees imageIds:null (portal crash bug).
  * Links with stored PassKit IDs are included; omitted if none stored.
  */
-async function updatePassTemplate({ clinic }) {
+async function updatePassTemplate({ clinic, imageIds: imageIdsOverride = null }) {
   if (!clinic.passkit_template_design_id) return;
-  // Pass imageIds: null so buildTemplateBody falls back to `images` URLs —
-  // ensures logo changes are always picked up on update.
+  const imageIds = imageIdsOverride || clinic.passkit_image_ids || null;
   const links = buildLinks(clinic);
-  const linksForBody = links.some((l) => l.id) ? links : null;
+  const linksWithId = links.filter((l) => l.id);
+  const linksForBody = linksWithId.length > 0 ? linksWithId : null;
   const body = {
-    ...buildTemplateBody(clinic, { imageIds: null, links: linksForBody }),
+    ...buildTemplateBody(clinic, { imageIds, links: linksForBody }),
     id: clinic.passkit_template_design_id,
   };
   const result = await pkFetch('/template', { method: 'PUT', body: JSON.stringify(body) });
@@ -615,71 +602,103 @@ async function updatePassTemplate({ clinic }) {
  * PassKit hierarchy per clinic:
  *   Program → Template (design) → Tier → Members (patients)
  */
-export async function createClinicTemplate({ clinic }) {
-  // Step 1: Create program
-  console.log('[PassKit] Step 1: creating program for clinic:', clinic.name);
-  const program = await pkFetch('/members/program', {
-    method: 'POST',
-    body: JSON.stringify({
-      name:                     clinic.name,
-      status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
-      pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
-      profileImageSettings:     'PROFILE_IMAGE_NONE',
-      autoDeleteDaysAfterExpiry: 0,
-      passRecoverySettings: {
-        enabled:  true,
-        delivery: 'DELIVERY_REDIRECT',
-        fieldsToMatchUponRecovery: ['person.emailAddress'],
-      },
-    }),
-  });
-  console.log('[PassKit] Step 1 success — programId:', program.id);
+export async function createClinicTemplate({ clinic, onProgress }) {
+  // Each step checks if its result was already saved (from a prior failed attempt)
+  // and skips creation if so. onProgress(data) is called after each step so the
+  // caller can persist IDs immediately — preventing duplicate resources on retry.
 
-  // Step 2: Upload images, get PassKit-assigned imageIds
-  // imageIds are stored on the clinic row and used in all future template calls.
-  let imageIds = {};
-  try {
-    console.log('[PassKit] Step 2: uploading images');
-    imageIds = await createImages(clinic);
-    console.log('[PassKit] Step 2 success — imageIds:', imageIds);
-  } catch (err) {
-    console.warn('[PassKit] Step 2 image upload failed, proceeding without imageIds:', err.message);
+  // Step 1: Program
+  let programId = clinic.passkit_program_id;
+  if (programId) {
+    console.log('[PassKit] Step 1 skipped — program already exists:', programId);
+  } else {
+    console.log('[PassKit] Step 1: creating program for clinic:', clinic.name);
+    const program = await pkFetch('/members/program', {
+      method: 'POST',
+      body: JSON.stringify({
+        name:                     clinic.name,
+        status:                   ['PROJECT_ACTIVE_FOR_OBJECT_CREATION', 'PROJECT_DRAFT'],
+        pointsType:               { balanceType: 'BALANCE_TYPE_INT64' },
+        profileImageSettings:     'PROFILE_IMAGE_NONE',
+        autoDeleteDaysAfterExpiry: 0,
+        passRecoverySettings: {
+          enabled:  true,
+          delivery: 'DELIVERY_REDIRECT',
+          fieldsToMatchUponRecovery: ['person.emailAddress'],
+        },
+      }),
+    });
+    programId = program.id;
+    console.log('[PassKit] Step 1 success — programId:', programId);
+    await onProgress?.({ passkit_program_id: programId });
   }
 
-  // Step 3: Create links, get PassKit-assigned link IDs
-  // IDs are stored on the clinic row (passkit_links) and used for PUT /template/link updates.
-  let links = [];
-  try {
-    console.log('[PassKit] Step 3: creating links');
-    links = await createAllLinks(clinic);
-    console.log('[PassKit] Step 3 success —', links.length, 'links created');
-  } catch (err) {
-    console.warn('[PassKit] Step 3 link creation failed:', err.message);
+  // Step 2: Images
+  let imageIds = clinic.passkit_image_ids || {};
+  if (imageIds.icon && imageIds.logo && imageIds.appleLogo) {
+    console.log('[PassKit] Step 2 skipped — imageIds already exist');
+  } else {
+    try {
+      console.log('[PassKit] Step 2: uploading images');
+      imageIds = await createImages(clinic);
+      console.log('[PassKit] Step 2 success — imageIds:', imageIds);
+      await onProgress?.({ passkit_image_ids: imageIds });
+    } catch (err) {
+      console.warn('[PassKit] Step 2 image upload failed, proceeding without imageIds:', err.message);
+    }
   }
 
-  // Step 4: Create template using stored imageIds and links (which now have IDs)
-  console.log('[PassKit] Step 4: creating pass template');
-  const { templateDesignId } = await createPassTemplate({ clinic, imageIds, links });
-  console.log('[PassKit] Step 4 success — templateDesignId:', templateDesignId);
+  // Step 3: Links
+  let links = clinic.passkit_links?.filter(l => l.id) || [];
+  if (links.length > 0) {
+    console.log('[PassKit] Step 3 skipped — links already exist:', links.length);
+  } else {
+    try {
+      console.log('[PassKit] Step 3: creating links');
+      links = await createAllLinks(clinic);
+      console.log('[PassKit] Step 3 success —', links.length, 'links created');
+      await onProgress?.({ passkit_links: links });
+    } catch (err) {
+      console.warn('[PassKit] Step 3 link creation failed:', err.message);
+    }
+  }
 
-  // Step 5: Create tier — needs both programId and passTemplateId
-  console.log('[PassKit] Step 5: creating tier');
-  const tier = await pkFetch('/members/tier', {
-    method: 'POST',
-    body: JSON.stringify({
-      id:               `${clinic.slug}-member`,
-      name:             'Member',
-      tierIndex:        1,
-      programId:        program.id,
-      passTemplateId:   templateDesignId,
-      expirySettings:   { expiryType: 'EXPIRE_NONE' },
-      timezone:         clinic.timezone || 'America/Edmonton',
-      allowTierEnrolment: { value: true },
-    }),
-  });
-  console.log('[PassKit] Step 5 success — tierId:', tier.id);
+  // Step 4: Template
+  let templateDesignId = clinic.passkit_template_design_id;
+  if (templateDesignId) {
+    console.log('[PassKit] Step 4 skipped — template already exists:', templateDesignId);
+  } else {
+    console.log('[PassKit] Step 4: creating pass template');
+    ({ templateDesignId } = await createPassTemplate({ clinic, links }));
+    console.log('[PassKit] Step 4 success — templateDesignId:', templateDesignId);
+    await onProgress?.({ passkit_template_design_id: templateDesignId });
+  }
 
-  return { programId: program.id, templateDesignId, tierId: tier.id, links, imageIds };
+  // Step 5: Tier
+  let tierId = clinic.passkit_template_id;
+  if (tierId) {
+    console.log('[PassKit] Step 5 skipped — tier already exists:', tierId);
+  } else {
+    console.log('[PassKit] Step 5: creating tier');
+    const tier = await pkFetch('/members/tier', {
+      method: 'POST',
+      body: JSON.stringify({
+        id:               `${clinic.slug}-member`,
+        name:             'Member',
+        tierIndex:        1,
+        programId,
+        passTemplateId:   templateDesignId,
+        expirySettings:   { expiryType: 'EXPIRE_NONE' },
+        timezone:         clinic.timezone || 'America/Edmonton',
+        allowTierEnrolment: { value: true },
+      }),
+    });
+    tierId = tier.id;
+    console.log('[PassKit] Step 5 success — tierId:', tierId);
+    await onProgress?.({ passkit_template_id: tierId });
+  }
+
+  return { programId, templateDesignId, tierId, links, imageIds };
 }
 
 /**
@@ -704,25 +723,27 @@ export async function updateClinicTemplate({ clinic }) {
     console.warn('[PassKit] Link update failed (non-fatal):', err.message);
   }
 
-  // 2. Best-effort: update image records via PUT /image
-  //    Non-fatal — template PUT below uses URL-based images which always works
-  if (clinic.passkit_image_ids) {
-    try {
-      const imageResults = await updateImages(clinic);
-      console.log('[PassKit] Images updated:', imageResults?.length ?? 0);
-    } catch (err) {
-      console.warn('[PassKit] Image update failed (non-fatal):', err.message);
-    }
+  // 2. Create fresh PassKit image records so PassKit re-downloads from the new path.
+  //    Always creates new records (POST /images) — PUT /image does not trigger re-download.
+  let freshImageIds = null;
+  try {
+    const imgResult = await updateImages(clinic);
+    console.log('[PassKit] Images created:', imgResult.count);
+    freshImageIds = imgResult.imageIds;
+  } catch (err) {
+    console.warn('[PassKit] Image update failed (non-fatal):', err.message);
   }
 
-  // 3. Critical: update the template — this is what actually pushes changes to passes
+  // 3. Critical: update the template with fresh image IDs so the portal reflects new images.
   try {
-    const templateResult = await updatePassTemplate({ clinic });
+    const templateResult = await updatePassTemplate({ clinic, imageIds: freshImageIds });
     console.log('[PassKit] Template updated — id:', templateResult?.id);
   } catch (err) {
     console.error('[PassKit] Template update failed:', err.message);
     throw err;
   }
+
+  return freshImageIds ? { newImageIds: freshImageIds } : null;
 }
 
 /**

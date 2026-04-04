@@ -470,22 +470,42 @@ export default function SettingsClient({ clinic }) {
     try {
       const blobs = await cropAll(file);
       const sb    = getSupabaseBrowser();
-      const base  = `${clinic.id}`;
+      const ts    = Date.now();
+      const base  = `${clinic.id}/${ts}`;
       const results = await Promise.all([
-        sb.storage.from('clinic-logos').upload(`${base}/logo-icon.png`,      blobs.icon,      { upsert: true, contentType: 'image/png' }),
-        sb.storage.from('clinic-logos').upload(`${base}/logo-thumbnail.png`, blobs.thumbnail, { upsert: true, contentType: 'image/png' }),
-        sb.storage.from('clinic-logos').upload(`${base}/logo.png`,           blobs.logo,      { upsert: true, contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo-icon.png`,  blobs.icon,      { contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo.png`,       blobs.logo,      { contentType: 'image/png' }),
+        sb.storage.from('clinic-logos').upload(`${base}/logo-apple.png`, blobs.appleLogo, { contentType: 'image/png' }),
       ]);
       const uploadErr = results.find(r => r.error)?.error;
       if (uploadErr) throw uploadErr;
+
       const { data: { publicUrl } } = sb.storage.from('clinic-logos').getPublicUrl(`${base}/logo.png`);
-      set('logo_url', `${publicUrl}?t=${Date.now()}`);
-      e.target.value = '';
+      const logo_url = publicUrl;
+
+      const token = await getToken();
+      const data  = await updateClinic(clinic.id, { logo_url }, token);
+      if (!data?.ok) throw new Error(data?.error || 'Failed to update logo.');
+
+      set('logo_url', logo_url);
+      setFeedback('Logo updated!');
+      setTimeout(() => setFeedback(''), 3000);
+      router.refresh();
+
+      // Delete old folder after success (best-effort, don't block)
+      const oldMatch = clinic.logo_url?.match(/clinic-logos\/(.+)\/logo\.png/);
+      if (oldMatch) {
+        sb.storage.from('clinic-logos').remove([
+          `${oldMatch[1]}/logo.png`,
+          `${oldMatch[1]}/logo-icon.png`,
+          `${oldMatch[1]}/logo-apple.png`,
+        ]).catch(() => {});
+      }
     } catch (err) {
       setFeedback(err.message || 'Logo upload failed.');
-      e.target.value = '';
       setTimeout(() => setFeedback(''), 4000);
     } finally {
+      e.target.value = '';
       setUploading(false);
     }
   }
