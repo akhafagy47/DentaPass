@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import QRCode from 'qrcode';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 
 function IconUsers() {
@@ -62,6 +63,15 @@ function IconPatients() {
     </svg>
   );
 }
+function IconDownload() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+  );
+}
 
 export default async function DashboardHome() {
   const supabase = createSupabaseServerClient();
@@ -109,6 +119,14 @@ export default async function DashboardHome() {
   const usagePercent = clinic.patient_limit
     ? Math.min(100, Math.round(((totalPatients ?? 0) / clinic.patient_limit) * 100))
     : null;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const enrollUrl = `${appUrl}/join/${clinic.slug}`;
+  const qrDataUrl = await QRCode.toDataURL(enrollUrl, {
+    width: 512,
+    margin: 2,
+    color: { dark: '#111827', light: '#ffffff' },
+  });
 
   const stats = [
     { label: 'Total patients', value: totalPatients ?? 0, Icon: IconUsers, accent: '#3bbfb9', delay: '0.05s' },
@@ -230,6 +248,32 @@ export default async function DashboardHome() {
             <a href="/dashboard/patients" className="action-btn" style={{ ...s.actionBtn, ...s.actionPurple }}>
               <IconPatients /> View Patients
             </a>
+          </div>
+        </div>
+
+        {/* Enrollment QR code */}
+        <div className="dp-glass-card" style={{ ...s.card, animationDelay: '0.4s' }}>
+          <div style={s.cardTitle}>Patient enrollment QR code</div>
+          <div style={{ display: 'flex', gap: 28, alignItems: 'center', flexWrap: 'wrap' }}>
+            <a href={qrDataUrl} download={`${clinic.slug}-enrollment-qr.png`} style={{ flexShrink: 0, lineHeight: 0, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--dp-bdr)', display: 'block' }}>
+              <img src={qrDataUrl} alt="Enrollment QR code" width={148} height={148} />
+            </a>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--dp-t2)', lineHeight: 1.65 }}>
+                Print and display at the front desk. Patients scan to add their loyalty card to Apple or Google Wallet instantly — no app download needed.
+              </p>
+              <code style={{ fontSize: 12, color: 'var(--dp-t3)', wordBreak: 'break-all', background: 'var(--dp-inp)', border: '1px solid var(--dp-bdr)', borderRadius: 8, padding: '6px 10px', display: 'block' }}>
+                {enrollUrl}
+              </code>
+              <div style={s.actionRow}>
+                <a href="/api/qr-pdf" download={`${clinic.slug}-enrollment-card.pdf`} className="action-btn" style={{ ...s.actionBtn, ...s.actionTeal, textDecoration: 'none' }}>
+                  <IconDownload /> Download print sheet
+                </a>
+                <a href={qrDataUrl} download={`${clinic.slug}-enrollment-qr.png`} className="action-btn" style={{ ...s.actionBtn, ...s.actionGreen, textDecoration: 'none' }}>
+                  <IconDownload /> Download QR only
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
