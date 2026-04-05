@@ -16,9 +16,10 @@ router.get('/by-serial/:serial', async (req, res) => {
   const { data: patient } = await supabase
     .from('patients')
     .select(`
-      id, first_name, last_name, points_balance, tier,
-      last_visit_date, next_checkup_date, referral_code,
-      passkit_serial_number, clinic_id,
+      id, first_name, last_name, email, phone, date_of_birth,
+      points_balance, tier, last_visit_date,
+      next_checkup_date, next_checkup_time,
+      referral_code, passkit_serial_number, clinic_id,
       clinic:clinics(name, slug)
     `)
     .eq('passkit_serial_number', serial)

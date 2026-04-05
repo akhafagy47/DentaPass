@@ -213,11 +213,45 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
               {patient.tier.charAt(0).toUpperCase() + patient.tier.slice(1)}
             </span>
           </div>
-          {patient.last_visit_date && (
-            <p style={{ fontSize: 13, color: T.metaText, margin: 0 }}>
-              Last visit: {new Date(patient.last_visit_date).toLocaleDateString('en-CA')}
-            </p>
-          )}
+          {/* Patient details */}
+          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5, textAlign: 'left' }}>
+            {patient.last_visit_date && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.metaText }}>
+                <span>Last visit</span>
+                <span>{new Date(patient.last_visit_date).toLocaleDateString('en-CA')}</span>
+              </div>
+            )}
+            {patient.next_checkup_date && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.metaText }}>
+                <span>Next checkup</span>
+                <span>
+                  {new Date(patient.next_checkup_date + 'T00:00:00').toLocaleDateString('en-CA')}
+                  {patient.next_checkup_time ? ` · ${patient.next_checkup_time}` : ''}
+                </span>
+              </div>
+            )}
+            {patient.date_of_birth && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.metaText }}>
+                <span>Date of birth</span>
+                <span>
+                  {new Date(patient.date_of_birth + 'T00:00:00').toLocaleDateString('en-CA')}
+                  {' '}({new Date().getFullYear() - new Date(patient.date_of_birth).getFullYear()} yrs)
+                </span>
+              </div>
+            )}
+            {patient.phone && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.metaText }}>
+                <span>Phone</span>
+                <a href={`tel:${patient.phone}`} style={{ color: '#3bbfb9', textDecoration: 'none' }}>{patient.phone}</a>
+              </div>
+            )}
+            {patient.email && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: T.metaText }}>
+                <span>Email</span>
+                <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{patient.email}</span>
+              </div>
+            )}
+          </div>
 
           <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
