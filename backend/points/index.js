@@ -53,8 +53,11 @@ router.post('/award', async (req, res) => {
     let points;
     if (reason === 'custom') {
       points = parseInt(customPoints, 10);
-      if (!points || points <= 0 || points > 10000) {
-        return res.status(400).json({ error: 'Invalid custom point amount.' });
+      if (!points || points === 0 || Math.abs(points) > 10000) {
+        return res.status(400).json({ error: 'Invalid point amount (must be non-zero, max ±10000).' });
+      }
+      if (points < 0 && patient.points_balance + points < 0) {
+        return res.status(400).json({ error: 'Cannot deduct more points than the current balance.' });
       }
     } else if (clinicActionPoints[reason] !== undefined) {
       points = clinicActionPoints[reason];

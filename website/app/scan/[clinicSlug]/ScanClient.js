@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getPatientBySerial, awardPoints } from '../../../lib/api';
+import { getPatientBySerial, awardPoints, updatePatient } from '../../../lib/api';
 import { getSupabaseBrowser } from '../../../lib/supabase-browser';
 
 const BUILTIN_META = [
@@ -61,10 +61,17 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
 
   const [mode, setMode]         = useState('scan'); // 'scan' | 'patient' | 'awarded'
   const [patient, setPatient]   = useState(null);
-  const [awarding, setAwarding] = useState(null);
-  const [awardResult, setAwardResult] = useState(null);
-  const [customPts, setCustomPts]     = useState('');
-  const [showCustom, setShowCustom]   = useState(false);
+  const [awarding, setAwarding] = useState(false);
+  const [awardResults, setAwardResults] = useState(null); // { items: [{label,points}], newBalance, tier }
+  const [selected, setSelected]         = useState(new Set()); // selected action reasons
+  const [customPts, setCustomPts]       = useState('');
+  const [showCustom, setShowCustom]     = useState(false);
+  const [deductPts, setDeductPts]       = useState('');
+  const [showDeduct, setShowDeduct]     = useState(false);
+  const [checkupDate, setCheckupDate]   = useState('');
+  const [checkupTime, setCheckupTime]   = useState('');
+  const [savingCheckup, setSavingCheckup] = useState(false);
+  const [checkupSaved, setCheckupSaved]   = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [scanning, setScanning]       = useState(false);
   const [authToken, setAuthToken]     = useState(null);
@@ -146,6 +153,9 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
     try {
       const p = await getPatientBySerial(serial);
       setPatient(p);
+      setCheckupDate(p.next_checkup_date || '');
+      setCheckupTime(p.next_checkup_time || '');
+      setSelected(new Set());
       setMode('patient');
     } catch (err) {
       setCameraError(err?.message || 'QR code not recognised. Try again.');
@@ -154,38 +164,126 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
     }
   }
 
-  async function handleAwardPoints(reason, customAmount) {
+  function toggleAction(reason) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(reason) ? next.delete(reason) : next.add(reason);
+      return next;
+    });
+  }
+
+  async function handleAwardAll() {
     if (awarding) return;
-    setAwarding(reason);
-    try {
-      const data = await awardPoints({ patientId: patient.id, reason, customPoints: customAmount, awardedBy: clinicSlug }, authToken);
-      if (data.ok) {
-        setAwardResult(data);
-        setPatient((p) => ({ ...p, points_balance: data.newBalance, tier: data.tier }));
-        setMode('awarded');
-        setTimeout(() => {
-          setMode('scan'); setPatient(null); setAwardResult(null);
-          setShowCustom(false); setCustomPts('');
-        }, 3000);
+    setAwarding(true);
+
+    const allActions = [
+      ...BUILTIN_META.map((m) => ({ ...m, points: actionPoints[m.reason] ?? 0 })),
+      ...customActions.map((a) => ({ reason: a.label, label: a.label, icon: '✦', points: a.points })),
+    ];
+    const toAward = allActions.filter((a) => selected.has(a.reason));
+
+    const items = [];
+    let latestBalance = patient.points_balance;
+    let latestTier    = patient.tier;
+
+    for (const action of toAward) {
+      try {
+        const data = await awardPoints({ patientId: patient.id, reason: action.reason, awardedBy: clinicSlug }, authToken);
+        latestBalance = data.newBalance;
+        latestTier    = data.tier;
+        items.push({ label: action.label, points: action.points });
+      } catch (err) {
+        setCameraError(`Failed to award "${action.label}": ${err?.message}`);
+        setTimeout(() => setCameraError(''), 4000);
       }
-    } catch (err) {
-      setCameraError(err?.message || 'Failed to award points. Please try again.');
-      setTimeout(() => setCameraError(''), 4000);
     }
-    setAwarding(null);
+
+    if (showCustom && customPts) {
+      const pts = parseInt(customPts, 10);
+      if (pts > 0) {
+        try {
+          const data = await awardPoints({ patientId: patient.id, reason: 'custom', customPoints: pts, awardedBy: clinicSlug }, authToken);
+          latestBalance = data.newBalance;
+          latestTier    = data.tier;
+          items.push({ label: 'Custom', points: pts });
+        } catch (err) {
+          setCameraError(`Custom award failed: ${err?.message}`);
+          setTimeout(() => setCameraError(''), 4000);
+        }
+      }
+    }
+
+    if (showDeduct && deductPts) {
+      const pts = parseInt(deductPts, 10);
+      if (pts > 0) {
+        try {
+          const data = await awardPoints({ patientId: patient.id, reason: 'custom', customPoints: -pts, awardedBy: clinicSlug }, authToken);
+          latestBalance = data.newBalance;
+          latestTier    = data.tier;
+          items.push({ label: 'Deduction', points: -pts });
+        } catch (err) {
+          setCameraError(`Deduction failed: ${err?.message}`);
+          setTimeout(() => setCameraError(''), 4000);
+        }
+      }
+    }
+
+    if (items.length > 0) {
+      setPatient((p) => ({ ...p, points_balance: latestBalance, tier: latestTier }));
+      setAwardResults({ items, newBalance: latestBalance, tier: latestTier });
+      setMode('awarded');
+      setTimeout(() => {
+        setMode('scan'); setPatient(null); setAwardResults(null);
+        setSelected(new Set()); setShowCustom(false); setCustomPts('');
+        setShowDeduct(false); setDeductPts('');
+      }, 4000);
+    }
+
+    setAwarding(false);
+  }
+
+  async function handleSaveCheckup() {
+    if (!checkupDate || savingCheckup) return;
+    setSavingCheckup(true);
+    try {
+      await updatePatient(patient.id, {
+        next_checkup_date: checkupDate,
+        ...(checkupTime ? { next_checkup_time: checkupTime } : { next_checkup_time: null }),
+      }, authToken);
+      setPatient((p) => ({ ...p, next_checkup_date: checkupDate, next_checkup_time: checkupTime }));
+      setCheckupSaved(true);
+      setTimeout(() => setCheckupSaved(false), 2000);
+    } catch (err) {
+      setCameraError(err?.message || 'Failed to save checkup date.');
+      setTimeout(() => setCameraError(''), 3000);
+    }
+    setSavingCheckup(false);
   }
 
   // ── SUCCESS ─────────────────────────────────────────────────────────────────
-  if (mode === 'awarded' && awardResult) {
+  if (mode === 'awarded' && awardResults) {
+    const totalPts = awardResults.items.reduce((s, i) => s + i.points, 0);
     return (
       <div style={{ minHeight: '100vh', background: T.pageBg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: "'DM Sans', sans-serif" }}>
         <div style={{ background: T.cardBg, border: `1px solid ${T.cardBdr}`, borderRadius: 20, padding: '32px 28px', width: '100%', maxWidth: 420, boxShadow: '0 4px 32px rgba(0,0,0,0.1)', textAlign: 'center' }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(52,211,153,0.12)', border: '1.5px solid rgba(52,211,153,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 28, color: '#34d399' }}>✓</div>
-          <h2 style={{ fontSize: 24, fontWeight: 700, color: T.text, margin: '0 0 8px' }}>+{awardResult.pointsAwarded} pts sent!</h2>
-          <p style={{ fontSize: 15, color: T.textMuted, margin: '0 0 4px' }}>
-            {patient.first_name}'s new balance: <strong>{awardResult.newBalance}</strong> pts
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: T.text, margin: '0 0 12px' }}>
+            {totalPts >= 0 ? `+${totalPts}` : totalPts} pts for {patient.first_name}
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+            {awardResults.items.map((item, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: T.textMuted, background: T.btnBg, borderRadius: 10, padding: '8px 14px' }}>
+                <span>{item.label}</span>
+                <span style={{ fontWeight: 700, color: item.points < 0 ? '#f87171' : '#34d399' }}>
+                  {item.points > 0 ? '+' : ''}{item.points} pts
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 14, color: T.textMuted, margin: '0 0 4px' }}>
+            New balance: <strong style={{ color: T.text }}>{awardResults.newBalance} pts</strong>
           </p>
-          <p style={{ fontSize: 14, fontWeight: 700, textTransform: 'capitalize', color: tierColor[awardResult.tier] || T.textMuted }}>{awardResult.tier} tier</p>
+          <p style={{ fontSize: 13, fontWeight: 700, textTransform: 'capitalize', color: tierColor[awardResults.tier] || T.textMuted, margin: '4px 0 0' }}>{awardResults.tier} tier</p>
           <p style={{ fontSize: 13, color: T.metaText, marginTop: 16 }}>Returning to scanner…</p>
         </div>
       </div>
@@ -253,54 +351,128 @@ export default function ScanClient({ clinicSlug, theme = 'auto', actionPoints = 
             )}
           </div>
 
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* Actions — multi-select */}
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
               ...BUILTIN_META.map((m) => ({ ...m, points: actionPoints[m.reason] ?? 0 })),
               ...customActions.map((a) => ({ reason: a.label, label: a.label, icon: '✦', points: a.points })),
-            ].map((btn) => (
-              <button
-                key={btn.reason}
-                disabled={!!awarding}
-                onClick={() => handleAwardPoints(btn.reason)}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: awarding === btn.reason ? 'rgba(52,211,153,0.1)' : T.btnBg,
-                  border: `1.5px solid ${T.btnBdr}`,
-                  borderRadius: 12, padding: '14px 16px', fontSize: 15,
-                  cursor: 'pointer', transition: 'background 0.15s', width: '100%',
-                  opacity: awarding ? 0.6 : 1, color: T.btnText,
-                }}
-              >
-                <span>{btn.icon} {btn.label}</span>
-                <span style={{ background: 'rgba(59,191,185,0.1)', color: '#3bbfb9', fontWeight: 700, fontSize: 13, padding: '3px 10px', borderRadius: 20 }}>+{btn.points}</span>
-              </button>
-            ))}
+            ].map((btn) => {
+              const isSelected = selected.has(btn.reason);
+              return (
+                <button
+                  key={btn.reason}
+                  disabled={awarding}
+                  onClick={() => toggleAction(btn.reason)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: isSelected ? 'rgba(52,211,153,0.08)' : T.btnBg,
+                    border: `1.5px solid ${isSelected ? 'rgba(52,211,153,0.35)' : T.btnBdr}`,
+                    borderRadius: 12, padding: '13px 16px', fontSize: 15,
+                    cursor: 'pointer', transition: 'all 0.12s', width: '100%',
+                    opacity: awarding ? 0.6 : 1, color: isSelected ? T.text : T.btnText,
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {isSelected && <span style={{ color: '#34d399', fontSize: 13, fontWeight: 700 }}>✓</span>}
+                    {btn.icon} {btn.label}
+                  </span>
+                  <span style={{ background: 'rgba(59,191,185,0.1)', color: '#3bbfb9', fontWeight: 700, fontSize: 13, padding: '3px 10px', borderRadius: 20 }}>+{btn.points}</span>
+                </button>
+              );
+            })}
 
+            {/* Custom add */}
             {!showCustom ? (
               <button onClick={() => setShowCustom(true)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.btnBg, border: `1.5px solid ${T.btnBdr}`, borderRadius: 12, padding: '14px 16px', fontSize: 15, cursor: 'pointer', width: '100%', color: T.textSub }}>
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.btnBg, border: `1.5px solid ${T.btnBdr}`, borderRadius: 12, padding: '13px 16px', fontSize: 15, cursor: 'pointer', width: '100%', color: T.textSub }}>
                 <span>Custom amount</span>
                 <span style={{ background: 'rgba(59,191,185,0.1)', color: '#3bbfb9', fontWeight: 700, fontSize: 13, padding: '3px 10px', borderRadius: 20 }}>+?</span>
               </button>
             ) : (
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 14, color: '#3bbfb9', fontWeight: 700, flexShrink: 0 }}>+</span>
                 <input
                   type="number" min="1" max="10000"
                   value={customPts}
                   onChange={(e) => setCustomPts(e.target.value)}
-                  placeholder="Points"
-                  style={{ flex: 1, padding: '12px 14px', border: `1.5px solid ${T.inputBdr}`, borderRadius: 10, fontSize: 15, outline: 'none', background: T.btnBg, color: T.text }}
+                  placeholder="Custom pts"
+                  style={{ flex: 1, padding: '11px 14px', border: `1.5px solid ${T.inputBdr}`, borderRadius: 10, fontSize: 15, outline: 'none', background: T.btnBg, color: T.text }}
                   autoFocus
                 />
-                <button
-                  disabled={!customPts || awarding}
-                  onClick={() => handleAwardPoints('custom', customPts)}
-                  style={{ background: '#3bbfb9', color: '#081312', border: 'none', borderRadius: 10, padding: '12px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}
-                >
-                  Award
-                </button>
+                <button onClick={() => { setShowCustom(false); setCustomPts(''); }}
+                  style={{ background: 'none', border: 'none', color: T.textSub, fontSize: 18, cursor: 'pointer', padding: '0 4px' }}>×</button>
               </div>
             )}
+
+            {/* Remove points */}
+            {!showDeduct ? (
+              <button onClick={() => setShowDeduct(true)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.btnBg, border: `1.5px solid ${T.btnBdr}`, borderRadius: 12, padding: '13px 16px', fontSize: 15, cursor: 'pointer', width: '100%', color: T.textSub }}>
+                <span>Remove points</span>
+                <span style={{ background: 'rgba(248,113,113,0.1)', color: '#f87171', fontWeight: 700, fontSize: 13, padding: '3px 10px', borderRadius: 20 }}>−?</span>
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 14, color: '#f87171', fontWeight: 700, flexShrink: 0 }}>−</span>
+                <input
+                  type="number" min="1" max={patient.points_balance}
+                  value={deductPts}
+                  onChange={(e) => setDeductPts(e.target.value)}
+                  placeholder={`Max ${patient.points_balance}`}
+                  style={{ flex: 1, padding: '11px 14px', border: `1.5px solid rgba(248,113,113,0.3)`, borderRadius: 10, fontSize: 15, outline: 'none', background: T.btnBg, color: T.text }}
+                  autoFocus
+                />
+                <button onClick={() => { setShowDeduct(false); setDeductPts(''); }}
+                  style={{ background: 'none', border: 'none', color: T.textSub, fontSize: 18, cursor: 'pointer', padding: '0 4px' }}>×</button>
+              </div>
+            )}
+          </div>
+
+          {/* Award button */}
+          {(selected.size > 0 || (showCustom && customPts) || (showDeduct && deductPts)) && (
+            <button
+              disabled={awarding}
+              onClick={handleAwardAll}
+              style={{
+                marginTop: 14, width: '100%', background: '#3bbfb9', color: '#081312',
+                border: 'none', borderRadius: 12, padding: '14px', fontSize: 16,
+                fontWeight: 700, cursor: 'pointer', opacity: awarding ? 0.6 : 1,
+              }}
+            >
+              {awarding ? 'Awarding…' : `Award${selected.size > 1 ? ` (${selected.size} actions)` : ''}`}
+            </button>
+          )}
+
+          {/* Set next checkup */}
+          <div style={{ marginTop: 16, borderTop: `1px solid ${T.cardBdr}`, paddingTop: 14 }}>
+            <p style={{ fontSize: 12, color: T.metaText, margin: '0 0 8px', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 600 }}>Next checkup</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="date"
+                value={checkupDate}
+                onChange={(e) => setCheckupDate(e.target.value)}
+                style={{ flex: 1, padding: '10px 12px', border: `1.5px solid ${T.inputBdr}`, borderRadius: 10, fontSize: 14, outline: 'none', background: T.btnBg, color: T.text, colorScheme: resolvedTheme }}
+              />
+              <input
+                type="time"
+                value={checkupTime}
+                onChange={(e) => setCheckupTime(e.target.value)}
+                style={{ width: 110, padding: '10px 12px', border: `1.5px solid ${T.inputBdr}`, borderRadius: 10, fontSize: 14, outline: 'none', background: T.btnBg, color: T.text, colorScheme: resolvedTheme }}
+              />
+              <button
+                disabled={!checkupDate || savingCheckup}
+                onClick={handleSaveCheckup}
+                style={{
+                  background: checkupSaved ? '#34d399' : '#3bbfb9', color: '#081312',
+                  border: 'none', borderRadius: 10, padding: '10px 14px',
+                  fontWeight: 600, fontSize: 14, cursor: 'pointer',
+                  opacity: (!checkupDate || savingCheckup) ? 0.5 : 1,
+                  transition: 'background 0.2s', flexShrink: 0,
+                }}
+              >
+                {checkupSaved ? '✓' : savingCheckup ? '…' : 'Set'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
